@@ -40,7 +40,7 @@ final class AppSettings {
     init(defaults: UserDefaults = .standard) {
         self.defaults = defaults
         provider = Provider(rawValue: defaults.string(forKey: "provider") ?? "") ?? .auto
-        modelId = defaults.string(forKey: "modelId") ?? AnthropicModel.opus55.id
+        modelId = defaults.string(forKey: "modelId") ?? AnthropicModel.sonnet55.id
         dailyCapUSD = defaults.object(forKey: "dailyCapUSD") as? Double ?? 2
         consentGiven = defaults.bool(forKey: "consentGiven")
         showPictures = defaults.object(forKey: "showPictures") as? Bool ?? true
