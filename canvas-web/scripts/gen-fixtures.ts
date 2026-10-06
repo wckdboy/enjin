@@ -16,6 +16,8 @@ const scene: PortalScene = {
     { id: "c-equipment", type: "topic", title: "Equipment", summary: "Gladius, pilum.", state: "filling", childCount: 0, imagePending: true },
   ],
   files: [{ id: "img-1", mimeType: "image/png", dataURL: "data:image/png;base64,iVBORw0KGgo=" }],
+  hero: { fileId: "img-1", width: 800, height: 533 },
+  subtitle: "Rome's professional heavy infantry.",
   elements: [{ id: "ink:s1:1", type: "freedraw", x: 10, y: 20, points: [[0, 0], [5, 5]], customData: { role: "ink" } }],
 };
 
@@ -38,6 +40,8 @@ export const examples: Record<string, { direction: "nativeToWeb" | "webToNative"
     },
     result: { placed: [{ cardId: "c-new", x: 368, y: 110, width: 320, height: 180 }] },
   },
+  "canvas.setHeader": { direction: "nativeToWeb", params: { portalId: "p-legions", title: "Legions", subtitle: "Heavy infantry.", hero: { fileId: "img-1", width: 800, height: 533 } }, result: null },
+  "canvas.setBusy": { direction: "nativeToWeb", params: { portalId: "p-legions", message: "Enjin is exploring Legions…" }, result: null },
   "canvas.addFiles": { direction: "nativeToWeb", params: { files: [{ id: "img-2", mimeType: "image/jpeg", dataURL: "data:image/jpeg;base64,/9j/" }] }, result: null },
   "canvas.frame": { direction: "nativeToWeb", params: { cardId: "c-why-won" }, result: { framed: true } },
   "canvas.flash": { direction: "nativeToWeb", params: { cardId: "c-why-won" }, result: null },

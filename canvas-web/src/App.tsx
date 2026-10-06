@@ -21,6 +21,14 @@ export function App({ bridge }: { bridge: Bridge }) {
     const portals = new PortalController(api, bridge, gate, stageRef.current);
     bridge.on("portal.load", (p) => portals.load(p).then(() => null));
     bridge.on("canvas.applyOps", (p) => portals.applyOps(p));
+    bridge.on("canvas.setHeader", (p) => {
+      portals.setHeader(p);
+      return null;
+    });
+    bridge.on("canvas.setBusy", (p) => {
+      portals.setBusy(p);
+      return null;
+    });
     bridge.on("canvas.addFiles", (p) => {
       portals.addFiles(p.files);
       return null;

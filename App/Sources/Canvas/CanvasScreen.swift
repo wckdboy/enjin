@@ -10,6 +10,7 @@ struct CanvasScreen: View {
     @State private var showMap = false
     @State private var showNewCard = false
     @State private var showSettings = false
+    @AppStorage("tip.dive.seen") private var diveTipSeen = false
 
     var body: some View {
         VStack(spacing: 0) {
@@ -46,8 +47,19 @@ struct CanvasScreen: View {
                     // The canvas runs under the home indicator; the keyboard must not resize it.
                     .ignoresSafeArea(.all, edges: .bottom)
                 VStack(spacing: 10) {
+                    if !diveTipSeen && controller.status == .ready && controller.agent.nextSteps.contains(where: \.isDive) {
+                        HStack(spacing: 12) {
+                            Image(systemName: "hand.pinch").font(.title2)
+                            Text("Tip: pinch a card open (or tap it, then **Dive in**) to go inside it.")
+                            Button("Got it") { diveTipSeen = true }.buttonStyle(.borderedProminent)
+                        }
+                        .padding(14)
+                        .background(.thickMaterial, in: .rect(cornerRadius: 16))
+                        .transition(.move(edge: .bottom).combined(with: .opacity))
+                    }
                     if controller.status == .ready {
-                        AgentDock(agent: controller.agent, onAsk: controller.ask, onGoToSuggestion: controller.goToSuggestion)
+                        AgentDock(agent: controller.agent, onAsk: controller.ask, onGoToSuggestion: controller.goToSuggestion,
+                                  onNextStep: controller.takeNextStep)
                     }
                 }
                 .padding(.bottom, 76)

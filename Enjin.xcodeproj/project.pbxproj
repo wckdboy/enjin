@@ -7,6 +7,8 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		0DA03F83B36E14BCBA0078A7 /* PlaygroundIllustrator.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8E289DB47DF61E71C799F2DE /* PlaygroundIllustrator.swift */; };
+		16D33BFBA32AD32F02DDA346 /* PrintStylizer.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2009E3C6D483FE10101AE48A /* PrintStylizer.swift */; };
 		22C65F2B475DD65156B6A244 /* EnjinApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 64B67552DCD5949B3BC2F70D /* EnjinApp.swift */; };
 		232FAF527008A6E987F8DA8F /* EnjinKit in Frameworks */ = {isa = PBXBuildFile; productRef = C1762FD4209A455CE72031C3 /* EnjinKit */; };
 		23F0C671C4DBD800917E7500 /* SmokeTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6A294F6F430A7C20694CAB29 /* SmokeTests.swift */; };
@@ -16,6 +18,7 @@
 		3C76EA3FDB16774AF37634EC /* MapView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 33AF9CC7D9145A77A59FF119 /* MapView.swift */; };
 		4212EC07E3335CFE5504A7B1 /* SettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2C61AE85BA8BC51497310158 /* SettingsView.swift */; };
 		431106171A4CE89700E476B5 /* AgentSpikeView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0682FAD4E167B1DE422DF1AD /* AgentSpikeView.swift */; };
+		4BF386EFF33CE472311A364B /* EnjinPrint.metal in Sources */ = {isa = PBXBuildFile; fileRef = 6BD6037F1264A16C0C79683D /* EnjinPrint.metal */; };
 		60432232E6FF47FCF7499A61 /* UITestBackend.swift in Sources */ = {isa = PBXBuildFile; fileRef = F7B8FED4FFF1EDF10FC0E58B /* UITestBackend.swift */; };
 		617B6447E0CB0A19F2009832 /* Library.swift in Sources */ = {isa = PBXBuildFile; fileRef = F7533C79DD18DCBADCDFE713 /* Library.swift */; };
 		70377B5A35A91DF9999B4D6E /* AppSettings.swift in Sources */ = {isa = PBXBuildFile; fileRef = DB313F315AC80EDD43B0D992 /* AppSettings.swift */; };
@@ -41,6 +44,7 @@
 		04DFDB9639551640B5AA8568 /* EnjinKit */ = {isa = PBXFileReference; lastKnownFileType = folder; name = EnjinKit; path = EnjinKit; sourceTree = SOURCE_ROOT; };
 		0682FAD4E167B1DE422DF1AD /* AgentSpikeView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AgentSpikeView.swift; sourceTree = "<group>"; };
 		1440DF5DF049F0826D2B1902 /* canvas-web */ = {isa = PBXFileReference; lastKnownFileType = folder; name = "canvas-web"; path = "App/Resources/canvas-web"; sourceTree = SOURCE_ROOT; };
+		2009E3C6D483FE10101AE48A /* PrintStylizer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PrintStylizer.swift; sourceTree = "<group>"; };
 		2C61AE85BA8BC51497310158 /* SettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsView.swift; sourceTree = "<group>"; };
 		33AF9CC7D9145A77A59FF119 /* MapView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MapView.swift; sourceTree = "<group>"; };
 		45E482B3B4467BAB837CBA81 /* CardDetailSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CardDetailSheet.swift; sourceTree = "<group>"; };
@@ -49,7 +53,9 @@
 		572660002A38184E8C3BADFA /* CanvasScreen.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CanvasScreen.swift; sourceTree = "<group>"; };
 		64B67552DCD5949B3BC2F70D /* EnjinApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EnjinApp.swift; sourceTree = "<group>"; };
 		6A294F6F430A7C20694CAB29 /* SmokeTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SmokeTests.swift; sourceTree = "<group>"; };
+		6BD6037F1264A16C0C79683D /* EnjinPrint.metal */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.metal; path = EnjinPrint.metal; sourceTree = "<group>"; };
 		8B7EAFE44EECEDCA640A7AF7 /* AgentDock.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AgentDock.swift; sourceTree = "<group>"; };
+		8E289DB47DF61E71C799F2DE /* PlaygroundIllustrator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PlaygroundIllustrator.swift; sourceTree = "<group>"; };
 		91D87DDA95FA18B171AB889A /* CanvasController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CanvasController.swift; sourceTree = "<group>"; };
 		DA6117F0186B6135D735DCA7 /* EnjinUITests.xctest */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.cfbundle; path = EnjinUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		DB313F315AC80EDD43B0D992 /* AppSettings.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppSettings.swift; sourceTree = "<group>"; };
@@ -96,6 +102,16 @@
 				F685A102603C08F6455FC835 /* LibraryView.swift */,
 			);
 			path = Library;
+			sourceTree = "<group>";
+		};
+		998820FF8CC4F393A21B9A70 /* Media */ = {
+			isa = PBXGroup;
+			children = (
+				6BD6037F1264A16C0C79683D /* EnjinPrint.metal */,
+				8E289DB47DF61E71C799F2DE /* PlaygroundIllustrator.swift */,
+				2009E3C6D483FE10101AE48A /* PrintStylizer.swift */,
+			);
+			path = Media;
 			sourceTree = "<group>";
 		};
 		9AB09C8F1EDD0D7DABF525AB /* Canvas */ = {
@@ -164,6 +180,7 @@
 				BCA8941AA8F55E1B24BE51EC /* Agent */,
 				9AB09C8F1EDD0D7DABF525AB /* Canvas */,
 				7DF9D4DAE49ABA410699C6E5 /* Library */,
+				998820FF8CC4F393A21B9A70 /* Media */,
 				A377514BAF49699CB1070D0E /* Settings */,
 			);
 			path = Sources;
@@ -325,10 +342,13 @@
 				B49F4B023D0899EA6386BB8C /* CanvasScreen.swift in Sources */,
 				3B277B7E7B91236DB9A852B3 /* CardDetailSheet.swift in Sources */,
 				22C65F2B475DD65156B6A244 /* EnjinApp.swift in Sources */,
+				4BF386EFF33CE472311A364B /* EnjinPrint.metal in Sources */,
 				E267715E0613AD83E9A6E19E /* InkLayer.swift in Sources */,
 				617B6447E0CB0A19F2009832 /* Library.swift in Sources */,
 				39894EAC037A27888974D57A /* LibraryView.swift in Sources */,
 				3C76EA3FDB16774AF37634EC /* MapView.swift in Sources */,
+				0DA03F83B36E14BCBA0078A7 /* PlaygroundIllustrator.swift in Sources */,
+				16D33BFBA32AD32F02DDA346 /* PrintStylizer.swift in Sources */,
 				FD51CB226F27CFF5D8371497 /* SchemeHandler.swift in Sources */,
 				4212EC07E3335CFE5504A7B1 /* SettingsView.swift in Sources */,
 				60432232E6FF47FCF7499A61 /* UITestBackend.swift in Sources */,
@@ -369,6 +389,7 @@
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
+				MTLLINKER_FLAGS = "-framework CoreImage";
 				PRODUCT_BUNDLE_IDENTIFIER = cc.wckd.enjin;
 				SDKROOT = iphoneos;
 				TARGETED_DEVICE_FAMILY = 2;
@@ -472,6 +493,7 @@
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
+				MTLLINKER_FLAGS = "-framework CoreImage";
 				PRODUCT_BUNDLE_IDENTIFIER = cc.wckd.enjin;
 				SDKROOT = iphoneos;
 				TARGETED_DEVICE_FAMILY = 2;

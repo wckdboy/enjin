@@ -62,9 +62,13 @@ final class FakeCanvas: CanvasSink {
     var ops: [(String, [CardOp])] = []
     var flashed: [String] = []
     var files: [BridgeFile] = []
+    var headers: [NativeMethod.SetHeader] = []
+    var busy: [(String, String?)] = []
     func apply(portalId: String, ops: [CardOp]) async { self.ops.append((portalId, ops)) }
     func flash(cardId: String) async { flashed.append(cardId) }
     func addFiles(_ files: [BridgeFile]) async { self.files += files }
+    func setHeader(_ header: NativeMethod.SetHeader) async { headers.append(header) }
+    func setBusy(portalId: String, message: String?) async { busy.append((portalId, message)) }
 }
 
 func card(_ title: String, stub: Bool = false, sources: [String]? = nil) -> JSONValue {
@@ -296,6 +300,7 @@ struct PrefetchTests {
                           createCards([card("Inside fall")], parent: "c-fall")], text: "background"),
         ])
         let agent = AgentSession(session: session, backend: backend, telemetry: nil)
+        agent.prefetchEnabled = true
         let canvas = FakeCanvas()
         agent.canvas = canvas
         agent.ask("go", portalId: "p-root", focusCardId: nil)

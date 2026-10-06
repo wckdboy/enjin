@@ -10,7 +10,7 @@ describe("placeCards", () => {
     for (let i = 0; i < placed.length; i++) for (let j = i + 1; j < placed.length; j++) expect(intersects(placed[i]!, placed[j]!)).toBe(false);
   });
   it("is deterministic", () => {
-    const sizes = [1, 2, 3, 4, 5].map((i) => ({ width: CARD_W, height: i % 2 ? 180 : 370 }));
+    const sizes = [1, 2, 3, 4, 5].map((i) => ({ width: CARD_W, height: i % 2 ? 196 : 386 }));
     expect(placeCards(sizes, [])).toEqual(placeCards(sizes, []));
   });
   it("fills the shortest column first (masonry)", () => {

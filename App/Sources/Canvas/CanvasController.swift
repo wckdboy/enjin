@@ -41,6 +41,10 @@ final class CanvasController: NSObject {
         agent = AgentSession(session: session, backend: settings.makeBackend(), telemetry: telemetry)
         agent.dailyCapUSD = settings.dailyCapUSD
         agent.imageFinder = settings.makeImageFinder()
+        agent.imageGenerator = settings.makeIllustrator()
+        agent.imageStylizer = PrintStylizer()
+        agent.assist = settings.makeAssist()
+        agent.prefetchEnabled = settings.prepareAhead
 
         let config = WKWebViewConfiguration()
         config.setURLSchemeHandler(SchemeHandler(root: bundle.resourceURL!.appendingPathComponent("canvas-web")), forURLScheme: SchemeHandler.scheme)
@@ -97,6 +101,16 @@ final class CanvasController: NSObject {
         agent.backend = settings.makeBackend()
         agent.dailyCapUSD = settings.dailyCapUSD
         agent.imageFinder = settings.makeImageFinder()
+        agent.imageGenerator = settings.makeIllustrator()
+        agent.prefetchEnabled = settings.prepareAhead
+    }
+
+    func takeNextStep(_ step: AgentSession.NextStep) {
+        agent.clearNextSteps()
+        switch step {
+        case .ask(let q): ask(q)
+        case .dive(let cardId, _): dive(into: cardId)
+        }
     }
 
     func ask(_ text: String) {
@@ -168,6 +182,7 @@ final class CanvasController: NSObject {
         do {
             let card = try await session.createCard(in: portalId, type: type, title: title, summary: summary, author: .kid)
             await telemetry.record("card_created", ["by": .string("kid")])
+            defer { Task { await agent.decorateKidCard(card.id) } }
             try await call("canvas.applyOps",
                            NativeMethod.ApplyOps(portalId: portalId, ops: [.upsert(session.bridgeCard(card))]),
                            returning: NativeMethod.ApplyOpsResult.self)
@@ -244,6 +259,8 @@ final class CanvasController: NSObject {
             guard let scene = try await session.scene(for: portalId) else { return }
             path = scene.path
             try await call("portal.load", NativeMethod.PortalLoad(scene: scene, transition: .jump))
+            // A brand-new notebook opens itself up.
+            if session.data.cards.isEmpty && agent.backend != nil && !agent.isRunning { agent.begin(portalId: portalId) }
         } catch {
             status = .failed("Couldn't load the canvas: \(error.localizedDescription)")
         }
@@ -290,5 +307,13 @@ extension CanvasController: CanvasSink {
 
     func addFiles(_ files: [BridgeFile]) async {
         _ = try? await call("canvas.addFiles", NativeMethod.AddFiles(files: files))
+    }
+
+    func setHeader(_ header: NativeMethod.SetHeader) async {
+        _ = try? await call("canvas.setHeader", header)
+    }
+
+    func setBusy(portalId: String, message: String?) async {
+        _ = try? await call("canvas.setBusy", NativeMethod.SetBusy(portalId: portalId, message: message))
     }
 }

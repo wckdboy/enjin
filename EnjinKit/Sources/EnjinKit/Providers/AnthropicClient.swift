@@ -46,6 +46,8 @@ public struct AnthropicClient: Sendable {
     public var baseURL = URL(string: "https://api.anthropic.com/v1/messages")!
     public var maxRetries = 3
     public var timeout: TimeInterval = 45
+    /// Injectable for tests (URLProtocol stubs).
+    public var session: URLSession = .shared
 
     public init(apiKey: String, workspaceId: String? = nil) {
         self.apiKey = apiKey
@@ -113,7 +115,7 @@ public struct AnthropicClient: Sendable {
         if let workspaceId { req.setValue(workspaceId, forHTTPHeaderField: "anthropic-workspace-id") }
         req.httpBody = try JSONEncoder().encode(JSONValue.object(obj))
 
-        let (bytes, response) = try await URLSession.shared.bytes(for: req)
+        let (bytes, response) = try await session.bytes(for: req)
         let status = (response as? HTTPURLResponse)?.statusCode ?? 0
         guard status == 200 else {
             var data = Data()

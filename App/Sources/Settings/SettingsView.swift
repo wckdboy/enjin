@@ -81,7 +81,13 @@ struct SettingsView: View {
                 } header: {
                     Text("Pictures")
                 } footer: {
-                    Text("Pictures come from Wikipedia (free-licensed lead images of articles, with credit). A word filter skips unsuitable ones, but no filter is perfect.")
+                    Text("Facts get real pictures from Wikipedia (free-licensed, credited; a word filter skips unsuitable ones, but no filter is perfect). Ideas get illustrations made on this iPad with Image Playground, where available. Everything gets Enjin's sketchbook look.")
+                }
+
+                Section {
+                    Toggle("Prepare cards ahead", isOn: $settings.prepareAhead)
+                } footer: {
+                    Text("Fills unexplored cards in the background while your kid looks at them, so diving in is instant. Uses noticeably more of the daily limit.")
                 }
 
                 Section {

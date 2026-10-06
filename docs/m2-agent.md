@@ -34,3 +34,13 @@ Built and tested against a scripted model (no API key available here).
 - On the canvas, picture cards reserve their space with a "finding a picture…" placeholder, so arriving images never push other cards around. Images are cover-cropped (portraits keep their upper part) and new cards are placed masonry-style.
 - Images are saved in `notebooks/<id>/files/`, sent to the canvas as data URLs (`canvas.addFiles`, `PortalScene.files`), and shown large in the card's detail sheet with credit, a "About this picture" link, and the card's sources.
 - Parents can turn pictures off in Settings.
+
+## Faster, cheaper, guided, coherent (added 2026-10-06)
+Real-key telemetry showed 7–26s turns at $0.05–0.13 each, with 2–3 rounds per turn, up to 3 searches, and background prefetches (5 of 8 turns) the kid never asked for.
+- **One round per turn.** The reply comes first, then all tool calls; the turn ends once client tools succeed (`endAfterClientTools`). Their results open the next user message. Failed tools still get a retry round. Tested against stubbed SSE.
+- **At most one web search,** and only for facts the model is unsure of.
+- **Prefetch is off by default** ("Prepare cards ahead" in Settings). Cache-write tokens are now logged per turn.
+- **Apple's on-device model (free):** next-question chips after each turn, and picture phrases for cards without one (stubs, the kid's own cards).
+- **Guidance:** new notebooks open themselves (a `begin` turn), with "Enjin is exploring…" shown in empty portals. Chips offer "dive into" for new stubs plus two questions. Stubs say "dive in →", and explored cards say "N inside →". A one-time pinch tip appears. Excalidraw's hints, menu, library, help and rarely-used tools are hidden.
+- **Visuals:** a portal opens with the owner card's picture as a banner plus its summary. Cards have a title/summary type hierarchy. Every card can have a picture.
+- **Pictures:** facts prefer real Wikipedia photos; stubs and kid cards prefer on-device Image Playground illustrations (needs an Apple Intelligence iPad; falls back to photos). Everything passes through the "Enjin print" Core Image Metal kernel (`App/Sources/Media/EnjinPrint.metal`) at import: posterized brightness with original chroma kept, ink edges (Sobel), ink-tinted shadows, highlights melting into the paper color, and grain. That gives one sketchbook look.

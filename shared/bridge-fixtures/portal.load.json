@@ -49,6 +49,12 @@
             "dataURL": "data:image/png;base64,iVBORw0KGgo="
           }
         ],
+        "hero": {
+          "fileId": "img-1",
+          "width": 800,
+          "height": 533
+        },
+        "subtitle": "Rome's professional heavy infantry.",
         "elements": [
           {
             "id": "ink:s1:1",

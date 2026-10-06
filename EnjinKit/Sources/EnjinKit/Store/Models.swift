@@ -28,6 +28,8 @@ public struct CardImage: Codable, Equatable, Sendable {
     public var credit: String?
     /// Where the picture came from (its Wikimedia Commons page).
     public var sourceURL: String?
+    /// Photo or on-device illustration (nil in older notebooks: photo).
+    public var kind: PictureKind?
 
     public init(fileId: String, mimeType: String, width: Int, height: Int, credit: String? = nil, sourceURL: String? = nil) {
         self.fileId = fileId; self.mimeType = mimeType; self.width = width; self.height = height; self.credit = credit; self.sourceURL = sourceURL

@@ -30,7 +30,7 @@ public enum AgentTools {
                             "body": string("Optional, <= 600 characters of extra detail shown when the card is opened"),
                             "type": .object(["type": .string("string"), "enum": .array([.string("topic"), .string("note")])]),
                             "isStub": .object(["type": .string("boolean"), "description": .string("true for an unexplored follow-up door")]),
-                            "image": string("Optional short search phrase for a real picture that helps a kid picture this, e.g. 'Roman legionary armour' or 'Colosseum aerial'. Use it on most filled topic cards; skip it for stubs."),
+                            "image": string("Optional short search phrase for a real picture that helps a kid picture this, e.g. 'Roman legionary armour' or 'Colosseum aerial'. Give one to every card."),
                             "sources": .object(["type": .string("array"), "items": .object(["type": .string("string")]),
                                                 "description": .string("URLs from this turn's web search that back this card")]),
                         ]),

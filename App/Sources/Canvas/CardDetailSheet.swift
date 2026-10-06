@@ -49,10 +49,12 @@ struct CardDetailSheet: View {
                             .frame(maxWidth: .infinity, maxHeight: 320)
                             .clipShape(.rect(cornerRadius: 12))
                             .accessibilityLabel("Picture for \(card.title)")
-                        if let credit = card.image?.credit {
+                        if card.image?.kind == .illustration {
+                            Text("Illustration made on this iPad (not a real photo)").font(.caption).foregroundStyle(.secondary)
+                        } else if let credit = card.image?.credit {
                             Text("Picture: \(credit)").font(.caption).foregroundStyle(.secondary)
                         }
-                        if let url = card.image?.sourceURL.flatMap(URL.init(string:)) {
+                        if card.image?.kind != .illustration, let url = card.image?.sourceURL.flatMap(URL.init(string:)) {
                             Link("About this picture", destination: url).font(.caption)
                         }
                     }

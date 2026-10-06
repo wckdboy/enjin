@@ -3,11 +3,12 @@ import type { ExcalidrawElement, NonDeletedExcalidrawElement } from "@excalidraw
 import type { ExcalidrawImperativeAPI } from "@excalidraw/excalidraw/types";
 import type { Bridge } from "../bridge/client";
 import type { BridgeFile, Card, Params, NativeToWeb, PortalScene, Result } from "../bridge/schema";
-import { buildPortalElements, cardRects, renderCards } from "../cards/render";
+import { buildPortalElements, cardRects, renderCards, withHeader } from "../cards/render";
 import { type Rect, type Viewport, centerOn, containsPoint, fitZoom, framedRect, mapRect, nearestToCenter, toView, union, visibleRect, windowIn } from "../cards/layout";
 import type { InputGate } from "../inputGate";
 import { cssTransition, nextPaint, setStyleNow, tween } from "./animate";
 import { CardActions } from "./CardActions";
+import { BusyHint } from "./BusyHint";
 import { PreviewOverlay } from "./PreviewOverlay";
 
 /** A card this big on screen (fraction of view width or height) dives in. */
@@ -37,6 +38,7 @@ export class PortalController {
   private lastTap: { t: number; x: number; y: number } | null = null;
   private unsubs: (() => void)[] = [];
   private overlay = new PreviewOverlay();
+  private busy = new BusyHint();
   private actions = new CardActions({
     open: (cardId) => this.bridge.notify("card.open", { cardId }),
     dive: (cardId) => void this.requestDive(cardId),
@@ -83,6 +85,7 @@ export class PortalController {
       this.transitioning = false;
       this.gate.unblock("transition");
       this.positionActions();
+      this.updateBusy();
     }
   }
 
@@ -96,6 +99,27 @@ export class PortalController {
       settle();
       this.loading = null;
     }
+  }
+
+  /** The banner/title/subtitle of the portal on screen changed (e.g. its card got a picture). */
+  setHeader(p: Params<NativeToWeb, "canvas.setHeader">): void {
+    if (this.scene?.portalId !== p.portalId) return;
+    this.scene = { ...this.scene, title: p.title, subtitle: p.subtitle, hero: p.hero };
+    this.api.updateScene({ elements: withHeader(this.api.getSceneElementsIncludingDeleted(), p), captureUpdate: CaptureUpdateAction.NEVER });
+    if (p.hero) this.refreshImages();
+  }
+
+  /** "Enjin is exploring…" in an empty portal; disappears once cards arrive. */
+  setBusy(p: Params<NativeToWeb, "canvas.setBusy">): void {
+    this.busyMessage = this.scene?.portalId === p.portalId || !p.message ? (p.message ?? null) : this.busyMessage;
+    this.updateBusy();
+  }
+
+  private busyMessage: string | null = null;
+
+  private updateBusy(): void {
+    const empty = cardRects(this.api.getSceneElements()).length === 0;
+    this.busy.show(this.busyMessage && empty && !this.transitioning ? this.busyMessage : null);
   }
 
   /**
@@ -163,6 +187,7 @@ export class PortalController {
     // Agent/native ops stay out of the kid's undo stack (plan §5.3).
     this.api.updateScene({ elements, captureUpdate: CaptureUpdateAction.NEVER });
     if (upserts.some((c) => c.image)) this.refreshImages();
+    this.updateBusy();
     return { placed: placed.map((p) => ({ cardId: p.cardId, ...p.rect })) };
   }
 
@@ -220,7 +245,7 @@ export class PortalController {
 
   private buildElements(scene: PortalScene): ExcalidrawElement[] {
     this.addFiles(scene.files);
-    return buildPortalElements(scene.title, scene.cards, restoreElements(scene.elements as never, null));
+    return buildPortalElements(scene, restoreElements(scene.elements as never, null));
   }
 
   /** Swap scene contents (no animation). Clears undo so Cmd-Z can't reach across portals. */
@@ -393,6 +418,7 @@ export class PortalController {
       this.transitioning = false;
       this.gate.unblock("transition");
       this.positionActions();
+      this.updateBusy();
     }
     this.emitFocus();
   }
@@ -413,6 +439,7 @@ export class PortalController {
       this.transitioning = false;
       this.gate.unblock("transition");
       this.positionActions();
+      this.updateBusy();
     }
     this.emitFocus();
   }

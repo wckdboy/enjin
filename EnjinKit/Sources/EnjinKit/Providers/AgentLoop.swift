@@ -12,6 +12,11 @@ public struct AgentConfig: Sendable {
     public var blockedDomains: [String] = []
     public var maxRounds = 5
     public var maxTokens = 16_000
+    /// End the turn as soon as the model's client tool calls all succeed, instead
+    /// of sending the results back for another round just to say "done". The
+    /// results are returned as `pendingToolResults` and must open the next user
+    /// message. Saves a full request (time and money) on nearly every turn.
+    public var endAfterClientTools = false
 
     public init(model: AnthropicModel, system: String, tools: [JSONValue], effort: String? = "low") {
         self.model = model; self.system = system; self.tools = tools; self.effort = effort
@@ -37,6 +42,9 @@ public struct AgentTurnResult: Sendable {
     /// Time from request start to the first streamed event.
     public var firstEventMs: Double?
     public var totalMs: Double
+    /// tool_result blocks the next user message must start with (see endAfterClientTools).
+    public var pendingToolResults: [JSONValue] = []
+    public var webSearches = 0
 
     public init(stop: AgentStop, rounds: Int, usage: MessageAccumulator.Usage, firstEventMs: Double?, totalMs: Double) {
         self.stop = stop; self.rounds = rounds; self.usage = usage; self.firstEventMs = firstEventMs; self.totalMs = totalMs
@@ -94,6 +102,7 @@ public struct AgentLoop: Sendable {
         let start = Date()
         var firstEvent: Double?
         var usage = MessageAccumulator.Usage()
+        var searches = 0
 
         for round in 1...config.maxRounds {
             try Task.checkCancellation()
@@ -104,6 +113,7 @@ public struct AgentLoop: Sendable {
                 if firstEvent == nil { firstEvent = Date().timeIntervalSince(start) * 1000 }
                 for e in try acc.apply(event) {
                     if case .toolUse(let id, let name, let input, let raw) = e { toolCalls.append((id, name, input, raw)) }
+                    if case .serverToolUse = e { searches += 1 }
                     onEvent(e)
                 }
             }
@@ -135,10 +145,18 @@ public struct AgentLoop: Sendable {
                     }
                     results.append(.object(r))
                 }
+                if config.endAfterClientTools && results.allSatisfy({ $0["is_error"] == nil }) {
+                    var r = AgentTurnResult(stop: .done, rounds: round, usage: usage, firstEventMs: firstEvent, totalMs: elapsed())
+                    r.pendingToolResults = results
+                    r.webSearches = searches
+                    return r
+                }
                 // All results in one user message, so the model keeps making parallel calls.
                 messages.append(.object(["role": .string("user"), "content": .array(results)]))
             default:
-                return AgentTurnResult(stop: .done, rounds: round, usage: usage, firstEventMs: firstEvent, totalMs: elapsed())
+                var r = AgentTurnResult(stop: .done, rounds: round, usage: usage, firstEventMs: firstEvent, totalMs: elapsed())
+                r.webSearches = searches
+                return r
             }
         }
         return AgentTurnResult(stop: .roundLimit, rounds: config.maxRounds, usage: usage, firstEventMs: firstEvent,

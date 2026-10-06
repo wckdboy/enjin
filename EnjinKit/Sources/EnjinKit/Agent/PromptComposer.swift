@@ -10,6 +10,8 @@ public enum PromptComposer {
         case ask(String)
         /// The kid dived into a stub (or we're prefetching it): fill it.
         case fill(cardId: String)
+        /// A brand-new notebook: open it up with a first set of cards.
+        case begin
     }
 
     /// A finished turn elsewhere, carried into other portals' prompts as text.
@@ -119,6 +121,12 @@ public enum PromptComposer {
         switch request {
         case .ask(let text):
             return "The kid says: \(text)"
+        case .begin:
+            return """
+            The kid just started a new notebook about "\(session.title)". Open it up: one short, excited sentence, \
+            then createCards with 3-4 filled cards that make this topic exciting (each with an image phrase) and 2 stubs \
+            (also with image phrases) as doors to explore. Keep it concrete and surprising.
+            """
         case .fill(let cardId):
             let c = session.card(cardId)
             return """

@@ -31,6 +31,8 @@ final class AppSettings {
     var consentGiven: Bool { didSet { defaults.set(consentGiven, forKey: "consentGiven") } }
     /// For organization keys that aren't scoped to a workspace (wrkspc_...).
     var workspaceId: String { didSet { defaults.set(workspaceId, forKey: "workspaceId") } }
+    /// Fill stubs in the background while the kid looks at them. Faster dives, more spend.
+    var prepareAhead: Bool { didSet { defaults.set(prepareAhead, forKey: "prepareAhead") } }
     /// Real pictures from Wikipedia on Enjin's cards.
     var showPictures: Bool { didSet { defaults.set(showPictures, forKey: "showPictures") } }
     private(set) var hasKey: Bool
@@ -43,6 +45,7 @@ final class AppSettings {
         consentGiven = defaults.bool(forKey: "consentGiven")
         showPictures = defaults.object(forKey: "showPictures") as? Bool ?? true
         workspaceId = defaults.string(forKey: "workspaceId") ?? ""
+        prepareAhead = defaults.bool(forKey: "prepareAhead")
         hasKey = Keychain.read(Self.keyAccount)?.isEmpty == false
     }
 
@@ -69,6 +72,21 @@ final class AppSettings {
     var onDeviceUnavailableReason: String? {
         if #available(iOS 26.0, *) { return AppleFMBackend.unavailableReason }
         return "Needs iPadOS 26."
+    }
+
+    /// Free on-device help (question chips, picture phrases), when Apple Intelligence is on.
+    func makeAssist() -> AssistHelper? {
+        if #available(iOS 26.0, *), AppleAssistHelper.isAvailable { return AppleAssistHelper() }
+        return nil
+    }
+
+    /// Pictures are on: illustrations from Image Playground, one look for everything.
+    private static let illustrator = PlaygroundIllustrator()
+    func makeIllustrator() -> ImageGenerator? {
+        #if DEBUG
+        if ProcessInfo.processInfo.arguments.contains("-uiTestingFakeAgent") { return nil }
+        #endif
+        return showPictures ? Self.illustrator : nil
     }
 
     func makeImageFinder() -> ImageFinder? {

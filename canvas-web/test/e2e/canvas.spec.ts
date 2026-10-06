@@ -351,7 +351,7 @@ test("picture cards: placeholder reserves space, image arrives in place without 
   const card = { id: "c-pic", type: "topic", title: "Testudo", summary: "Shields locked like a tortoise shell.", state: "filled", childCount: 0 };
   await call(page, "canvas.applyOps", { portalId: "p-root", ops: [{ op: "upsert", card: { ...card, imagePending: true } }] });
   const before = (await frames(page)).find((c) => c.cardId === "c-pic")!;
-  expect(before.height).toBe(370);
+  expect(before.height).toBe(386);
   const roles = () =>
     page.evaluate(() =>
       (window as unknown as { __enjinDebug: Debug }).__enjinDebug.api
@@ -375,7 +375,7 @@ test("picture cards: placeholder reserves space, image arrives in place without 
   await call(page, "canvas.applyOps", { portalId: "p-root", ops: [{ op: "upsert", card: { ...card, image: { fileId: "img-test", width: 400, height: 200 } } }] });
 
   const after = (await frames(page)).find((c) => c.cardId === "c-pic")!;
-  expect([after.x, after.y, after.height]).toEqual([before.x, before.y, 370]);
+  expect([after.x, after.y, after.height]).toEqual([before.x, before.y, 386]);
   const img = await page.evaluate(() =>
     (window as unknown as { __enjinDebug: Debug }).__enjinDebug.api.getSceneElements().find((e) => e.type === "image") as unknown as {
       width: number; height: number; fileId: string; x: number;

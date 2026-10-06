@@ -8,6 +8,8 @@ public protocol CanvasSink: AnyObject {
     func apply(portalId: String, ops: [CardOp]) async
     func flash(cardId: String) async
     func addFiles(_ files: [BridgeFile]) async
+    func setHeader(_ header: NativeMethod.SetHeader) async
+    func setBusy(portalId: String, message: String?) async
 }
 
 /// Runs agent turns against one open notebook (plan §5). One turn at a time:
@@ -27,7 +29,19 @@ public final class AgentSession {
         case failed(String)
     }
 
-    public enum Kind: String, Sendable { case ask, fill, prefetch }
+    public enum Kind: String, Sendable { case ask, fill, prefetch, begin }
+
+    /// Tappable suggestions shown after a turn.
+    public enum NextStep: Equatable, Sendable, Identifiable {
+        case ask(String)
+        case dive(cardId: String, title: String)
+        public var id: String {
+            switch self {
+            case .ask(let q): "ask:\(q)"
+            case .dive(let id, _): "dive:\(id)"
+            }
+        }
+    }
 
     public struct Suggestion: Equatable, Sendable {
         public var cardId: String
@@ -38,6 +52,7 @@ public final class AgentSession {
     /// The agent's short chat reply for the current/last turn.
     public private(set) var reply = ""
     public private(set) var suggestion: Suggestion?
+    public private(set) var nextSteps: [NextStep] = []
     public var canUndo: Bool { lastTurn != nil && !(lastTurn?.isEmpty ?? true) }
     /// True while a turn (including a background prefetch) is in flight.
     /// Stored (not derived from `task`) so SwiftUI observes it.
@@ -46,8 +61,17 @@ public final class AgentSession {
     public private(set) var prefetchingCardId: String?
 
     @ObservationIgnored public var backend: AgentBackend?
-    /// Where pictures come from; nil turns pictures off.
+    /// Real photos (Wikipedia). With `imageGenerator` nil too, pictures are off.
     @ObservationIgnored public var imageFinder: ImageFinder?
+    /// On-device illustrations (Image Playground).
+    @ObservationIgnored public var imageGenerator: ImageGenerator?
+    /// The shared look applied to every picture.
+    @ObservationIgnored public var imageStylizer: ImageStylizer?
+    /// Free on-device help: next-question chips, picture phrases.
+    @ObservationIgnored public var assist: AssistHelper?
+    /// Fill stubs in the background when the kid lingers on them (costs a turn each).
+    @ObservationIgnored public var prefetchEnabled = false
+    var picturesOn: Bool { imageFinder != nil || imageGenerator != nil }
     @ObservationIgnored private var claimedImages: Set<String> = []
     @ObservationIgnored public var dailyCapUSD: Double = 2
     @ObservationIgnored public let session: NotebookSession
@@ -55,6 +79,8 @@ public final class AgentSession {
     @ObservationIgnored private let telemetry: Telemetry?
     @ObservationIgnored private var task: Task<Void, Never>?
     @ObservationIgnored private var threads: [String: [JSONValue]] = [:]
+    /// tool_results owed to the model, per thread (turns end right after tool calls).
+    @ObservationIgnored private var pendingResults: [String: [JSONValue]] = [:]
     @ObservationIgnored private var tail: [PromptComposer.TailEntry] = []
     private var lastTurn: TurnRecord?
     @ObservationIgnored private let log = Logger(subsystem: "cc.wckd.enjin", category: "agent")
@@ -94,9 +120,14 @@ public final class AgentSession {
         start(.fill, request: .fill(cardId: cardId), portalId: portal.portalId, focusCardId: nil, kidSaid: "(dived into \(card.title))")
     }
 
+    /// Open a brand-new notebook with a first set of cards.
+    public func begin(portalId: String) {
+        start(.begin, request: .begin, portalId: portalId, focusCardId: nil, kidSaid: "(started \(session.title))")
+    }
+
     /// Background fill of a stub the kid is lingering on. Never interrupts real work.
     public func prefetch(cardId: String) {
-        guard task == nil, backend?.isReduced == false, let card = session.card(cardId), card.state == .stub, card.type == .topic else { return }
+        guard prefetchEnabled, task == nil, backend?.isReduced == false, let card = session.card(cardId), card.state == .stub, card.type == .topic else { return }
         Task {
             guard let portal = try? await session.ensurePortal(for: cardId) else { return }
             guard task == nil else { return }
@@ -189,6 +220,12 @@ public final class AgentSession {
             status = .working(.thinking)
             reply = ""
             suggestion = nil
+            nextSteps = []
+        }
+        let showBusy = (kind == .fill || kind == .begin) && session.activeCards(in: portalId).isEmpty
+        if showBusy {
+            let what = kind == .begin ? session.title : (session.portal(portalId)?.title ?? "")
+            await canvas?.setBusy(portalId: portalId, message: "Enjin is exploring \(what)…")
         }
 
         let changes = session.drainChangeLog()
@@ -196,8 +233,14 @@ public final class AgentSession {
                                               changes: changes, tail: tail.filter { $0.portalTitle != session.portal(portalId)?.title },
                                               compact: backend.isReduced)
         var thread = threads[portalId] ?? []
-        if thread.filter({ $0["role"] == .string("user") && $0["content"]?.stringValue != nil }).count >= Self.maxThreadTurns { thread = [] }
-        thread.append(.object(["role": .string("user"), "content": .string(userText)]))
+        var owed = pendingResults[portalId] ?? []
+        if Self.kidTurns(thread) >= Self.maxThreadTurns {
+            thread = []
+            owed = []
+        }
+        // Results of the previous turn's tool calls go first, then the new message.
+        thread.append(.object(["role": .string("user"), "content": owed.isEmpty
+                ? .string(userText) : .array(owed + [.object(["type": .string("text"), "text": .string(userText)])])]))
 
         let tools = backend.isReduced ? AgentTools.reduced : AgentTools.all
         let executor = ToolExecutor(agent: self, portalId: portalId, turnId: turnId)
@@ -227,6 +270,7 @@ public final class AgentSession {
             try Task.checkCancellation()
 
             threads[portalId] = thread
+            pendingResults[portalId] = result.pendingToolResults
             record.created = executor.created
             record.previous.merge(executor.previous) { first, _ in first }
             made = executor.created.compactMap { session.card($0)?.title }
@@ -235,14 +279,16 @@ public final class AgentSession {
             if !record.isEmpty && kind != .prefetch { lastTurn = record }
             tail.append(.init(portalTitle: session.portal(portalId)?.title ?? "", kidSaid: kidSaid, cardsMade: made))
             if tail.count > 3 { tail.removeFirst(tail.count - 3) }
+            if showBusy { await canvas?.setBusy(portalId: portalId, message: nil) }
             if foreground {
                 switch result.stop {
                 case .refused: status = .failed("Enjin can't help with that one. Try asking a different way.")
                 default: status = .idle
                 }
+                offerNextSteps(created: executor.created, portalId: portalId, kidSaid: kind == .ask ? kidSaid : nil)
             }
             await Task.yield() // let queued stream events land before counting searches
-            let searches = executor.searches
+            let searches = max(executor.searches, result.webSearches)
             let cost = Pricing.of(backend.modelId).cost(result.usage, webSearches: searches)
             await telemetry?.record("agent_turn", [
                 "kind": .string(kind.rawValue), "model": .string(backend.modelId), "turn": .string(turnId),
@@ -250,9 +296,11 @@ public final class AgentSession {
                 "rounds": .number(Double(result.rounds)), "stop": .string("\(result.stop)"), "cards": .number(Double(made.count)),
                 "searches": .number(Double(searches)), "input_tokens": .number(Double(result.usage.inputTokens)),
                 "output_tokens": .number(Double(result.usage.outputTokens)), "cache_read_tokens": .number(Double(result.usage.cacheReadInputTokens)),
+                "cache_write_tokens": .number(Double(result.usage.cacheCreationInputTokens)),
                 "cost": .number((cost * 10_000).rounded() / 10_000),
             ])
         } catch {
+            if showBusy { await canvas?.setBusy(portalId: portalId, message: nil) }
             // Cards already placed stay; a stub we were filling goes back to being a stub.
             if let id = fillingId, session.card(id)?.state == .filling { await setState(id, .stub) }
             if executor.created.count > 0 && kind != .prefetch {
@@ -268,6 +316,16 @@ public final class AgentSession {
                 "total_ms": .number(Date().timeIntervalSince(started) * 1000), "error": .string(cancelled ? "cancelled" : "\(error)"),
             ])
         }
+    }
+
+    /// Kid/request turns in a thread (user messages carrying text, not just tool results).
+    static func kidTurns(_ thread: [JSONValue]) -> Int {
+        thread.filter { m in
+            guard m["role"] == .string("user") else { return false }
+            if m["content"]?.stringValue != nil { return true }
+            if case .array(let blocks)? = m["content"] { return blocks.contains { $0["type"] == .string("text") } }
+            return false
+        }.count
     }
 
     static func kidMessage(for error: Error) -> String {
@@ -296,37 +354,75 @@ public final class AgentSession {
         await canvas?.apply(portalId: c.portalId, ops: [.upsert(session.bridgeCard(c))])
     }
 
-    /// Look for a picture for a card in the background; the card holds a placeholder meanwhile.
-    func findImage(for cardId: String) {
+    /// Chips after a turn: dive into the new stubs, plus questions from the on-device model.
+    private func offerNextSteps(created: [String], portalId: String, kidSaid: String?) {
+        let stubs = created.compactMap { session.card($0) }.filter { $0.state == .stub && $0.type == .topic }
+        nextSteps = stubs.prefix(2).map { .dive(cardId: $0.id, title: $0.title) }
+        guard let assist else { return }
+        let path = session.path(to: portalId).map(\.title)
+        let cards = session.activeCards(in: portalId).suffix(8).map { (title: $0.title, summary: $0.summary) }
+        Task {
+            let qs = await assist.nextQuestions(path: path, cards: Array(cards), lastAsk: kidSaid)
+            // Only if nothing newer happened meanwhile.
+            guard status == .idle, nextSteps.allSatisfy({ if case .dive = $0 { true } else { false } }) else { return }
+            nextSteps += qs.prefix(2).map { .ask($0) }
+        }
+    }
+
+    public func clearNextSteps() {
+        nextSteps = []
+    }
+
+    /// Give a card a picture: uses its phrase, asks the on-device model for one
+    /// if it has none, then a photo or illustration (see PicturePipeline). The
+    /// card holds a placeholder meanwhile.
+    public func findImage(for cardId: String) {
         guard let card = session.card(cardId), let query = card.imageQuery else { return }
-        guard let finder = imageFinder else {
+        guard picturesOn else {
             Task { await clearImageQuery(cardId) }
             return
         }
+        let pipeline = PicturePipeline(photos: imageFinder, illustrations: imageGenerator, stylizer: imageStylizer)
+        let topic = session.title
         Task {
-            var found: FoundImage?
+            var phrase = query
+            if phrase.isEmpty, let assist {
+                phrase = await assist.imagePhrase(title: card.title, summary: card.summary, topic: topic) ?? ""
+            }
+            if phrase.isEmpty { phrase = card.title }
+            var picked: (FoundImage, PictureKind)?
             for _ in 0..<2 {
                 let excluded = session.usedImageSources.union(claimedImages)
-                found = try? await finder.find(query, excluding: excluded)
+                picked = await pipeline.picture(for: phrase, prefer: PicturePipeline.preferredKind(for: card), excluding: excluded)
                 // Another card grabbed the same picture meanwhile: look again.
-                if let f = found, claimedImages.contains(f.sourceURL) { found = nil; continue }
+                if let p = picked, claimedImages.contains(p.0.sourceURL) { picked = nil; continue }
                 break
             }
-            guard let found, session.card(cardId)?.isActive == true else {
+            guard let (found, kind) = picked, session.card(cardId)?.isActive == true else {
                 await clearImageQuery(cardId)
                 await telemetry?.record("image", ["found": .bool(false)])
                 return
             }
             claimedImages.insert(found.sourceURL)
             defer { claimedImages.remove(found.sourceURL) }
-            let image = CardImage(fileId: "img-\(UUID().uuidString.lowercased())", mimeType: found.mimeType, width: found.width,
+            var image = CardImage(fileId: "img-\(UUID().uuidString.lowercased())", mimeType: found.mimeType, width: found.width,
                                   height: found.height, credit: found.credit, sourceURL: found.sourceURL)
+            image.kind = kind
             guard let updated = try? await session.attachImage(cardId, data: found.data, image: image),
                   let file = await session.bridgeFile(image) else { return }
             await canvas?.addFiles([file])
             await canvas?.apply(portalId: updated.portalId, ops: [.upsert(session.bridgeCard(updated))])
-            await telemetry?.record("image", ["found": .bool(true)])
+            if let header = session.header(forPortalOf: cardId) { await canvas?.setHeader(header) }
+            await telemetry?.record("image", ["found": .bool(true), "kind": .string(kind.rawValue)])
         }
+    }
+
+    /// The kid made a card: give it a picture too (free: on-device phrase, illustration or photo).
+    public func decorateKidCard(_ cardId: String) async {
+        guard picturesOn, session.card(cardId)?.image == nil,
+              let c = try? await session.updateCard(cardId, by: .agent, { $0.imageQuery = $0.imageQuery ?? "" }) else { return }
+        await canvas?.apply(portalId: c.portalId, ops: [.upsert(session.bridgeCard(c))])
+        findImage(for: cardId)
     }
 
     private func clearImageQuery(_ cardId: String) async {
@@ -429,7 +525,7 @@ final class ToolExecutor {
                             title: AgentTools.clip(title, AgentTools.titleLimit),
                             summary: AgentTools.clip(c["summary"]?.stringValue ?? "", AgentTools.summaryLimit),
                             state: c["isStub"] == .bool(true) ? .stub : .filling, childCount: 0,
-                            imagePending: c["image"] != nil && agent.imageFinder != nil ? true : nil)
+                            imagePending: agent.picturesOn ? true : nil)
             if drafts[i].shown[id] != card {
                 drafts[i].shown[id] = card
                 ops.append(.upsert(card))
@@ -490,14 +586,16 @@ final class ToolExecutor {
                 var ids: [String] = []
                 var ops: [CardOp] = []
                 for (n, c) in wanted.enumerated() {
-                    let imageQuery = agent.imageFinder != nil ? c.image.flatMap { $0.trimmingCharacters(in: .whitespaces).isEmpty ? nil : $0 } : nil
+                    // "" = no phrase yet; the on-device model (or the title) will supply one.
+                    let phrase = c.image.flatMap { $0.trimmingCharacters(in: .whitespaces).isEmpty ? nil : $0 }
+                    let imageQuery = agent.picturesOn ? (phrase ?? "") : nil
                     let card = try await session.createCard(
                         id: n < reuse.count ? reuse[n] : nil,
                         in: target, type: c.type ?? .topic, title: AgentTools.clip(c.title, AgentTools.titleLimit),
                         summary: AgentTools.clip(c.summary, AgentTools.summaryLimit),
                         body: c.body.map { AgentTools.clip($0, AgentTools.bodyLimit) }.flatMap { $0.isEmpty ? nil : $0 },
                         state: c.isStub ? .stub : .filled, author: .agent, turnId: turnId, sources: sources(c.sources),
-                        imageQuery: c.isStub ? nil : imageQuery)
+                        imageQuery: imageQuery)
                     ids.append(card.id)
                     ops.append(.upsert(session.bridgeCard(card)))
                 }
@@ -527,9 +625,10 @@ final class ToolExecutor {
                     if let b = args.body { $0.body = AgentTools.clip(b, AgentTools.bodyLimit) }
                     if let st = args.state { $0.state = st } else if $0.state == .filling { $0.state = .filled }
                     if let srcs { $0.sources = srcs }
-                    if let q = args.image, !q.isEmpty, $0.image == nil, agent.imageFinder != nil { $0.imageQuery = q }
+                    if let q = args.image, !q.isEmpty, $0.image == nil, agent.picturesOn { $0.imageQuery = q }
                 }) else { return .error("No card \(args.cardId).") }
                 await agent.canvas?.apply(portalId: updated.portalId, ops: [.upsert(session.bridgeCard(updated))])
+                if let header = session.header(forPortalOf: updated.id) { await agent.canvas?.setHeader(header) }
                 agent.findImage(for: updated.id)
                 return .ok("Updated \(updated.id).")
 

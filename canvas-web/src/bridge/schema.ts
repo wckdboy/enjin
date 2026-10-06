@@ -47,6 +47,9 @@ export const PortalScene = z.object({
   elements: z.array(z.record(z.string(), z.unknown())),
   /** Images used by this portal's cards. */
   files: z.array(BridgeFile).optional(),
+  /** The card this portal is inside: its picture as a banner, its summary under the title. */
+  hero: CardImageRef.optional(),
+  subtitle: z.string().optional(),
 });
 export type PortalScene = z.infer<typeof PortalScene>;
 
@@ -101,6 +104,15 @@ export const nativeToWeb = {
     }),
     /** Where each upserted card ended up (empty if the portal isn't current). */
     result: z.object({ placed: z.array(PlacedCard) }),
+  },
+  "canvas.setHeader": {
+    params: z.object({ portalId: z.string(), title: z.string(), subtitle: z.string().optional(), hero: CardImageRef.optional() }),
+    result: Null,
+  },
+  "canvas.setBusy": {
+    /** Shown in an empty portal while Enjin fills it; omitted/undefined hides it. */
+    params: z.object({ portalId: z.string(), message: z.string().optional() }),
+    result: Null,
   },
   "canvas.addFiles": {
     params: z.object({ files: z.array(BridgeFile) }),

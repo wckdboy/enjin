@@ -41,6 +41,9 @@ public struct AnthropicBackend: AgentBackend {
                     execute: @escaping @Sendable (String, JSONValue) async -> ToolOutcome) async throws -> AgentTurnResult {
         var config = AgentConfig(model: model, system: system, tools: tools, effort: effort)
         config.blockedDomains = blockedDomains
+        config.endAfterClientTools = true
+        // Search results are big (input tokens) and slow; one per turn is plenty for a kid's question.
+        config.maxWebSearches = 1
         return try await AgentLoop(client: client, config: config).run(messages: &thread, onEvent: onEvent, executeTool: execute)
     }
 }

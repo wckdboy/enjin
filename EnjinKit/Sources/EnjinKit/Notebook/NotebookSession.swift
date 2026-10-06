@@ -115,6 +115,13 @@ public final class NotebookSession {
                     imagePending: c.image == nil && c.imageQuery != nil ? true : nil)
     }
 
+    /// Header for the portal inside `cardId` (if it has one).
+    public func header(forPortalOf cardId: String) -> NativeMethod.SetHeader? {
+        guard let p = childPortal(of: cardId), let c = card(cardId) else { return nil }
+        return NativeMethod.SetHeader(portalId: p.portalId, title: p.title, subtitle: c.summary.isEmpty ? nil : c.summary,
+                                      hero: c.image.map { CardImageRef(fileId: $0.fileId, width: $0.width, height: $0.height) })
+    }
+
     /// The image file for the canvas, from cache or disk.
     public func bridgeFile(_ image: CardImage) async -> BridgeFile? {
         if let f = fileCache[image.fileId] { return f }
@@ -157,9 +164,13 @@ public final class NotebookSession {
             elements = try await store.scene(id, portalId: portalId)
             scenes[portalId] = elements
         }
-        let files = await files(in: portalId)
+        var files = await files(in: portalId)
+        let owner = p.ownerCardId.flatMap(card)
+        if let img = owner?.image, let f = await bridgeFile(img) { files.append(f) }
         return PortalScene(portalId: p.portalId, title: p.title, path: path(to: portalId),
-                           cards: activeCards(in: portalId).map(bridgeCard), elements: elements, files: files.isEmpty ? nil : files)
+                           cards: activeCards(in: portalId).map(bridgeCard), elements: elements, files: files.isEmpty ? nil : files,
+                           hero: owner?.image.map { CardImageRef(fileId: $0.fileId, width: $0.width, height: $0.height) },
+                           subtitle: owner.flatMap { $0.summary.isEmpty ? nil : $0.summary })
     }
 
     // MARK: - Navigation

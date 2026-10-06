@@ -43,6 +43,8 @@ targets:
         INFOPLIST_KEY_UILaunchScreen_Generation: YES
         INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad: "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight"
         INFOPLIST_KEY_CFBundleDisplayName: Enjin
+        # Core Image stitchable kernels (Media/EnjinPrint.metal) link against CoreImage.
+        MTLLINKER_FLAGS: "-framework CoreImage"
         ENABLE_USER_SCRIPT_SANDBOXING: NO
   EnjinUITests:
     type: bundle.ui-testing

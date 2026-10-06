@@ -56,6 +56,9 @@ public struct PortalScene: Codable, Equatable, Sendable {
     public var elements: [JSONValue]
     /// Images the cards in this portal use.
     public var files: [BridgeFile]?
+    /// The card this portal is inside: its picture as a banner, its summary under the title.
+    public var hero: CardImageRef?
+    public var subtitle: String?
 }
 
 public enum Transition: String, Codable, Sendable { case dive, exit, jump }
@@ -143,6 +146,23 @@ public enum NativeMethod {
     public struct AddFiles: Codable, Sendable {
         public var files: [BridgeFile]
         public init(files: [BridgeFile]) { self.files = files }
+    }
+
+    public struct SetHeader: Codable, Sendable {
+        public var portalId: String
+        public var title: String
+        public var subtitle: String?
+        public var hero: CardImageRef?
+        public init(portalId: String, title: String, subtitle: String?, hero: CardImageRef?) {
+            self.portalId = portalId; self.title = title; self.subtitle = subtitle; self.hero = hero
+        }
+    }
+
+    public struct SetBusy: Codable, Sendable {
+        public var portalId: String
+        /// Shown in an empty portal while Enjin fills it; nil hides it.
+        public var message: String?
+        public init(portalId: String, message: String?) { self.portalId = portalId; self.message = message }
     }
 
     public struct CanvasFrame: Codable, Sendable {

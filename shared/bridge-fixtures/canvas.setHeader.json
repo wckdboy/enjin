@@ -1,0 +1,23 @@
+{
+  "direction": "nativeToWeb",
+  "request": {
+    "v": 1,
+    "id": "fx-1",
+    "method": "canvas.setHeader",
+    "params": {
+      "portalId": "p-legions",
+      "title": "Legions",
+      "subtitle": "Heavy infantry.",
+      "hero": {
+        "fileId": "img-1",
+        "width": 800,
+        "height": 533
+      }
+    }
+  },
+  "response": {
+    "v": 1,
+    "id": "fx-1",
+    "result": null
+  }
+}

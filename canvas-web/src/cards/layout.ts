@@ -9,7 +9,7 @@ export interface Rect {
 
 export const CARD_W = 320;
 /** Text area height; picture cards add the image area on top. */
-export const CARD_H = 180;
+export const CARD_H = 196;
 export const IMAGE_H = 190;
 export const GAP = 48;
 export const COLUMNS = 3;
@@ -22,11 +22,11 @@ const STEP = 12;
  * masonry instead of leaving holes. Never overlaps `occupied` (kid content,
  * other cards). Deterministic.
  */
-export function placeCards(sizes: { width: number; height: number }[], occupied: Rect[]): Rect[] {
+export function placeCards(sizes: { width: number; height: number }[], occupied: Rect[], top = HEADER_H): Rect[] {
   const placed: Rect[] = [];
   for (const size of sizes) {
     let spot: Rect | null = null;
-    for (let y = HEADER_H; !spot; y += STEP) {
+    for (let y = top; !spot; y += STEP) {
       for (let col = 0; col < COLUMNS && !spot; col++) {
         const r = { x: col * (CARD_W + GAP), y, width: size.width, height: size.height };
         if (![...occupied, ...placed].some((o) => intersects(o, r, GAP / 2))) spot = r;

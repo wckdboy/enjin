@@ -6,6 +6,7 @@ struct AgentDock: View {
     let agent: AgentSession
     let onAsk: (String) -> Void
     let onGoToSuggestion: () -> Void
+    let onNextStep: (AgentSession.NextStep) -> Void
     @State private var text = ""
     @FocusState private var focused: Bool
 
@@ -18,6 +19,25 @@ struct AgentDock: View {
                 }
                 .buttonStyle(.bordered)
                 .tint(.orange)
+                .transition(.opacity)
+            }
+
+            if !agent.nextSteps.isEmpty && !agent.isRunning {
+                ScrollView(.horizontal, showsIndicators: false) {
+                    HStack(spacing: 8) {
+                        ForEach(agent.nextSteps) { step in
+                            Button { onNextStep(step) } label: {
+                                switch step {
+                                case .dive(_, let title): Label(title, systemImage: "arrow.down.right.circle.fill")
+                                case .ask(let q): Text(q)
+                                }
+                            }
+                            .buttonStyle(.bordered)
+                            .tint(step.isDive ? .blue : .orange)
+                            .lineLimit(1)
+                        }
+                    }
+                }
                 .transition(.opacity)
             }
 
@@ -75,6 +95,7 @@ struct AgentDock: View {
         .shadow(color: .black.opacity(0.08), radius: 12, y: 4)
         .animation(.snappy, value: agent.status)
         .animation(.snappy, value: agent.suggestion)
+        .animation(.snappy, value: agent.nextSteps)
     }
 
     private var isError: Bool {
@@ -98,4 +119,8 @@ struct AgentDock: View {
         focused = false // put the keyboard away so the kid sees the cards arrive
         onAsk(t)
     }
+}
+
+extension AgentSession.NextStep {
+    var isDive: Bool { if case .dive = self { true } else { false } }
 }
