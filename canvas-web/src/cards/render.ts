@@ -11,20 +11,20 @@ export interface EnjinData {
   role: CardRole;
 }
 
-// The ENJIN palette (same values as the native Theme).
+// The ENJIN palette, monochrome like the motor icon (same values as the native Theme).
 const STYLE: Record<Card["state"], { bg: string; stroke: "solid" | "dashed" }> = {
-  stub: { bg: "#f1f3f5", stroke: "dashed" },
-  filling: { bg: "#ffe8d9", stroke: "solid" },
-  filled: { bg: "#fff4e6", stroke: "solid" },
-  error: { bg: "#ffe3e3", stroke: "solid" },
+  stub: { bg: "#f2f2f2", stroke: "dashed" },
+  filling: { bg: "#e9e9e9", stroke: "solid" },
+  filled: { bg: "#ffffff", stroke: "solid" },
+  error: { bg: "#f6e3e3", stroke: "solid" },
 };
 
-const INK = "#2a2a3c";
-const MUTED = "#5c5f73";
-const ACCENT = "#e8590c";
-/** Display face for titles (Lilita One), reading face for everything else (Nunito). */
-const DISPLAY = FONT_FAMILY["Lilita One"];
-const READING = FONT_FAMILY.Nunito;
+const INK = "#0b0b0c";
+const MUTED = "#6a6a70";
+const ACCENT = INK;
+/** Clean, neutral type on cards (matches the native SF Pro): Helvetica for titles and text. */
+const DISPLAY = FONT_FAMILY.Helvetica;
+const READING = FONT_FAMILY.Helvetica;
 const INSET = 10;
 const TITLE_PX = 24;
 const SUMMARY_PX = 17;

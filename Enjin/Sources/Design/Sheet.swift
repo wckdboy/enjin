@@ -49,7 +49,7 @@ struct EnjinSheet<Content: View>: View {
             content
         }
         .background(Theme.paper.ignoresSafeArea())
-        .tint(Theme.ember)
+        .tint(Theme.accent)
     }
 }
 
@@ -73,7 +73,7 @@ extension View {
     func enjinForm() -> some View {
         scrollContentBackground(.hidden)
             .background(Theme.paper)
-            .tint(Theme.ember)
+            .tint(Theme.accent)
             .listRowBackground(Theme.card)
     }
 }

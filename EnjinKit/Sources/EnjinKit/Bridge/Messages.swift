@@ -235,6 +235,12 @@ public enum WebMethod {
         public var visibleCardIds: [String]
     }
 
+    public struct MediaStylize: Codable, Sendable {
+        public var dataURL: String
+        public var mimeType: String
+        public init(dataURL: String, mimeType: String) { self.dataURL = dataURL; self.mimeType = mimeType }
+    }
+
     public struct CardOpen: Codable, Sendable {
         public var cardId: String
     }

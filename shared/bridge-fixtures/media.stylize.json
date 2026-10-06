@@ -1,0 +1,20 @@
+{
+  "direction": "webToNative",
+  "request": {
+    "v": 1,
+    "id": "fx-1",
+    "method": "media.stylize",
+    "params": {
+      "dataURL": "data:image/png;base64,iVBORw0KGgo=",
+      "mimeType": "image/png"
+    }
+  },
+  "response": {
+    "v": 1,
+    "id": "fx-1",
+    "result": {
+      "dataURL": "data:image/jpeg;base64,/9j/",
+      "mimeType": "image/jpeg"
+    }
+  }
+}

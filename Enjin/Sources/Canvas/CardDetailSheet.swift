@@ -93,7 +93,7 @@ struct CardDetailSheet: View {
                     }
 
                     HStack(spacing: 8) {
-                        Image(systemName: card.createdBy == .kid ? "person.fill" : "sparkle").foregroundStyle(Theme.ember)
+                        Image(systemName: card.createdBy == .kid ? "person.fill" : "bolt.fill").foregroundStyle(Theme.accent)
                         Text(card.createdBy == .kid ? "Made by you" : "Made by Enjin")
                         Text(verbatim: "·")
                         Text(card.createdAt, format: .dateTime.day().month().hour().minute())

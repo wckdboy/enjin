@@ -1,5 +1,5 @@
 html, body, #root { margin: 0; height: 100%; overflow: hidden; overscroll-behavior: none; touch-action: none; }
-body { background: #fffdf8; -webkit-user-select: none; user-select: none; -webkit-touch-callout: none; }
+body { background: #fafaf9; -webkit-user-select: none; user-select: none; -webkit-touch-callout: none; }
 .stage { position: fixed; inset: 0; transform-origin: 50% 50%; will-change: transform, opacity; }
 .fatal { padding: 48px; font: 18px -apple-system, system-ui, sans-serif; color: #c92a2a; }
 
@@ -13,11 +13,11 @@ body { background: #fffdf8; -webkit-user-select: none; user-select: none; -webki
 /* "Enjin is exploring…" */
 [data-enjin="busy"] {
   position: absolute; left: 50%; top: 42%; transform: translate(-50%, -50%); z-index: 3; pointer-events: none;
-  display: flex; align-items: center; gap: 12px; padding: 14px 22px; border-radius: 16px;
-  background: #fffaf0; border: 2px solid #2a2a3c; box-shadow: 3px 4px 0 #2a2a3c;
-  font: 700 18px ui-rounded, -apple-system, system-ui, sans-serif; color: #2a2a3c; transition: opacity 200ms ease;
+  display: flex; align-items: center; gap: 12px; padding: 14px 22px; border-radius: 12px;
+  background: #ffffff; border: 2px solid #0b0b0c; box-shadow: 3px 4px 0 #0b0b0c;
+  font: 700 18px -apple-system, system-ui, sans-serif; color: #0b0b0c; transition: opacity 200ms ease;
 }
-[data-enjin="busy"] i { width: 10px; height: 10px; border-radius: 50%; background: #e8590c; animation: enjin-pulse 1s ease-in-out infinite; }
+[data-enjin="busy"] i { width: 10px; height: 10px; border-radius: 50%; background: #0b0b0c; animation: enjin-pulse 1s ease-in-out infinite; }
 [data-enjin="busy"] i:nth-child(2) { animation-delay: 0.15s; }
 [data-enjin="busy"] i:nth-child(3) { animation-delay: 0.3s; }
 @keyframes enjin-pulse { 0%, 100% { opacity: 0.25; transform: scale(0.8); } 50% { opacity: 1; transform: scale(1); } }

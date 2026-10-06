@@ -176,6 +176,11 @@ export const webToNative = {
     params: z.object({ cardId: z.string() }),
     result: Null,
   },
+  "media.stylize": {
+    /** An image arrived on the canvas without native (e.g. pasted): give it the ENJIN look. */
+    params: z.object({ dataURL: z.string(), mimeType: z.string() }),
+    result: z.object({ dataURL: z.string(), mimeType: z.string() }),
+  },
   "selection.changed": {
     /** Cards whose frame is selected (a card is selected as a group). */
     params: z.object({ portalId: z.string(), cardIds: z.array(z.string()) }),

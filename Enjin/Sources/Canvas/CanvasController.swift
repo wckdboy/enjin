@@ -60,7 +60,7 @@ final class CanvasController: NSObject {
         webView.navigationDelegate = self
         webView.isInspectable = true
         webView.isOpaque = false
-        webView.backgroundColor = UIColor(red: 1, green: 0.992, blue: 0.973, alpha: 1)
+        webView.backgroundColor = UIColor(red: 0.98, green: 0.98, blue: 0.976, alpha: 1)
         webView.scrollView.isScrollEnabled = false
         webView.scrollView.bounces = false
         webView.scrollView.contentInsetAdjustmentBehavior = .never
@@ -256,6 +256,15 @@ final class CanvasController: NSObject {
                 focusChanged(to: p.cardId)
             }
             return Empty()
+        }
+        router.on("media.stylize", WebMethod.MediaStylize.self) { [weak self] p in
+            // Pasted/dropped images get the same ENJIN look as everything else.
+            guard let comma = p.dataURL.firstIndex(of: ","), let data = Data(base64Encoded: String(p.dataURL[p.dataURL.index(after: comma)...])) else {
+                throw BridgeError(code: BridgeErrorCode.invalidParams.rawValue, message: "not a base64 data URL")
+            }
+            let found = FoundImage(data: data, mimeType: p.mimeType, width: 0, height: 0, credit: nil, sourceURL: "pasted")
+            let styled = await (self?.agent.imageStylizer ?? PrintStylizer()).stylize(found)
+            return WebMethod.MediaStylize(dataURL: "data:\(styled.mimeType);base64,\(styled.data.base64EncodedString())", mimeType: styled.mimeType)
         }
         router.on("card.open", WebMethod.CardOpen.self) { [weak self] p in
             self?.openCardId = p.cardId

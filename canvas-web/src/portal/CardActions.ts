@@ -21,13 +21,13 @@ export class CardActions {
     this.host.dataset.enjin = "card-actions";
     Object.assign(this.host.style, {
       position: "absolute", left: "0", top: "0", zIndex: "3", display: "none", gap: "6px", padding: "5px",
-      background: "#fffaf0", borderRadius: "16px", border: "2px solid #2a2a3c", boxShadow: "3px 4px 0 #2a2a3c",
-      font: "700 16px ui-rounded, -apple-system, system-ui, sans-serif", transformOrigin: "50% 100%", transition: "opacity 120ms ease",
+      background: "#ffffff", borderRadius: "12px", border: "2px solid #0b0b0c", boxShadow: "3px 4px 0 #0b0b0c",
+      font: "700 16px -apple-system, system-ui, sans-serif", transformOrigin: "50% 100%", transition: "opacity 120ms ease",
     });
     this.open = this.button("Open", "M4 4h7v2H6v12h12v-5h2v7H4V4zm10 0h6v6h-2V7.4l-7.3 7.3-1.4-1.4L16.6 6H14V4z", () => this.cardId && this.handlers.open(this.cardId));
     this.dive = this.button("Dive in", "M10 4a6 6 0 0 1 4.7 9.7l5 5-1.4 1.4-5-5A6 6 0 1 1 10 4zm0 2a4 4 0 1 0 0 8 4 4 0 0 0 0-8zm-1 1.5h2V9h1.5v2H11v1.5H9V11H7.5V9H9V7.5z", () => this.cardId && this.handlers.dive(this.cardId));
-    // "Dive in" is the main action: ember, like every "go" in ENJIN.
-    Object.assign(this.dive.style, { background: "#e8590c", color: "#ffffff" });
+    // "Dive in" is the main action: solid black, like every "go" in ENJIN.
+    Object.assign(this.dive.style, { background: "#0b0b0c", color: "#ffffff" });
     this.host.append(this.dive, this.open);
     onLangChange(() => this.relabel());
     this.relabel();
@@ -47,7 +47,7 @@ export class CardActions {
     b.innerHTML = `<svg width="18" height="18" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="${iconPath}"/></svg><span>${label}</span>`;
     Object.assign(b.style, {
       display: "inline-flex", alignItems: "center", gap: "6px", minHeight: "40px", padding: "0 14px", border: "0", borderRadius: "11px",
-      background: "transparent", color: "#2a2a3c", font: "inherit", cursor: "pointer", touchAction: "manipulation",
+      background: "transparent", color: "#0b0b0c", font: "inherit", cursor: "pointer", touchAction: "manipulation",
     });
     // Act on pointerup: Excalidraw would otherwise treat the press as a canvas gesture.
     b.addEventListener("pointerdown", (e) => e.stopPropagation());

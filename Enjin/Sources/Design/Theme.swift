@@ -1,18 +1,18 @@
-import CoreText
 @preconcurrency import SwiftUI
 
-/// ENJIN's look: warm paper, deep ink, one ember accent, chunky Lilita One for
-/// display (also used for card titles on the canvas), rounded system text for
-/// reading, and "sticker" surfaces with an ink outline and a hard offset shadow
-/// that presses down when tapped.
+/// ENJIN's look, matched to the monochrome motor icon: near-white paper, true
+/// black ink, greys for state, black as the only accent. Display type is SF Pro
+/// Expanded Black (precise, engine-like), reading type is SF Pro. Surfaces are
+/// "stickers": a black outline and a hard offset shadow that presses down.
 enum Theme {
-    static let paper = Color(hex: 0xFFFAF0)
-    static let card = Color(hex: 0xFFF4E6)
-    static let stub = Color(hex: 0xF1F3F5)
-    static let ink = Color(hex: 0x2A2A3C)
-    static let inkSoft = Color(hex: 0x5C5F73)
-    static let ember = Color(hex: 0xE8590C)
-    static let emberSoft = Color(hex: 0xFFE8D9)
+    static let paper = Color(hex: 0xFAFAF9)
+    static let card = Color(hex: 0xFFFFFF)
+    static let stub = Color(hex: 0xF2F2F2)
+    static let ink = Color(hex: 0x0B0B0C)
+    static let inkSoft = Color(hex: 0x6A6A70)
+    /// The one accent is ink itself: every "go" is black, like the icon.
+    static let accent = ink
+    static let accentSoft = Color(hex: 0xE9E9E9)
     static let sky = Color(hex: 0x1971C2)
     static let leaf = Color(hex: 0x2F9E44)
 
@@ -24,22 +24,16 @@ enum Theme {
         static func == (a: InkColor, b: InkColor) -> Bool { a.id == b.id }
     }
     static var inkColors: [InkColor] {
-        [.init(id: "#2a2a3c", name: "Ink", color: ink), .init(id: "#e8590c", name: "Ember", color: ember),
+        [.init(id: "#0b0b0c", name: "Ink", color: ink), .init(id: "#e8590c", name: "Ember", color: Color(hex: 0xE8590C)),
          .init(id: "#1971c2", name: "Sky", color: sky), .init(id: "#2f9e44", name: "Leaf", color: leaf)]
     }
 
-    static let radius: CGFloat = 16
+    static let radius: CGFloat = 12
     static let line: CGFloat = 2
     static let shadow = CGSize(width: 3, height: 4)
 
-    static func display(_ size: CGFloat) -> Font { .custom("LilitaOne", size: size) }
-    static func body(_ size: CGFloat = 17, weight: Font.Weight = .regular) -> Font { .system(size: size, weight: weight, design: .rounded) }
-
-    /// Lilita One ships inside the app, unmodified (OFL 1.1, see Fonts/OFL-LilitaOne.txt).
-    static func registerFonts() {
-        guard let url = Bundle.main.url(forResource: "LilitaOne-Regular", withExtension: "ttf") else { return }
-        CTFontManagerRegisterFontsForURL(url as CFURL, .process, nil)
-    }
+    static func display(_ size: CGFloat) -> Font { .system(size: size, weight: .black).width(.expanded) }
+    static func body(_ size: CGFloat = 17, weight: Font.Weight = .regular) -> Font { .system(size: size, weight: weight) }
 }
 
 extension Color {
@@ -80,7 +74,7 @@ struct StickerButtonStyle: ButtonStyle {
     func makeBody(configuration: Configuration) -> some View {
         let pressed = configuration.isPressed
         let fill: Color = switch kind {
-        case .primary: Theme.ember
+        case .primary: Theme.accent
         case .plain: Theme.paper
         case .quiet: Theme.card
         }
@@ -109,7 +103,7 @@ struct IconButtonStyle: ButtonStyle {
             .font(.system(size: 18, weight: .semibold))
             .foregroundStyle(active ? Color.white : Theme.ink)
             .frame(width: size, height: size)
-            .background(active ? Theme.ember : Theme.paper, in: .circle)
+            .background(active ? Theme.accent : Theme.paper, in: .circle)
             .overlay(Circle().strokeBorder(Theme.ink, lineWidth: Theme.line))
             .background(Circle().fill(Theme.ink).offset(pressed ? .zero : CGSize(width: 2, height: 3)))
             .offset(pressed ? CGSize(width: 2, height: 3) : .zero)
@@ -118,19 +112,22 @@ struct IconButtonStyle: ButtonStyle {
     }
 }
 
-/// The ENJIN wordmark: hand-drawn letters and an ember spark.
+/// The ENJIN wordmark: the motor from the app icon, then the name, expanded.
 struct Wordmark: View {
     var size: CGFloat = 44
 
     var body: some View {
-        HStack(alignment: .top, spacing: size * 0.06) {
+        HStack(alignment: .center, spacing: size * 0.3) {
+            Image("MotorMark")
+                .renderingMode(.template)
+                .resizable()
+                .scaledToFit()
+                .frame(height: size * 1.25)
+                .foregroundStyle(Theme.ink)
             Text(verbatim: "ENJIN")
                 .font(Theme.display(size))
+                .tracking(size * 0.04)
                 .foregroundStyle(Theme.ink)
-            Image(systemName: "sparkle")
-                .font(.system(size: size * 0.4, weight: .bold))
-                .foregroundStyle(Theme.ember)
-                .offset(y: size * 0.05)
         }
         .accessibilityElement(children: .ignore)
         .accessibilityLabel(Text(verbatim: "Enjin"))

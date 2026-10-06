@@ -6,8 +6,8 @@
 using namespace metal;
 
 namespace enjin {
-    constant float3 kInk   = float3(0.165, 0.165, 0.235); // deep blue-black ink
-    constant float3 kPaper = float3(1.000, 0.976, 0.941); // warm paper (#fffaf0)
+    constant float3 kInk   = float3(0.043, 0.043, 0.047); // ENJIN ink (#0b0b0c)
+    constant float3 kPaper = float3(0.980, 0.980, 0.976); // ENJIN paper (#fafaf9)
     constant float3 kLuma  = float3(0.299, 0.587, 0.114);
 
     float hash(float2 p) {

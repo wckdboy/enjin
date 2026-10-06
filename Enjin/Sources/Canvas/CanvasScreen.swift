@@ -27,7 +27,7 @@ struct CanvasScreen: View {
                 }
                 .background(Theme.paper)
             } else if controller.status == .loading {
-                ProgressView().tint(Theme.ember)
+                ProgressView().tint(Theme.accent)
             }
         }
         .overlay(alignment: .topLeading) { navigation.padding(.leading, 20).padding(.top, 12) }
@@ -39,7 +39,7 @@ struct CanvasScreen: View {
             VStack(spacing: 12) {
                 if !diveTipSeen && controller.status == .ready && controller.agent.nextSteps.contains(where: \.isDive) {
                     HStack(spacing: 14) {
-                        Image(systemName: "hand.pinch").font(.system(size: 24, weight: .semibold)).foregroundStyle(Theme.ember)
+                        Image(systemName: "hand.pinch").font(.system(size: 24, weight: .semibold)).foregroundStyle(Theme.accent)
                         Text("Tip: pinch a card open, or tap it and press **Dive in**, to go inside it.")
                             .font(Theme.body(16)).foregroundStyle(Theme.ink)
                         Button("Got it") { diveTipSeen = true }.buttonStyle(StickerButtonStyle(kind: .primary))
@@ -97,7 +97,7 @@ struct CanvasScreen: View {
                 .accessibilityIdentifier("notebooks")
                 .padding(.trailing, 8)
             ForEach(Array(controller.path.enumerated()), id: \.element.portalId) { i, crumb in
-                if i > 0 { Image(systemName: "chevron.right").font(.system(size: 13, weight: .heavy)).foregroundStyle(Theme.ember) }
+                if i > 0 { Image(systemName: "chevron.right").font(.system(size: 13, weight: .heavy)).foregroundStyle(Theme.accent) }
                 if i == controller.path.count - 1 {
                     Text(crumb.title)
                         .font(Theme.display(22))
@@ -199,7 +199,7 @@ struct RailButtonStyle: ButtonStyle {
             .font(.system(size: 19, weight: .semibold))
             .foregroundStyle(active ? Color.white : Theme.ink)
             .frame(width: 44, height: 44)
-            .background(active ? Theme.ember : (configuration.isPressed ? Theme.card : .clear), in: .rect(cornerRadius: 12))
+            .background(active ? Theme.accent : (configuration.isPressed ? Theme.card : .clear), in: .rect(cornerRadius: 12))
             .overlay(RoundedRectangle(cornerRadius: 12).strokeBorder(active ? Theme.ink : .clear, lineWidth: Theme.line))
             .scaleEffect(configuration.isPressed ? 0.92 : 1)
             .animation(.spring(duration: 0.15), value: configuration.isPressed)

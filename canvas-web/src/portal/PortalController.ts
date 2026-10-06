@@ -19,7 +19,7 @@ const DOUBLE_TAP_MS = 300;
 /** Dive/exit camera flight. Long enough to read as a zoom, short enough to feel instant. */
 const DIVE_MS = 620;
 const EXIT_MS = 620;
-const BACKGROUND = "#fffdf8";
+const BACKGROUND = "#fafaf9";
 const DOUBLE_TAP_PX = 30;
 
 type Zoom = { value: number };
@@ -148,9 +148,46 @@ export class PortalController {
     if (used.length) this.api.addFiles(used);
   }
 
+  /** Files that came from native, already styled. Anything else gets styled on arrival. */
+  private styledFiles = new Set<string>();
+  private styling = new Set<string>();
+
+  /**
+   * Every picture on an ENJIN canvas has the ENJIN look. Native styles the ones
+   * it adds; an image that shows up any other way (pasted, dropped) is sent to
+   * native's shader and swapped for the styled version.
+   */
+  private async styleStrayImages(): Promise<void> {
+    const files = this.api.getFiles();
+    const strays = this.api.getSceneElements().filter(
+      (e) => e.type === "image" && e.fileId && !this.styledFiles.has(e.fileId) && !this.styling.has(e.fileId) && files[e.fileId],
+    );
+    for (const el of strays) {
+      const fileId = (el as { fileId: string }).fileId;
+      this.styling.add(fileId);
+      try {
+        const file = files[fileId]!;
+        const styled = await this.bridge.request("media.stylize", { dataURL: file.dataURL, mimeType: file.mimeType });
+        const id = `img-k-${Math.random().toString(36).slice(2, 10)}`;
+        this.addFiles([{ id, mimeType: styled.mimeType, dataURL: styled.dataURL }]);
+        this.api.updateScene({
+          elements: this.api.getSceneElementsIncludingDeleted().map((e) => ((e as { fileId?: string }).fileId === fileId ? newElementWith(e as never, { fileId: id } as never) : e)),
+          captureUpdate: CaptureUpdateAction.NEVER,
+        });
+        this.refreshImages();
+      } catch (e) {
+        this.bridge.notify("log.event", { level: "warn", message: `couldn't style a pasted image: ${String(e)}` });
+        this.styledFiles.add(fileId); // don't retry forever
+      } finally {
+        this.styling.delete(fileId);
+      }
+    }
+  }
+
   /** Give Excalidraw image data before (or as) cards that use it arrive. */
   addFiles(files: BridgeFile[] | undefined): void {
     if (!files?.length) return;
+    for (const f of files) this.styledFiles.add(f.id);
     const have = this.api.getFiles();
     const fresh = files.filter((f) => !have[f.id]);
     if (fresh.length) this.api.addFiles(fresh.map((f) => ({ ...f, id: f.id as never, mimeType: f.mimeType as never, dataURL: f.dataURL as never, created: Date.now() })));
@@ -175,9 +212,9 @@ export class PortalController {
         captureUpdate: CaptureUpdateAction.NEVER,
       });
     for (let i = 0; i < 3; i++) {
-      recolor("#f76707");
+      recolor("#0b0b0c");
       await new Promise((r) => setTimeout(r, 220));
-      recolor("#343a40");
+      recolor("#0b0b0c");
       await new Promise((r) => setTimeout(r, 160));
     }
   }
@@ -535,6 +572,7 @@ export class PortalController {
 
   private onElementsChanged(elements: readonly ExcalidrawElement[]): void {
     this.emitSelection();
+    if (elements.some((e) => e.type === "image")) void this.styleStrayImages();
     if (this.transitioning || !this.scene) return;
     const version = getSceneVersion(elements as never);
     if (version === this.lastSceneVersion) return;

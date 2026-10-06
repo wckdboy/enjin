@@ -12,9 +12,7 @@
 		0D00BC97A5472810A8DA69BB /* SmokeTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4363D056E6B217A1044E73A2 /* SmokeTests.swift */; };
 		232FAF527008A6E987F8DA8F /* EnjinKit in Frameworks */ = {isa = PBXBuildFile; productRef = C1762FD4209A455CE72031C3 /* EnjinKit */; };
 		24A7F12B9E99A6A388F0CAE1 /* Localize.swift in Sources */ = {isa = PBXBuildFile; fileRef = F3D11B19BB06058E2702F59B /* Localize.swift */; };
-		2D075DDF11F6DCAFA57E557A /* OFL-LilitaOne.txt in Resources */ = {isa = PBXBuildFile; fileRef = 1DE355C5946EECCA3E21645E /* OFL-LilitaOne.txt */; };
 		332EB97F9CD29974D0D78986 /* Localizable.xcstrings in Resources */ = {isa = PBXBuildFile; fileRef = 092D5C6B564F75AB0E301777 /* Localizable.xcstrings */; };
-		3869581EDE8998CD46D2F6BE /* LilitaOne-Regular.ttf in Resources */ = {isa = PBXBuildFile; fileRef = FDF7027A710F2EE8A7E9E064 /* LilitaOne-Regular.ttf */; };
 		3CD2A8ECA8A46E8AB0C32935 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 8E0EE3B6BA14C8CE319C4D8D /* Assets.xcassets */; };
 		3D512AF61955DC50D1D7E6B8 /* CanvasScreen.swift in Sources */ = {isa = PBXBuildFile; fileRef = 81B6E6ACBD460AB9C6F00E8E /* CanvasScreen.swift */; };
 		403F8E242AFF90A415F03DA9 /* AgentSpikeView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8522A1DB946B3184C6B689F8 /* AgentSpikeView.swift */; };
@@ -53,7 +51,6 @@
 		04DFDB9639551640B5AA8568 /* EnjinKit */ = {isa = PBXFileReference; lastKnownFileType = folder; name = EnjinKit; path = EnjinKit; sourceTree = SOURCE_ROOT; };
 		092D5C6B564F75AB0E301777 /* Localizable.xcstrings */ = {isa = PBXFileReference; lastKnownFileType = text.json.xcstrings; path = Localizable.xcstrings; sourceTree = "<group>"; };
 		09A9754A8A157ADFA4338A7B /* UITestBackend.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UITestBackend.swift; sourceTree = "<group>"; };
-		1DE355C5946EECCA3E21645E /* OFL-LilitaOne.txt */ = {isa = PBXFileReference; lastKnownFileType = text; path = "OFL-LilitaOne.txt"; sourceTree = "<group>"; };
 		2650FB14BB5A4E2514208B79 /* LibraryView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LibraryView.swift; sourceTree = "<group>"; };
 		28A725197BCD991374E0C890 /* CanvasController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CanvasController.swift; sourceTree = "<group>"; };
 		335196AD4E7A4D9D71C15B4B /* SettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsView.swift; sourceTree = "<group>"; };
@@ -82,7 +79,6 @@
 		F3D11B19BB06058E2702F59B /* Localize.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Localize.swift; sourceTree = "<group>"; };
 		F568033F43CC69352E8396FA /* demo-notebook.json */ = {isa = PBXFileReference; lastKnownFileType = text.json; path = "demo-notebook.json"; sourceTree = "<group>"; };
 		FD00177352742C83CFC89527 /* CardDetailSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CardDetailSheet.swift; sourceTree = "<group>"; };
-		FDF7027A710F2EE8A7E9E064 /* LilitaOne-Regular.ttf */ = {isa = PBXFileReference; lastKnownFileType = file; path = "LilitaOne-Regular.ttf"; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -121,18 +117,8 @@
 				D8409464C6112C14BEF87BB6 /* canvas-web */,
 				092D5C6B564F75AB0E301777 /* Localizable.xcstrings */,
 				371F03DB5F3106C281550DF4 /* PrivacyInfo.xcprivacy */,
-				28318FE8E291F6EBE241C93A /* Fonts */,
 			);
 			path = Resources;
-			sourceTree = "<group>";
-		};
-		28318FE8E291F6EBE241C93A /* Fonts */ = {
-			isa = PBXGroup;
-			children = (
-				FDF7027A710F2EE8A7E9E064 /* LilitaOne-Regular.ttf */,
-				1DE355C5946EECCA3E21645E /* OFL-LilitaOne.txt */,
-			);
-			path = Fonts;
 			sourceTree = "<group>";
 		};
 		47BCA53242DF02B8D363A05F /* Sources */ = {
@@ -345,9 +331,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				3CD2A8ECA8A46E8AB0C32935 /* Assets.xcassets in Resources */,
-				3869581EDE8998CD46D2F6BE /* LilitaOne-Regular.ttf in Resources */,
 				332EB97F9CD29974D0D78986 /* Localizable.xcstrings in Resources */,
-				2D075DDF11F6DCAFA57E557A /* OFL-LilitaOne.txt in Resources */,
 				B7891786098A15327A3C4DAB /* PrivacyInfo.xcprivacy in Resources */,
 				B3D839D222FFF7811F741D12 /* canvas-web in Resources */,
 				B53DF79BDB30941D0A242DEB /* demo-notebook.da.json in Resources */,

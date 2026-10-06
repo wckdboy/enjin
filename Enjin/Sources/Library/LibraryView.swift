@@ -80,7 +80,7 @@ struct LibraryView: View {
                 #endif
             }
         }
-        .tint(Theme.ember)
+        .tint(Theme.accent)
     }
 
     private var explorePrompt: some View {
@@ -95,10 +95,10 @@ struct LibraryView: View {
                     .onSubmit { start(topic) }
                     .padding(.horizontal, 18)
                     .frame(height: 58)
-                    .sticker(.white, radius: 14, lifted: false)
+                    .sticker(.white, radius: Theme.radius, lifted: false)
                     .accessibilityIdentifier("topicField")
                 Button { start(topic) } label: {
-                    Label("Explore", systemImage: "sparkle").font(Theme.body(20, weight: .bold)).frame(minHeight: 50)
+                    Label("Explore", systemImage: "bolt.fill").font(Theme.body(20, weight: .bold)).frame(minHeight: 50)
                 }
                 .buttonStyle(StickerButtonStyle(kind: .primary))
                 .disabled(topic.trimmingCharacters(in: .whitespaces).isEmpty)
@@ -144,11 +144,11 @@ struct NotebookCover: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
             ZStack {
-                Theme.emberSoft
+                Theme.accentSoft
                 if let cover {
                     Image(uiImage: cover).resizable().scaledToFill()
                 } else {
-                    Image(systemName: "sparkles").font(.system(size: 44, weight: .semibold)).foregroundStyle(Theme.ember.opacity(0.7))
+                    Image("MotorMark").renderingMode(.template).resizable().scaledToFit().frame(height: 70).foregroundStyle(Theme.ink.opacity(0.18))
                 }
             }
             .frame(height: 170)
@@ -199,7 +199,7 @@ struct NotebookScreen: View {
                     Text(error)
                 }
             } else {
-                ProgressView().tint(Theme.ember)
+                ProgressView().tint(Theme.accent)
             }
         }
         .background(Theme.paper.ignoresSafeArea())

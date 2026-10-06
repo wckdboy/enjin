@@ -6,7 +6,9 @@ import os
 import UniformTypeIdentifiers
 
 /// Applies the "Enjin print" Metal kernel (EnjinPrint.metal) to every picture
-/// before it's saved, so photos and illustrations share one look.
+/// before it's saved, so photos, illustrations and pasted images share one
+/// look: print layers, ink edges, paper highlights, and 55% of the original
+/// color (muted, so pictures sit calmly in the monochrome UI).
 struct PrintStylizer: ImageStylizer {
     /// Longest side of stored pictures: plenty for a card or banner, keeps notebooks small.
     static let maxSide: CGFloat = 960
@@ -30,7 +32,7 @@ struct PrintStylizer: ImageStylizer {
         // The kernel's palette is sRGB: run it on sRGB-encoded values.
         let srgb = scaled.applyingFilter("CILinearToSRGBToneCurve").clampedToExtent()
         guard let styled = kernel.apply(extent: extent, roiCallback: { _, r in r.insetBy(dx: -3, dy: -3) },
-                                        arguments: [srgb, Float(6), Float(0.9), Float(0.5), Float(0.035)])?
+                                        arguments: [srgb, Float(6), Float(0.55), Float(0.5), Float(0.035)])?
             .applyingFilter("CISRGBToneCurveToLinear").cropped(to: extent),
               let cg = Self.context.createCGImage(styled, from: extent) else { return image }
         let out = NSMutableData()

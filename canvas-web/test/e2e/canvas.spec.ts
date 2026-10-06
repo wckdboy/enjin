@@ -478,3 +478,27 @@ test("the canvas speaks Danish when told to", async ({ page }) => {
   await page.touchscreen.tap(p.x, p.y);
   await expect(page.locator("[data-enjin=card-actions]").getByRole("button", { name: "Dyk ind" })).toBeVisible();
 });
+
+test("an image pasted onto the canvas is sent for ENJIN styling and swapped in", async ({ page }) => {
+  await ready(page);
+  // What Excalidraw does on paste: add a file, then an image element using it.
+  await page.evaluate(() => {
+    const { api } = (window as unknown as { __enjinDebug: { api: {
+      addFiles(f: unknown[]): void; updateScene(u: unknown): void; getSceneElementsIncludingDeleted(): unknown[] } } }).__enjinDebug;
+    const c = document.createElement("canvas"); c.width = 40; c.height = 40;
+    c.getContext("2d")!.fillRect(0, 0, 40, 40);
+    api.addFiles([{ id: "pasted-1", mimeType: "image/png", dataURL: c.toDataURL("image/png"), created: Date.now() }]);
+    api.updateScene({ elements: [...api.getSceneElementsIncludingDeleted(), {
+      type: "image", id: "img-el", x: 700, y: 700, width: 40, height: 40, angle: 0, fileId: "pasted-1", status: "saved", scale: [1, 1],
+      strokeColor: "transparent", backgroundColor: "transparent", fillStyle: "solid", strokeWidth: 1, strokeStyle: "solid", roughness: 0, opacity: 100,
+      groupIds: [], frameId: null, roundness: null, seed: 1, version: 1, versionNonce: 1, isDeleted: false, boundElements: null, updated: 1, link: null, locked: false,
+      index: "a9", crop: null,
+    }] });
+  });
+  await expect.poll(() =>
+    page.evaluate(() => (window as unknown as { __devLog: { method: string }[] }).__devLog.filter((r) => r.method === "media.stylize").length),
+  ).toBe(1);
+  await expect.poll(() =>
+    page.evaluate(() => ((window as unknown as { __enjinDebug: Debug }).__enjinDebug.api.getSceneElements().find((e) => e.id === "img-el") as unknown as { fileId: string }).fileId),
+  ).toMatch(/^img-k-/);
+});

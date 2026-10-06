@@ -31,7 +31,7 @@ struct MapView: View {
                         Button { onSelect(row.id) } label: {
                             HStack(spacing: 12) {
                                 if row.depth > 0 {
-                                    Image(systemName: "arrow.turn.down.right").foregroundStyle(Theme.ember).font(.system(size: 15, weight: .bold))
+                                    Image(systemName: "arrow.turn.down.right").foregroundStyle(Theme.accent).font(.system(size: 15, weight: .bold))
                                 }
                                 Text(row.title)
                                     .font(row.depth == 0 ? Theme.display(26) : Theme.body(18, weight: row.id == current ? .bold : .semibold))
@@ -40,13 +40,13 @@ struct MapView: View {
                                 Text("\(row.cardCount) cards").font(Theme.body(15)).foregroundStyle(Theme.inkSoft)
                                 if row.id == current {
                                     Text("You are here").font(Theme.body(13, weight: .bold)).foregroundStyle(.white)
-                                        .padding(.horizontal, 8).padding(.vertical, 3).background(Theme.ember, in: .capsule)
+                                        .padding(.horizontal, 8).padding(.vertical, 3).background(Theme.accent, in: .capsule)
                                 }
                             }
                             .padding(.horizontal, 16)
                             .padding(.vertical, 12)
                             .frame(maxWidth: .infinity, alignment: .leading)
-                            .sticker(row.id == current ? Theme.emberSoft : (row.depth == 0 ? Theme.card : Theme.paper), radius: 14)
+                            .sticker(row.id == current ? Theme.accentSoft : (row.depth == 0 ? Theme.card : Theme.paper), radius: 14)
                         }
                         .buttonStyle(.plain)
                         .padding(.leading, CGFloat(row.depth) * 28)

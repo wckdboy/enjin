@@ -24,8 +24,6 @@ targets:
       Release: Config/Base.xcconfig
     sources:
       - path: Enjin/Sources
-      - path: Enjin/Resources/Fonts
-        buildPhase: resources
       - path: Enjin/Resources/Localizable.xcstrings
         buildPhase: resources
       - path: Enjin/Resources/Assets.xcassets

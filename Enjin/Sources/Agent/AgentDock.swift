@@ -50,7 +50,7 @@ struct AgentDock: View {
                     if agent.isRunning && agent.prefetchingCardId == nil {
                         SparkDots()
                     } else if !isError {
-                        Image(systemName: "sparkle").foregroundStyle(Theme.ember).font(.system(size: 16, weight: .bold))
+                        Image(systemName: "bolt.fill").foregroundStyle(Theme.ink).font(.system(size: 15, weight: .bold))
                     }
                     Text(line)
                         .font(Theme.body(17))
@@ -146,7 +146,7 @@ struct SparkDots: View {
     var body: some View {
         HStack(spacing: 4) {
             ForEach(0..<3) { i in
-                Circle().fill(Theme.ember).frame(width: 7, height: 7)
+                Circle().fill(Theme.accent).frame(width: 7, height: 7)
                     .opacity(on ? 1 : 0.25)
                     .animation(.easeInOut(duration: 0.5).repeatForever().delay(Double(i) * 0.15), value: on)
             }

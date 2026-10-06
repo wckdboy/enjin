@@ -53,6 +53,11 @@ export const examples: Record<string, { direction: "nativeToWeb" | "webToNative"
   "canvas.changed": { direction: "webToNative", params: { portalId: "p-legions", elements: scene.elements }, result: null },
   "focus.changed": { direction: "webToNative", params: { portalId: "p-legions", cardId: null, zoom: 1.25, visibleCardIds: ["c-why-won"] }, result: null },
   "card.open": { direction: "webToNative", params: { cardId: "c-why-won" }, result: null },
+  "media.stylize": {
+    direction: "webToNative",
+    params: { dataURL: "data:image/png;base64,iVBORw0KGgo=", mimeType: "image/png" },
+    result: { dataURL: "data:image/jpeg;base64,/9j/", mimeType: "image/jpeg" },
+  },
   "selection.changed": { direction: "webToNative", params: { portalId: "p-legions", cardIds: ["c-why-won"] }, result: null },
   "portal.enter": { direction: "webToNative", params: { portalId: "p-root", cardId: "c-legions" }, result: scene },
   "portal.exit": { direction: "webToNative", params: { portalId: "p-legions" }, result: { scene, focusCardId: "c-legions" } },

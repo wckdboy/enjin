@@ -15,10 +15,6 @@ struct EnjinApp: App {
         return (try? NotebookStore.defaultRoot()) ?? FileManager.default.temporaryDirectory.appendingPathComponent("Notebooks")
     }
 
-    init() {
-        Theme.registerFonts()
-    }
-
     var body: some Scene {
         WindowGroup {
             LibraryView(store: store, settings: settings, telemetry: telemetry)

@@ -146,7 +146,7 @@ struct ParentConsentView: View {
 
     private func point(_ symbol: String, _ text: LocalizedStringKey) -> some View {
         HStack(alignment: .top, spacing: 14) {
-            Image(systemName: symbol).font(.system(size: 20, weight: .semibold)).foregroundStyle(Theme.ember).frame(width: 28)
+            Image(systemName: symbol).font(.system(size: 20, weight: .semibold)).foregroundStyle(Theme.accent).frame(width: 28)
             Text(text).font(Theme.body(17)).foregroundStyle(Theme.ink)
         }
     }

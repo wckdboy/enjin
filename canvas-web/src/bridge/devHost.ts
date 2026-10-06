@@ -80,6 +80,9 @@ export function devHost(getBridge: () => Bridge): NativeTransport {
           if (!p?.parentPortalId) return ok(req, null);
           return ok(req, { scene: sceneFor(p.parentPortalId), focusCardId: p.ownerCardId });
         }
+        case "media.stylize":
+          // The browser has no Metal shader; mark the data so tests can see the swap.
+          return ok(req, { dataURL: (req.params as { dataURL: string }).dataURL, mimeType: "image/png" });
         case "canvas.changed":
           savedElements.set(params.portalId!, (req.params as { elements: Record<string, unknown>[] }).elements);
           return ok(req, null);
