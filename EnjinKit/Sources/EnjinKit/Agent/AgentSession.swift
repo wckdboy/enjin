@@ -563,7 +563,7 @@ final class ToolExecutor {
             // A figure streams in item by item; its card keeps one size (fixed height per kind).
             // A live model's HTML only runs once it's complete: until then the card shows "building the model…".
             let raw = c["visual"].flatMap { try? $0.decode(as: Visual.self) }
-            let visual = raw?.kind == .live ? Visual(kind: .live) : raw?.sanitized()
+            let visual = raw.map { $0.kind == .live || $0.kind.isSkill } == true ? Visual(kind: raw!.kind) : raw?.sanitized()
             let card = Card(id: id, type: c["type"]?.stringValue == "note" ? .note : .topic,
                             title: AgentTools.clip(title, AgentTools.titleLimit),
                             summary: AgentTools.clip(c["summary"]?.stringValue ?? "", AgentTools.summaryLimit),
@@ -670,7 +670,10 @@ final class ToolExecutor {
                     if let b = args.body { $0.body = AgentTools.clip(b, AgentTools.bodyLimit) }
                     if let st = args.state { $0.state = st } else if $0.state == .filling { $0.state = .filled }
                     if let srcs { $0.sources = srcs }
-                    if let v = args.visual { $0.visual = v; $0.imageQuery = nil }
+                    if let v = args.visual {
+                        $0.visual = v
+                        if v.kind != .diorama { $0.imageQuery = nil }
+                    }
                     if let q = args.image, !q.isEmpty, $0.image == nil, $0.visual == nil, agent.picturesOn { $0.imageQuery = q }
                     if let q = args.illustrate, !q.isEmpty, $0.image == nil, $0.visual == nil, agent.picturesOn {
                         $0.imageQuery = q

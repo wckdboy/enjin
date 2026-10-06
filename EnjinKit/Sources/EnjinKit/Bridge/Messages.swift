@@ -46,7 +46,11 @@ public struct VisualItem: Codable, Equatable, Sendable {
     }
 }
 
-public enum VisualKind: String, Codable, Sendable, CaseIterable { case flow, cycle, timeline, bars, parts, stat, formula, code, live, graph, table, chart }
+public enum VisualKind: String, Codable, Sendable, CaseIterable { case flow, cycle, timeline, bars, parts, stat, formula, code, live, graph, table, chart, model3d, diorama, ui
+
+    /// Skills: run by ENJIN's own runtimes in a sandboxed frame, from a JSON `spec`.
+    public var isSkill: Bool { self == .model3d || self == .diorama || self == .ui }
+}
 
 /// graph: a labelled relation between two nodes, named by their labels.
 public struct VisualLink: Codable, Equatable, Sendable {
@@ -83,17 +87,23 @@ public struct Visual: Codable, Equatable, Sendable {
     public var xLabel: String?
     public var yLabel: String?
     public var logY: Bool?
+    /// Skills (model3d, diorama, ui): the scene or widget, as data.
+    public var spec: JSONValue?
 
     public init(kind: VisualKind, items: [VisualItem]? = nil, center: String? = nil, value: String? = nil, unit: String? = nil,
                 text: String? = nil, html: String? = nil, links: [VisualLink]? = nil, columns: [String]? = nil, rows: [[String]]? = nil,
-                series: [VisualSeries]? = nil, plot: PlotStyle? = nil, xLabel: String? = nil, yLabel: String? = nil, logY: Bool? = nil) {
+                series: [VisualSeries]? = nil, plot: PlotStyle? = nil, xLabel: String? = nil, yLabel: String? = nil, logY: Bool? = nil,
+                spec: JSONValue? = nil) {
         self.kind = kind; self.items = items; self.center = center; self.value = value; self.unit = unit; self.text = text; self.html = html
         self.links = links; self.columns = columns; self.rows = rows; self.series = series; self.plot = plot
-        self.xLabel = xLabel; self.yLabel = yLabel; self.logY = logY
+        self.xLabel = xLabel; self.yLabel = yLabel; self.logY = logY; self.spec = spec
     }
 
+    /// Skill specs are data for ENJIN's runtimes; this caps their size.
+    public static let maxSpecBytes = 40_000
+
     static let maxItems: [VisualKind: Int] = [.flow: 5, .cycle: 6, .timeline: 6, .bars: 6, .parts: 6, .stat: 0, .formula: 4, .code: 0, .live: 0,
-                                              .graph: 8, .table: 0, .chart: 0]
+                                              .graph: 8, .table: 0, .chart: 0, .model3d: 0, .diorama: 0, .ui: 0]
     /// Live models are small on purpose: one idea, one screen.
     public static let maxHTML = 24_000
 
@@ -134,6 +144,12 @@ public struct Visual: Codable, Equatable, Sendable {
         v.xLabel = kind == .chart ? clip(xLabel, 24) : nil
         v.yLabel = kind == .chart ? clip(yLabel, 24) : nil
         v.logY = kind == .chart && logY == true ? true : nil
+        if kind.isSkill, case .object(let o)? = spec, !o.isEmpty,
+           let bytes = try? JSONEncoder().encode(spec), bytes.count <= Self.maxSpecBytes {
+            v.spec = spec
+        } else {
+            v.spec = nil
+        }
         if kind == .code {
             v.text = text.map { $0.split(separator: "\n", omittingEmptySubsequences: false).prefix(10).map { String($0.prefix(64)) }.joined(separator: "\n") }
         } else {
@@ -146,6 +162,15 @@ public struct Visual: Codable, Equatable, Sendable {
         case .graph: return (v.items?.count ?? 0) >= 2 ? v : nil
         case .table: return (v.rows?.isEmpty ?? true) ? nil : v
         case .chart: return v.series == nil ? nil : v
+        case .model3d:
+            if case .array(let parts)? = v.spec?["parts"], !parts.isEmpty { return v }
+            return nil
+        case .diorama:
+            if case .array(let layers)? = v.spec?["layers"], !layers.isEmpty { return v }
+            return nil
+        case .ui:
+            if case .array(let blocks)? = v.spec?["blocks"], !blocks.isEmpty { return v }
+            return nil
         case .parts: return v.items == nil && v.center == nil ? nil : v
         case .bars: return (v.items?.count ?? 0) >= 2 ? v : nil
         default: return v.items == nil ? nil : v

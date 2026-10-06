@@ -91,7 +91,7 @@ export function App({ bridge }: { bridge: Bridge }) {
           canvasActions: { loadScene: false, saveToActiveFile: false, export: false, saveAsImage: false, toggleTheme: null, clearCanvas: false },
           tools: { image: false },
         }}
-        initialData={{ appState: { viewBackgroundColor: "#fafaf9", currentItemRoughness: 0 } }}
+        initialData={{ appState: { viewBackgroundColor: "#f2f2f0", currentItemRoughness: 0, currentItemStrokeColor: "#0b0b0c" } }}
       />
     </div>
   );

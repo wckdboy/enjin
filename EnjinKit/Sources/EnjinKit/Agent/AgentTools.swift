@@ -26,6 +26,7 @@ public enum AgentTools {
         e.g. "steers", "is made of", "causes"), table (compare things across properties: columns[] headers, rows[][] of \
         cells, first cell names the row; up to 5 x 6), chart (real data over a range: series[] = {label, points: [[x, y]]}, \
         up to 3 series and 40 points, plot line or scatter, xLabel, yLabel, logY for exponential growth). \
+        Skills (put the data in spec): model3d, diorama, ui; see the spec field. \
         Labels <= 30 characters, details <= 48.
         """),
         "properties": .object([
@@ -67,12 +68,36 @@ public enum AgentTools {
             "xLabel": .object(["type": .string("string")]),
             "yLabel": .object(["type": .string("string")]),
             "logY": .object(["type": .string("boolean")]),
+            "spec": .object(["type": .string("object"), "description": .string("""
+            For the skills (data, not code; ENJIN renders it):
+            model3d: {"parts": [{"shape": "box|sphere|cylinder|cone|torus|ring", "size": [w,h,d] (box), "radius", "height", \
+            "tube" (torus), "inner" (ring), "position": [x,y,z], "rotation": [deg,deg,deg], "color": "white|light|grey|dark|black|accent|glass", \
+            "label": "short name", "spin": {"axis": "x|y|z", "rpm": 20}, "orbit": {"center": [x,y,z], "rpm": 5}}], \
+            "camera": {"azimuth": 35, "elevation": 22}, "caption": "..."}. Y is up; units are arbitrary but consistent; \
+            up to 60 parts. Label the parts that matter. Use motion to show how it works (a rotor spins, a moon orbits).
+            diorama: {"layers": [{"depth": 0..1 (0 far, 1 near), "items": [{"shape": "rect|circle|ellipse|path|text", \
+            "x","y","w","h","r","rx" or "d" (SVG path), "text", "size", "fill": "white|light|grey|dark|black|accent|sky|glass|none", \
+            "stroke", "opacity", "anim": "float|pulse|spin|drift"}]}], "hotspots": [{"x","y","label","detail"}], "caption"}. \
+            The scene is 100 wide x 60 tall (y down). 3-5 layers from far (sky, ground) to near (foreground). Give the card \
+            an illustrate prompt to paint a backdrop behind the layers.
+            ui: {"state": {"name": number}, "blocks": [...]} with blocks: {"type": "heading|text", "text"} (text may embed \
+            {{expr}} or {{expr|digits}}), {"type": "slider", "var", "min", "max", "step", "label", "unit"}, {"type": "toggle", \
+            "var", "label"}, {"type": "choice", "var", "label", "options": [{"label", "value"}]}, {"type": "readout", "label", \
+            "expr", "unit", "digits"}, {"type": "meter", "label", "expr", "max", "unit"}, {"type": "plot", "label", "expr" (in x \
+            and state), "xmin", "xmax", "ymin", "ymax", "xLabel", "marker" (expr for a dot)}, {"type": "quiz", "question", \
+            "options": [...], "answer": index, "explain"}, {"type": "steps", "items": [{"title", "text"}]}, {"type": \
+            "flashcards", "cards": [{"front", "back"}]}, {"type": "order", "prompt", "items": [in the correct order]}, \
+            {"type": "row", "blocks": [...]}. Expressions: + - * / % ^, comparisons, a ? b : c, pi, e, g, c, and sin cos tan \
+            sqrt abs exp ln log min max pow round clamp. Make the explorer's choices change real numbers.
+            """)]),
             "html": .object(["type": .string("string"), "description": .string("""
             live only: one self-contained HTML snippet (markup, <style>, <script>; no <html>/<head>) under 20,000 characters. \
             It runs in a sandboxed iframe, about 650 x 380 px (read innerWidth/innerHeight, handle resize), with NO network: \
             no external scripts, fonts, images or fetch. Use canvas 2D or inline SVG and requestAnimationFrame. Touch input via \
-            pointer events. Look: white background, ink #0b0b0c lines, greys, one accent #e8590c; controls are pill buttons and \
-            sliders in a row at the bottom; a monospace readout of the live numbers. It must start moving on its own and show \
+            pointer events. Look (white, black, glass): background #ffffff, lines and type #0b0b0c, greys #66666b and \
+            #e0e0de, black for what matters (a second colour, #e8590c, only if two things must be told apart); controls \
+            are pill buttons (#f4f4f3, 0.75px #e0e0de edge; the main one solid #0b0b0c with white text) and sliders in a \
+            row at the bottom; a monospace readout of the live numbers. It must start moving on its own and show \
             the idea with no instructions; controls let the explorer change one or two variables and see the effect.
             """)]),
         ]),

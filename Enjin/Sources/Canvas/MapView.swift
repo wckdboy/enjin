@@ -30,25 +30,19 @@ struct MapView: View {
                     ForEach(session.portal(session.rootPortalId).map { rows($0) } ?? []) { row in
                         Button { onSelect(row.id) } label: {
                             HStack(spacing: 12) {
-                                if row.depth > 0 {
-                                    Image(systemName: "arrow.turn.down.right").foregroundStyle(Theme.accent).font(.system(size: 15, weight: .bold))
-                                }
+                                if row.depth > 0 { Readout(text: Text(verbatim: String(repeating: "›", count: min(row.depth, 4))), color: Theme.fgFaint) }
                                 Text(row.title)
+                                    .foregroundStyle(Theme.fg)
                                     .font(row.depth == 0 ? Theme.display(26) : Theme.body(18, weight: row.id == current ? .bold : .semibold))
-                                    .foregroundStyle(Theme.ink)
                                 Spacer()
-                                Text("\(row.cardCount) cards").font(Theme.body(15)).foregroundStyle(Theme.inkSoft)
-                                if row.id == current {
-                                    Text("You are here").font(Theme.body(13, weight: .bold)).foregroundStyle(.white)
-                                        .padding(.horizontal, 8).padding(.vertical, 3).background(Theme.accent, in: .capsule)
-                                }
+                                Readout(text: Text("\(row.cardCount) cards"))
+                                if row.id == current { Readout("You are here", color: Theme.signal) }
                             }
-                            .padding(.horizontal, 16)
-                            .padding(.vertical, 12)
+                            .padding(.horizontal, 18)
+                            .padding(.vertical, row.depth == 0 ? 16 : 12)
                             .frame(maxWidth: .infinity, alignment: .leading)
-                            .panel(row.id == current ? Theme.accentSoft : (row.depth == 0 ? Theme.card : Theme.paper), radius: 14)
                         }
-                        .buttonStyle(.plain)
+                        .buttonStyle(MapRowStyle(current: row.id == current, root: row.depth == 0))
                         .padding(.leading, CGFloat(row.depth) * 28)
                         .accessibilityElement(children: .ignore)
                         .accessibilityLabel(Text(row.title))
@@ -60,6 +54,18 @@ struct MapView: View {
                 .padding(24)
             }
         }
+    }
+}
+
+/// A map row is a glass key: the portal you're in has a lit edge.
+private struct MapRowStyle: ButtonStyle {
+    let current: Bool
+    let root: Bool
+    func makeBody(configuration: Configuration) -> some View {
+        configuration.label
+            .panel(radius: 16, active: current || configuration.isPressed)
+            .scaleEffect(configuration.isPressed ? 0.98 : 1)
+            .animation(.spring(duration: 0.16, bounce: 0.3), value: configuration.isPressed)
     }
 }
 

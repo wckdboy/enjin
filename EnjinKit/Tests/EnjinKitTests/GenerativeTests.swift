@@ -69,4 +69,31 @@ struct GenerativeTests {
         #expect(chart?.plot == .line)
         #expect(Visual(kind: .table, columns: ["a"]).sanitized() == nil, "a table needs rows")
     }
+
+    @Test func skillsNeedASpecOfTheRightShapeAndSize() {
+        let model = Visual(kind: .model3d, spec: .object(["parts": .array([.object(["shape": .string("box")])])])).sanitized()
+        #expect(model?.spec != nil)
+        #expect(Visual(kind: .model3d, spec: .object(["parts": .array([])])).sanitized() == nil, "no parts, nothing to show")
+        #expect(Visual(kind: .ui, spec: .object(["blocks": .array([.object(["type": .string("heading")])])])).sanitized() != nil)
+        #expect(Visual(kind: .diorama, spec: .object(["hotspots": .array([])])).sanitized() == nil, "a diorama needs layers")
+        let huge = JSONValue.object(["parts": .array(Array(repeating: .object(["label": .string(String(repeating: "x", count: 500))]), count: 100))])
+        #expect(Visual(kind: .model3d, spec: huge).sanitized() == nil, "over the size cap")
+        #expect(Visual(kind: .flow, items: [VisualItem(label: "a")], spec: .object(["x": .number(1)])).sanitized()?.spec == nil, "spec only on skills")
+    }
+
+    @Test func aDioramaKeepsItsPaintedBackdrop() async throws {
+        let (agent, _) = try await base.make([
+            .init(calls: [createCards([
+                .object(["title": .string("Inside a volcano"), "summary": .string("x"), "isStub": .bool(false), "type": .string("note"),
+                         "illustrate": .string("volcano cross-section, magma chamber"),
+                         "visual": .object(["kind": .string("diorama"), "spec": .object(["layers": .array([.object(["depth": .number(0.5), "items": .array([])])])])])]),
+            ])]),
+        ])
+        agent.imageGenerator = FakeGenerator()
+        agent.ask("go", portalId: "p-root", focusCardId: nil)
+        try await base.settle(agent)
+        let card = try #require(agent.session.activeCards(in: "p-root").first { $0.title == "Inside a volcano" })
+        #expect(card.visual?.kind == .diorama)
+        #expect(card.image?.kind == .illustration, "the backdrop was painted")
+    }
 }

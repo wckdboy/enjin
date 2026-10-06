@@ -1,6 +1,6 @@
 import SwiftUI
 
-/// A sheet in ENJIN style: paper, an expanded title, capsule buttons.
+/// A sheet: the field, a header with the logo, the title and its keys, then content.
 struct EnjinSheet<Content: View>: View {
     let title: LocalizedStringKey
     var cancel: LocalizedStringKey? = nil
@@ -28,68 +28,39 @@ struct EnjinSheet<Content: View>: View {
     var body: some View {
         VStack(spacing: 0) {
             HStack(spacing: 12) {
-                if let cancel {
-                    Button(cancel) { dismiss() }.buttonStyle(MachineButtonStyle(kind: .quiet))
-                }
+                Logo(size: 26)
+                Text(title).font(Theme.display(24)).tracking(-0.4).foregroundStyle(Theme.fg).accessibilityAddTraits(.isHeader)
                 Spacer()
+                if let cancel {
+                    Button(cancel) { dismiss() }.buttonStyle(KeyButtonStyle(kind: .secondary, size: .small))
+                }
                 if let confirm, let onConfirm {
                     Button(confirm) { onConfirm(); dismiss() }
-                        .buttonStyle(MachineButtonStyle(kind: .primary))
+                        .buttonStyle(KeyButtonStyle(kind: .primary, size: .small))
                         .disabled(confirmDisabled)
-                        .opacity(confirmDisabled ? 0.5 : 1)
                         .accessibilityIdentifier("confirm")
                 } else if cancel == nil {
-                    Button("Done") { dismiss() }.buttonStyle(MachineButtonStyle(kind: .quiet))
+                    Button("Done") { dismiss() }.buttonStyle(KeyButtonStyle(kind: .primary, size: .small))
                 }
             }
-            .overlay { Text(title).font(Theme.display(28)).foregroundStyle(Theme.ink).accessibilityAddTraits(.isHeader) }
             .padding(.horizontal, 24)
-            .padding(.top, 20)
-            .padding(.bottom, 12)
+            .padding(.top, 22)
+            .padding(.bottom, 16)
+            SignalLine()
             content
         }
-        .background(Theme.paper.ignoresSafeArea())
-        .tint(Theme.accent)
-    }
-}
-
-/// A white field with a hairline edge that goes ink while you type.
-struct FieldStyle: ViewModifier {
-    func body(content: Content) -> some View {
-        content
-            .font(Theme.body(19))
-            .foregroundStyle(Theme.ink)
-            .padding(.horizontal, 16)
-            .padding(.vertical, 13)
-            .background(.white, in: .rect(cornerRadius: 14))
-            .overlay(RoundedRectangle(cornerRadius: 14).strokeBorder(Theme.hairline, lineWidth: 1))
+        .background(FieldBackground().ignoresSafeArea())
+        .tint(Theme.signal)
+        .preferredColorScheme(.light)
     }
 }
 
 extension View {
-    func enjinField() -> some View { modifier(FieldStyle()) }
-
-    /// Form sections on paper instead of grey.
+    /// Form sections on the field, rows as dark decks.
     func enjinForm() -> some View {
         scrollContentBackground(.hidden)
-            .background(Theme.paper)
-            .tint(Theme.accent)
-            .listRowBackground(Theme.card)
-    }
-}
-
-/// Two-way choice as capsules (e.g. Topic / Note); the chosen one is ink.
-struct SegmentChoice<Value: Hashable>: View {
-    @Binding var selection: Value
-    let options: [(Value, LocalizedStringKey, String)]
-
-    var body: some View {
-        HStack(spacing: 10) {
-            ForEach(options, id: \.0) { value, label, symbol in
-                Button { selection = value } label: { Label(label, systemImage: symbol) }
-                    .buttonStyle(MachineButtonStyle(kind: selection == value ? .primary : .quiet))
-                    .accessibilityAddTraits(selection == value ? .isSelected : [])
-            }
-        }
+            .background(FieldBackground())
+            .tint(Theme.signal)
+            .listRowBackground(Theme.deck)
     }
 }

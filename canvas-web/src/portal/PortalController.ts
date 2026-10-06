@@ -10,6 +10,7 @@ import { cssTransition, nextPaint, setStyleNow, tween } from "./animate";
 import { CardActions } from "./CardActions";
 import { BusyHint } from "./BusyHint";
 import { LiveLayer } from "./LiveLayer";
+import { FRAME_KINDS, frameBody } from "../live/documents";
 import { PreviewOverlay } from "./PreviewOverlay";
 
 /** A card this big on screen (fraction of view width or height) dives in. */
@@ -20,7 +21,7 @@ const DOUBLE_TAP_MS = 300;
 /** Dive/exit camera flight. Long enough to read as a zoom, short enough to feel instant. */
 const DIVE_MS = 620;
 const EXIT_MS = 620;
-const BACKGROUND = "#fafaf9";
+const BACKGROUND = "#f2f2f0";
 const DOUBLE_TAP_PX = 30;
 
 type Zoom = { value: number };
@@ -215,10 +216,11 @@ export class PortalController {
           .map((e) => (e.customData?.cardId === cardId && e.customData?.role === "frame" ? newElementWith(e, { strokeColor: color, strokeWidth: 4 }) : e)),
         captureUpdate: CaptureUpdateAction.NEVER,
       });
+    // The edge pulses black, then settles back.
     for (let i = 0; i < 3; i++) {
       recolor("#0b0b0c");
       await new Promise((r) => setTimeout(r, 220));
-      recolor("#0b0b0c");
+      recolor("#e0e0de");
       await new Promise((r) => setTimeout(r, 160));
     }
   }
@@ -579,9 +581,25 @@ export class PortalController {
     this.syncLive(busy);
   }
 
-  /** Running live models over their slots; touchable while their card is selected. */
+  /** Frame figures (live models, 3D models, dioramas, generative UI) over their slots; touchable while selected. */
+  private liveBodies = new Map<string, { key: string; body: string }>();
   private syncLive(hidden: boolean): void {
-    const html = new Map(this.cards().flatMap((c) => (c.visual?.kind === "live" && c.visual.html ? [[c.id, c.visual.html] as const] : [])));
+    const files = this.api.getFiles();
+    const html = new Map<string, string>();
+    for (const c of this.cards()) {
+      if (!c.visual || !FRAME_KINDS.has(c.visual.kind)) continue;
+      // A diorama's backdrop is the card's picture (painted on the device).
+      const backdrop = c.visual.kind === "diorama" && c.image ? (files[c.image.fileId as never]?.dataURL ?? null) : null;
+      const key = `${c.visual.html?.length ?? 0}|${JSON.stringify(c.visual.spec ?? null)}|${c.visual.html ?? ""}|${c.image?.fileId ?? ""}|${backdrop ? 1 : 0}`;
+      let entry = this.liveBodies.get(c.id);
+      if (!entry || entry.key !== key) {
+        const body = frameBody(c.visual, backdrop as string | null);
+        if (!body) continue;
+        entry = { key, body };
+        this.liveBodies.set(c.id, entry);
+      }
+      html.set(c.id, entry.body);
+    }
     const slots = this.api.getSceneElements().flatMap((e) => {
       const d = enjinData(e);
       const h = d?.role === "live" && d.cardId ? html.get(d.cardId) : undefined;

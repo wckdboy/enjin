@@ -27,7 +27,7 @@ window.requestAnimationFrame=function(cb){return raf(function tick(t){try{cb(t);
 export function liveDocument(html: string): string {
   return `<!doctype html><html><head><meta charset="utf-8">
 <meta http-equiv="Content-Security-Policy" content="${CSP}">${RESILIENT_RAF}
-<style>html,body{margin:0;width:100%;height:100%;overflow:hidden;background:#fff;color:#0b0b0c;
+<style>html,body{margin:0;width:100%;height:100%;overflow:hidden;background:#ffffff;color:#0b0b0c;
 font:15px -apple-system,system-ui,sans-serif;-webkit-user-select:none;user-select:none;touch-action:none}</style>
 </head><body>${html}</body></html>`;
 }
@@ -90,7 +90,8 @@ export class LiveLayer {
       });
       const on = active === s.cardId;
       f.iframe.style.pointerEvents = on ? "auto" : "none";
-      f.wrap.style.boxShadow = on ? "0 0 0 2px #0b0b0c" : "0 0 0 1px #c9c9cd";
+      // Playing: the model gets the ink keyline and its side, like a pressed-out block.
+      f.wrap.style.boxShadow = on ? "0 0 0 1.5px #0b0b0c, 0 12px 28px rgba(0, 0, 0, 0.14)" : "0 0 0 0.75px #e0e0de";
       f.hint.style.opacity = on ? "0" : "1";
     }
   }
@@ -98,7 +99,7 @@ export class LiveLayer {
   private make(s: LiveSlot): Frame {
     const wrap = document.createElement("div");
     Object.assign(wrap.style, {
-      position: "absolute", left: "0", top: "0", transformOrigin: "0 0", borderRadius: "12px", overflow: "hidden", background: "#fff",
+      position: "absolute", left: "0", top: "0", transformOrigin: "0 0", borderRadius: "14px", overflow: "hidden", background: "#ffffff",
       // Sized before the frame loads: models read innerWidth/innerHeight on their first frame.
       width: `${s.rect.width}px`, height: `${s.rect.height}px`,
     });
@@ -113,7 +114,7 @@ export class LiveLayer {
     hint.textContent = t.liveHint().toUpperCase();
     Object.assign(hint.style, {
       position: "absolute", right: "10px", top: "8px", font: "600 11px ui-monospace, Menlo, monospace", letterSpacing: "1px",
-      color: "#6a6a70", background: "rgba(255,255,255,0.8)", padding: "3px 8px", borderRadius: "999px", pointerEvents: "none",
+      color: "#66666b", background: "rgba(255,255,255,0.8)", padding: "3px 8px", borderRadius: "999px", pointerEvents: "none",
       transition: "opacity 160ms ease",
     });
     wrap.append(iframe, hint);

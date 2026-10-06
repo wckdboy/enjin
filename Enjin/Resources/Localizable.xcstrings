@@ -350,6 +350,16 @@
         }
       }
     },
+    "Enjin builds the notebook as you go: pick a depth, then follow the rabbit holes.": {
+      "localizations": {
+        "da": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Enjin bygger notesbogen undervejs: vælg en dybde, og følg kaninhullerne."
+          }
+        }
+      }
+    },
     "Enjin is an AI. It can be wrong; it shows its sources so you can check.": {
       "localizations": {
         "da": {
@@ -703,6 +713,16 @@
         }
       }
     },
+    "Nothing here yet": {
+      "localizations": {
+        "da": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Intet her endnu"
+          }
+        }
+      }
+    },
     "Nothing is shared with anyone else. Notebooks and usage logs stay on this iPad.": {
       "localizations": {
         "da": {
@@ -742,6 +762,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Pen"
+          }
+        }
+      }
+    },
+    "Pick a topic above. Enjin writes the first cards, and every card you dive into grows the notebook.": {
+      "localizations": {
+        "da": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Vælg et emne ovenfor. Enjin skriver de første kort, og hvert kort du dykker ned i, får notesbogen til at vokse."
           }
         }
       }

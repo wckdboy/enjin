@@ -19,7 +19,7 @@ struct AgentDock: View {
                     Label { Text(verbatim: "\(s.reason) → \(card.title)") } icon: { Image(systemName: "eye") }
                         .lineLimit(1)
                 }
-                .buttonStyle(MachineButtonStyle(kind: .quiet))
+                .buttonStyle(KeyButtonStyle(kind: .secondary, size: .small))
                 .transition(.opacity)
             }
 
@@ -35,7 +35,7 @@ struct AgentDock: View {
                                     Text(q)
                                 }
                             }
-                            .buttonStyle(MachineButtonStyle(kind: step.isDive ? .primary : .quiet))
+                            .buttonStyle(KeyButtonStyle(kind: step.isDive ? .primary : .secondary, size: .small))
                             .lineLimit(1)
                         }
                     }
@@ -52,11 +52,11 @@ struct AgentDock: View {
                     }
                     Text(line)
                         .font(Theme.body(17))
-                        .foregroundStyle(isError ? Color(hex: 0xC92A2A) : Theme.ink)
+                        .foregroundStyle(isError ? Theme.danger : Theme.fg)
                         .frame(maxWidth: .infinity, alignment: .leading)
                         .lineLimit(4)
                     if isError {
-                        Button("OK") { agent.dismissError() }.buttonStyle(MachineButtonStyle(kind: .quiet))
+                        Button("OK") { agent.dismissError() }.buttonStyle(KeyButtonStyle(kind: .primary, size: .small))
                     }
                 }
                 .padding(.horizontal, 4)
@@ -79,23 +79,23 @@ struct AgentDock: View {
                     }
                     .padding(.horizontal, 20)
                     .padding(.vertical, 13)
-                    .background(.white.opacity(0.85), in: .rect(cornerRadius: 24))
-                    .overlay(RoundedRectangle(cornerRadius: 24).strokeBorder(focused ? Theme.ink : Theme.hairline, lineWidth: focused ? 2 : 1))
+                    .tint(Theme.signal)
+                    .well(radius: 24, focused: focused)
                     .accessibilityIdentifier("askField")
                 if agent.isRunning && agent.prefetchingCardId == nil {
                     Button { agent.cancel() } label: { Image(systemName: "stop.fill") }
-                        .buttonStyle(IconButtonStyle(size: 48))
+                        .buttonStyle(RotorKeyStyle(size: 48))
                         .accessibilityLabel(Text("Stop"))
                 } else {
                     Button(action: send) { Image(systemName: "arrow.up").font(.system(size: 20, weight: .heavy)) }
-                        .buttonStyle(IconButtonStyle(active: true, size: 48))
+                        .buttonStyle(RotorKeyStyle(active: true, size: 48))
                         .disabled(text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
                         .accessibilityLabel(Text("Send"))
                         .accessibilityIdentifier("send")
                 }
                 if agent.canUndo && !agent.isRunning {
                     Button { Task { await agent.undoLastTurn() } } label: { Image(systemName: "arrow.uturn.backward") }
-                        .buttonStyle(IconButtonStyle(size: 48))
+                        .buttonStyle(RotorKeyStyle(size: 48))
                         .accessibilityLabel(Text("Undo Enjin's last change"))
                         .accessibilityIdentifier("undoAgent")
                 }
@@ -103,7 +103,7 @@ struct AgentDock: View {
         }
         .padding(12)
         .frame(maxWidth: 640)
-        .chrome(radius: 36)
+        .chrome(radius: 34)
         .animation(.snappy, value: agent.status)
         .animation(.snappy, value: agent.suggestion)
         .animation(.snappy, value: agent.nextSteps)

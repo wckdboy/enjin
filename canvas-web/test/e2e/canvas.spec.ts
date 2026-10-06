@@ -378,7 +378,7 @@ test("picture cards: placeholder reserves space, image arrives in place without 
   const card = { id: "c-pic", type: "topic", title: "Testudo", summary: "Shields locked like a tortoise shell.", state: "filled", childCount: 0 };
   await call(page, "canvas.applyOps", { portalId: "p-root", ops: [{ op: "upsert", card: { ...card, imagePending: true } }] });
   const before = (await frames(page)).find((c) => c.cardId === "c-pic")!;
-  expect(before.height).toBe(386);
+  expect(before.height).toBe(406);
   const roles = () =>
     page.evaluate(() =>
       (window as unknown as { __enjinDebug: Debug }).__enjinDebug.api
@@ -402,7 +402,7 @@ test("picture cards: placeholder reserves space, image arrives in place without 
   await call(page, "canvas.applyOps", { portalId: "p-root", ops: [{ op: "upsert", card: { ...card, image: { fileId: "img-test", width: 400, height: 200 } } }] });
 
   const after = (await frames(page)).find((c) => c.cardId === "c-pic")!;
-  expect([after.x, after.y, after.height]).toEqual([before.x, before.y, 386]);
+  expect([after.x, after.y, after.height]).toEqual([before.x, before.y, 406]);
   const img = await page.evaluate(() =>
     (window as unknown as { __enjinDebug: Debug }).__enjinDebug.api.getSceneElements().find((e) => e.type === "image") as unknown as {
       width: number; height: number; fileId: string; x: number;
@@ -410,9 +410,9 @@ test("picture cards: placeholder reserves space, image arrives in place without 
   );
   expect(img.fileId).toBe("img-test");
   // Fills the picture area (cropped to fit, not stretched).
-  expect([img.width, img.height]).toEqual([300, 180]);
+  expect([img.width, img.height]).toEqual([280, 170]);
   const crop = (img as unknown as { crop: { width: number; height: number } }).crop;
-  expect(crop.width / crop.height).toBeCloseTo(300 / 180);
+  expect(crop.width / crop.height).toBeCloseTo(280 / 170);
   expect(await roles()).not.toContain("placeholder");
   // Actually drawn: sample the canvas at the image's center, it should be the image's red.
   const center = await page.evaluate(() => {

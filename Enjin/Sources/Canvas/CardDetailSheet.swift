@@ -46,7 +46,7 @@ struct CardDetailSheet: View {
                         LiveModelView(html: html)
                             .frame(height: 520)
                             .clipShape(.rect(cornerRadius: 18))
-                            .panel(Theme.card, radius: 18)
+                            .panel(radius: 18)
                             .accessibilityLabel(Text("Live model for \(card.title)"))
                     }
                     if let picture {
@@ -56,7 +56,7 @@ struct CardDetailSheet: View {
                                 .scaledToFit()
                                 .frame(maxWidth: .infinity, maxHeight: 360)
                                 .clipShape(.rect(cornerRadius: 14))
-                                .panel(Theme.card, radius: 14)
+                                .panel(radius: 14)
                                 .accessibilityLabel(Text("Picture for \(card.title)"))
                             HStack(spacing: 10) {
                                 if card.image?.kind == .illustration {
@@ -93,14 +93,14 @@ struct CardDetailSheet: View {
                                     Link(destination: url) {
                                         Label(s.title, systemImage: "link").font(Theme.body(16, weight: .semibold)).lineLimit(1)
                                     }
-                                    .buttonStyle(MachineButtonStyle(kind: .quiet))
+                                    .buttonStyle(KeyButtonStyle(kind: .secondary, size: .small))
                                 }
                             }
                         }
                     }
 
                     HStack(spacing: 8) {
-                        Image(systemName: card.createdBy == .kid ? "person.fill" : "bolt.fill").foregroundStyle(Theme.accent)
+                        if card.createdBy == .kid { Image(systemName: "person.fill") } else { Rotor(size: 16) }
                         Text(card.createdBy == .kid ? "Made by you" : "Made by Enjin")
                         Text(verbatim: "·")
                         Text(card.createdAt, format: .dateTime.day().month().hour().minute())
@@ -115,7 +115,7 @@ struct CardDetailSheet: View {
                     HStack(spacing: 12) {
                         if let onDive {
                             Button(action: onDive) { Label("Dive in", systemImage: "arrow.down.right") }
-                                .buttonStyle(MachineButtonStyle(kind: .primary))
+                                .buttonStyle(KeyButtonStyle(kind: .primary))
                         }
                         if editable {
                             Button {
@@ -124,7 +124,7 @@ struct CardDetailSheet: View {
                                 onSave(t, summary.trimmingCharacters(in: .whitespacesAndNewlines), b.isEmpty ? nil : b)
                                 dismiss()
                             } label: { Label("Save", systemImage: "checkmark") }
-                                .buttonStyle(MachineButtonStyle(kind: onDive == nil ? .primary : .plain))
+                                .buttonStyle(KeyButtonStyle(kind: onDive == nil ? .primary : .secondary))
                                 .disabled(!changed || title.trimmingCharacters(in: .whitespaces).isEmpty)
                         }
                     }

@@ -1,6 +1,6 @@
-import mark from "../assets/enjin-mark.svg?raw";
+import logo from "../assets/enjin-logo.png";
 
-/** A glass pill with the turning rotor, in the middle of an empty portal while Enjin fills it. */
+/** A glass pill with the turning logo, in the middle of an empty portal while Enjin fills it. */
 export class BusyHint {
   private el: HTMLDivElement;
 
@@ -9,7 +9,7 @@ export class BusyHint {
     this.el.dataset.enjin = "busy";
     this.el.className = "enjin-glass";
     this.el.style.display = "none";
-    this.el.innerHTML = `${mark}<span></span>`;
+    this.el.innerHTML = `<img alt="" src="${logo}"><span></span>`;
   }
 
   show(message: string | null): void {

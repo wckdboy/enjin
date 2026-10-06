@@ -18,7 +18,7 @@ struct LiveModelView: UIViewRepresentable {
         <meta name="viewport" content="width=device-width,initial-scale=1,user-scalable=no">
         <script>(function(){var raf=window.requestAnimationFrame.bind(window),fails=0;
         window.requestAnimationFrame=function(cb){return raf(function tick(t){try{cb(t);fails=0}catch(e){if(++fails<300)raf(tick)}})};})();</script>
-        <style>html,body{margin:0;width:100%;height:100%;overflow:hidden;background:#fff;color:#0b0b0c;
+        <style>html,body{margin:0;width:100%;height:100%;overflow:hidden;background:#ffffff;color:#0b0b0c;
         font:15px -apple-system,system-ui,sans-serif;-webkit-user-select:none;user-select:none;touch-action:none}</style>
         </head><body>\(html)</body></html>
         """

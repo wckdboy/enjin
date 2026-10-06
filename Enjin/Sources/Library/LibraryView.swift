@@ -34,26 +34,26 @@ struct LibraryView: View {
                         Wordmark(size: 52)
                         Spacer()
                         Button { showSettings = true } label: { Image(systemName: "gearshape") }
-                            .buttonStyle(IconButtonStyle())
+                            .buttonStyle(RotorKeyStyle())
                             .accessibilityLabel(Text("Settings"))
                             .accessibilityIdentifier("settings")
                     }
 
                     explorePrompt
 
-                    if !library.notebooks.isEmpty {
-                        VStack(alignment: .leading, spacing: 16) {
-                            HStack(alignment: .firstTextBaseline) {
-                                Heading(text: "Your notebooks", size: 30)
-                                Spacer()
-                                Readout(text: Text("\(library.notebooks.count) notebooks"))
-                            }
-                            LazyVGrid(columns: [GridItem(.adaptive(minimum: 230, maximum: 320), spacing: 24)], alignment: .leading, spacing: 28) {
+                    VStack(alignment: .leading, spacing: 20) {
+                        SectionHeader(title: "Your notebooks") {
+                            Readout(text: Text("\(library.notebooks.count) notebooks"))
+                        }
+                        if library.notebooks.isEmpty {
+                            emptyShelf
+                        } else {
+                            LazyVGrid(columns: [GridItem(.adaptive(minimum: 230, maximum: 320), spacing: 26)], alignment: .leading, spacing: 30) {
                                 ForEach(library.notebooks) { nb in
                                     NavigationLink(value: nb.id) {
                                         NotebookCover(meta: nb, cover: library.covers[nb.id], cardCount: library.counts[nb.id] ?? 0)
                                     }
-                                    .buttonStyle(.plain)
+                                    .buttonStyle(CoverPressStyle())
                                     .contextMenu {
                                         Button(role: .destructive) { confirmDelete = nb } label: { Label("Delete notebook", systemImage: "trash") }
                                     }
@@ -68,7 +68,7 @@ struct LibraryView: View {
                 .frame(maxWidth: 1100, alignment: .leading)
                 .frame(maxWidth: .infinity)
             }
-            .background(DotGrid().ignoresSafeArea())
+            .background(FieldBackground(logo: true).ignoresSafeArea())
             .toolbar(.hidden, for: .navigationBar)
             .navigationDestination(for: String.self) { id in
                 NotebookScreen(notebookId: id, store: library.store, settings: settings, telemetry: telemetry)
@@ -92,65 +92,78 @@ struct LibraryView: View {
         .tint(Theme.accent)
     }
 
+    /// The launch console: a bracketed glass panel with the logo lit from behind.
     private var explorePrompt: some View {
-        VStack(alignment: .leading, spacing: 18) {
+        VStack(alignment: .leading, spacing: 22) {
             HStack(alignment: .center, spacing: 24) {
-                VStack(alignment: .leading, spacing: 10) {
+                VStack(alignment: .leading, spacing: 12) {
                     Readout("Science · Engineering · Code")
-                    Heading(text: "What do you want to explore?", size: 44)
+                    Heading(text: "What do you want to explore?", size: 46)
+                    Text("Enjin builds the notebook as you go: pick a depth, then follow the rabbit holes.")
+                        .font(Theme.body(17))
+                        .foregroundStyle(Theme.fgSoft)
                 }
                 Spacer(minLength: 0)
-                Image("MotorHero")
-                    .renderingMode(.template)
-                    .resizable()
-                    .scaledToFit()
-                    .frame(width: 150, height: 150)
-                    .foregroundStyle(Theme.ink)
-                    .accessibilityHidden(true)
+
             }
-            HStack(spacing: 12) {
-                TextField(text: $topic) { Text("A topic, a question, anything…") }
-                    .font(Theme.body(22))
-                    .foregroundStyle(Theme.ink)
+            HStack(spacing: 14) {
+                TextField(text: $topic) { Text("A topic, a question, anything…").foregroundStyle(Theme.fgFaint) }
+                    .font(Theme.body(21))
+                    .foregroundStyle(Theme.fg)
+                    .tint(Theme.signal)
                     .focused($topicFocused)
                     .submitLabel(.go)
                     .onSubmit { start(topic) }
                     .padding(.horizontal, 22)
                     .frame(height: 58)
-                    .background(Theme.paper, in: .capsule)
-                    .overlay(Capsule().strokeBorder(topicFocused ? Theme.ink : Theme.hairline, lineWidth: topicFocused ? 2 : 1))
-                    .animation(.snappy, value: topicFocused)
+                    .wellCapsule(focused: topicFocused)
                     .accessibilityIdentifier("topicField")
                 Button { start(topic) } label: {
-                    Label("Explore", systemImage: "arrow.right").labelStyle(TrailingIcon()).font(Theme.body(20, weight: .bold)).frame(minHeight: 50)
+                    Label("Explore", systemImage: "arrow.right").labelStyle(TrailingIcon())
                 }
-                .buttonStyle(MachineButtonStyle(kind: .primary))
+                .buttonStyle(KeyButtonStyle(kind: .primary, size: .large))
                 .disabled(topic.trimmingCharacters(in: .whitespaces).isEmpty)
                 .accessibilityIdentifier("explore")
             }
-            HStack(spacing: 12) {
+            HStack(spacing: 14) {
                 Readout("Depth")
-                SegmentChoice(selection: $level, options: [
+                GearSelector(selection: $level, options: [
                     (.curious, "Curious", "sparkles"),
                     (.student, "Student", "graduationcap"),
                     (.expert, "Expert", "atom"),
                 ])
                 .accessibilityIdentifier("levelPicker")
             }
+            SignalLine()
             ScrollView(.horizontal, showsIndicators: false) {
                 HStack(spacing: 10) {
                     Readout("or try")
                     ForEach(starters.indices, id: \.self) { i in
-                        Button { start(starterText(i)) } label: { Text(starters[i]).font(Theme.body(16, weight: .semibold)) }
-                            .buttonStyle(MachineButtonStyle(kind: .quiet))
+                        Button { start(starterText(i)) } label: { Text(starters[i]) }
+                            .buttonStyle(KeyButtonStyle(kind: .secondary, size: .small))
                     }
                 }
                 .padding(.vertical, 6)
                 .padding(.trailing, 6)
             }
         }
-        .padding(28)
-        .panel(Theme.card, radius: 32)
+        .padding(36)
+        .panel(radius: 34)
+    }
+
+    /// No notebooks yet.
+    private var emptyShelf: some View {
+        HStack(spacing: 18) {
+            Logo(size: 44, color: Theme.fgFaint)
+            VStack(alignment: .leading, spacing: 6) {
+                Text("Nothing here yet").font(Theme.title(20)).foregroundStyle(Theme.fg)
+                Text("Pick a topic above. Enjin writes the first cards, and every card you dive into grows the notebook.")
+                    .font(Theme.body(15)).foregroundStyle(Theme.fgSoft)
+            }
+        }
+        .padding(22)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .overlay(RoundedRectangle(cornerRadius: 20, style: .continuous).strokeBorder(Theme.edge, style: StrokeStyle(lineWidth: 1, dash: [6, 5])))
     }
 
     /// The starter's text in the current language (the key itself is English).
@@ -167,40 +180,44 @@ struct LibraryView: View {
     }
 }
 
-/// A notebook as a book cover: its first picture, its title, how much is in it.
+/// A notebook as a glass card: its cover art (or the logo while it has none),
+/// its title, depth and size.
 struct NotebookCover: View {
     let meta: NotebookMeta
     let cover: UIImage?
     let cardCount: Int
+    var pressed = false
 
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
             ZStack {
-                Theme.stub
+                Theme.deck
                 if let cover {
                     Image(uiImage: cover).resizable().scaledToFill()
                 } else {
-                    Rotor(size: 64, color: Theme.ink.opacity(0.14))
+                    Logo(size: 84, color: Theme.fgFaint)
                 }
             }
-            .frame(height: 170)
+            .frame(height: 168)
             .frame(maxWidth: .infinity)
-            .clipShape(.rect(cornerRadius: 14))
-            .padding([.horizontal, .top], 8)
+            .clipShape(.rect(cornerRadius: 12, style: .continuous))
+            .overlay(RoundedRectangle(cornerRadius: 12, style: .continuous).strokeBorder(Theme.edge, lineWidth: 1))
+            .padding([.horizontal, .top], 10)
 
-            VStack(alignment: .leading, spacing: 6) {
+            VStack(alignment: .leading, spacing: 8) {
                 Text(meta.title)
-                    .font(Theme.display(28))
-                    .foregroundStyle(Theme.ink)
+                    .font(Theme.display(24))
+                    .tracking(-0.4)
+                    .foregroundStyle(Theme.fg)
                     .lineLimit(2)
                     .multilineTextAlignment(.leading)
                 HStack(spacing: 8) {
                     if let level = meta.level {
-                        Readout(text: Text(level.label), color: Theme.ink)
-                        Circle().fill(Theme.hairline).frame(width: 4, height: 4)
+                        Readout(text: Text(level.label), color: Theme.fg)
+                        Text(verbatim: "·").foregroundStyle(Theme.fgFaint)
                     }
-                    Readout(text: Text("\(cardCount) cards"), color: Theme.ink)
-                    Circle().fill(Theme.hairline).frame(width: 4, height: 4)
+                    Readout(text: Text("\(cardCount) cards"), color: Theme.fg)
+                    Text(verbatim: "·").foregroundStyle(Theme.fgFaint)
                     Readout(text: Text(meta.updatedAt, format: .relative(presentation: .named)))
                 }
             }
@@ -209,8 +226,18 @@ struct NotebookCover: View {
             .padding(.bottom, 16)
             .frame(maxWidth: .infinity, alignment: .leading)
         }
-        .panel(Theme.card, radius: 22)
         .contentShape(.rect(cornerRadius: 22))
+    }
+}
+
+/// Covers press like keys: they dip, and their edge lights.
+struct CoverPressStyle: ButtonStyle {
+    func makeBody(configuration: Configuration) -> some View {
+        configuration.label
+            .panel(radius: 22, active: configuration.isPressed)
+            .scaleEffect(configuration.isPressed ? 0.975 : 1)
+            .animation(.spring(duration: 0.18, bounce: 0.3), value: configuration.isPressed)
+            .sensoryFeedback(.impact(flexibility: .rigid, intensity: 0.6), trigger: configuration.isPressed) { _, now in now }
     }
 }
 

@@ -13,7 +13,7 @@ final class SmokeTests: XCTestCase {
     }
 
     func testOpenNotebookAddCardAndUseMap() {
-        let demo = app.staticTexts["Electric motors"].firstMatch
+        let demo = app.buttons["notebook:Electric motors"].firstMatch
         XCTAssertTrue(demo.waitForExistence(timeout: 10), "demo notebook is seeded")
         demo.tap()
 
@@ -43,7 +43,9 @@ final class SmokeTests: XCTestCase {
 
         // Back to the library and in again: the card survived (persisted).
         app.buttons["Notebooks"].tap()
-        app.staticTexts["Electric motors"].firstMatch.tap()
+        let cover = app.buttons["notebook:Electric motors"].firstMatch
+        XCTAssertTrue(cover.waitForExistence(timeout: 10))
+        cover.tap()
         XCTAssertTrue(app.buttons["Map"].waitForExistence(timeout: 10))
         app.buttons["Map"].tap()
         let again = app.buttons["map:Electric motors"]
@@ -58,7 +60,7 @@ final class SmokeTests: XCTestCase {
         app.launch()
         let topic = app.textFields["topicField"]
         XCTAssertTrue(topic.waitForExistence(timeout: 10))
-        XCTAssertFalse(app.staticTexts["Your notebooks"].exists, "no pre-built notebooks")
+        XCTAssertTrue(app.staticTexts["Nothing here yet"].exists, "no pre-built notebooks")
         app.buttons["Expert"].tap()
         topic.tap()
         topic.typeText("Quantum computers")
@@ -79,7 +81,7 @@ final class SmokeTests: XCTestCase {
     }
 
     func testAskTheAgentThenUndo() {
-        app.staticTexts["Electric motors"].firstMatch.tap()
+        app.buttons["notebook:Electric motors"].firstMatch.tap()
         let ask = app.textFields["askField"]
         XCTAssertTrue(ask.waitForExistence(timeout: 15), "agent dock appears once the canvas is ready")
         ask.tap()

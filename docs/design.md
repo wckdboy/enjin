@@ -1,30 +1,27 @@
 # ENJIN design system
 
 ENJIN ≈ engine, for curious people aged 13 to 25 who are into science and
-engineering. The app icon is a hand-drawn three-quarter motor (stator coils
-with their windings, rotor, bore). The small mark beside the wordmark and the
-spinner is the same motor seen end-on (`docs/enjin-mark.svg`). Everything
-follows them: precise, mechatronic, monochrome, for native screens and the
-canvas alike.
+engineering. The look is **white, black and glass**:
+- a soft light field;
+- frosted white Liquid Glass with a bright edge and a soft lift;
+- black type;
+- black for the one thing to press, or for what's selected.
 
-- **Palette** (`Enjin/Sources/Design/Theme.swift`, mirrored in `canvas-web/src/cards/render.ts`):
-  - paper `#FAFAF9`, card `#FFFFFF`, stub `#F2F2F2`, filling `#E9E9E9`
-  - ink `#0B0B0C`, ink-soft `#6A6A70`, hairline = ink at 14%
-  - The only accent is ink: every "go" (Explore, Send, Dive in, the active tool) is solid black with white text.
-  - Drawing inks on the tool rail (ink, ember, sky, leaf) are content, not chrome.
-- **Shapes are the mark's:** circles, capsules, concentric rounded rects. No sharp corners, no hard shadows.
-- **Type:** **Inter** (OFL, bundled in `Enjin/Resources/Fonts` and `canvas-web/src/assets`).
-  - **Inter Display Black**, tracked tight, for display: the wordmark, headings, titles.
-  - **Inter** for reading.
-  - **Readouts** (`Readout`): SF Mono, capitals, tracked out, for counts, status and "or try". On canvas cards the same role is Cascadia ("3 INSIDE →", "DIVE IN →").
-  - Canvas cards are Inter too: Excalidraw's "Helvetica" family (a system font it never loads) is mapped to Inter with `@font-face`. **Excalifont** is only for what the explorer writes.
-- **Surfaces:**
-  - Content (explore panel, notebook covers, sheets) sits on **machined panels** (`.panel()`): white, a 1pt hairline edge, a soft contact shadow.
-  - Chrome floating over the canvas (crumbs, actions, tool rail, dock, tips) is **Liquid Glass** (`.chrome()`, `.glassEffect`). Icon buttons are glass circles; active ones are ink-tinted glass.
-  - On the web side, the card actions pill and the busy hint use `.enjin-glass`, a backdrop-filter version of the same material.
-  - The library sits on engineering paper (`DotGrid`).
-- **Motion:** the mark is the busy indicator (`Rotor`). It steps round one coil (60°) at a time, like a stepper motor, natively and on the canvas. Buttons scale down slightly when pressed.
-- **Dividers** on the tool rail are three short ticks, like a scale on a dial.
+The chrome has no colour; colour belongs to content (drawing inks, pictures). The
+logo, the hand-drawn three-quarter motor from the app icon, is the only mark.
+It is used everywhere a logo appears: the wordmark, section headers, the
+spinner, empty states, cover placeholders, and the canvas's busy hint. It also
+sits huge behind the library's glass.
+
+- **Kit** (`Enjin/Sources/Design/`; open `-designKit` in debug builds to see every piece):
+  - `Theme.swift`: tokens and type.
+  - `Surfaces.swift`: glass `panel()`/`chrome()`, `well()`, and `FieldBackground`.
+  - `Keys.swift`: primary keys are solid black, secondary ones glass, round icon keys and rail tools; all with haptics.
+  - `Controls.swift`: `GearSelector` and fields.
+  - `Marks.swift`: `Logo`, `Wordmark`, `Rotor` (the logo, turning while Enjin works), `Readout`, `Heading`, `SectionHeader`, `SignalLine`, `SignalMeter`.
+  - The canvas mirrors the tokens in `canvas-web/src/cards/palette.ts`.
+- **Type:** **Inter** (OFL, bundled): Inter Display Bold for display, Inter for reading, SF Mono capitals for readouts. Canvas cards are Inter too, via Excalidraw's "Helvetica" family, mapped with `@font-face`.
+- **Cards** on the canvas are white faces with a fine edge and a 20pt inner margin. A card being written gets a black edge; stubs are dashed.
 - **Canvas chrome is native:**
   - top-left: back plus breadcrumb;
   - top-right: New card, Map, Settings;
@@ -38,8 +35,7 @@ canvas alike.
   - highlights melting into paper;
   - grain;
   - 55% of the original color: muted, so pictures sit calmly in the monochrome UI.
-- **Icon:** `tools/icon/motor_bell.py` cleans up the hand-drawn motor (`tools/icon/motor-bell-source.png`): ink/no-ink alpha, contours smoothed at 4×, centred with even padding. It renders the light (black on white, opaque), dark and tinted (white on transparent) icons, plus `MotorHero` (the library's hero art).
-- **Mark:** `tools/icon/enjin_mark.py` draws the flat end-on motor as exact geometry (true circles, parallel-sided spokes, one corner radius). It renders the `MotorMark` template image and the SVGs.
+- **Icon and logo:** `tools/icon/motor_bell.py` cleans up the hand-drawn motor (`tools/icon/motor-bell-source.png`). It renders the app icons, `MotorHero` (the logo as a template image), and `canvas-web/src/assets/enjin-logo.png`.
 
 ## Figures and live models
 Cards can carry a **figure** (`visual`) instead of a picture. It is drawn as canvas geometry in the ENJIN look, with a `FIG · KIND` readout (`canvas-web/src/cards/visual.ts`).
@@ -62,6 +58,17 @@ Cards can carry a **figure** (`visual`) instead of a picture. It is drawn as can
   - a CSP that blocks all network access;
   - the bridge itself refuses non-main frames, and the navigation policy only allows `about:srcdoc` in subframes.
 - Live models animate all the time and take touches while their card is selected. A card's detail sheet shows the model at full size in its own sandboxed web view.
+## Skills: the media Enjin chooses
+The agent picks, for each idea, the medium that makes it clearest. The skills are defined in `AgentTools.visual` and `Persona.system`:
+- **Figures** (above): structure and real numbers.
+- **3D models** (`model3d`): models from primitives (box, sphere, cylinder, cone, torus, ring), with labels and motion (spin, orbit). They're drawn by ENJIN's own small engine (`canvas-web/src/live/engine3d.ts`): drag to turn, pinch to zoom.
+- **Dioramas** (`diorama`): 2.5D scenes in depth layers with parallax, animated props and hotspots. A backdrop painted on the device is optional (`live/diorama.ts`).
+- **Generative UI** (`ui`): interactive learning widgets the agent designs on the fly from a component kit. The components are sliders, toggles, choices, readouts, meters, plots, quizzes, steps, flashcards, ordering games and rows (`live/uiKit.ts`). Formulas run through a safe expression compiler (`live/expr.ts`, no `eval`).
+- **Illustrations**: pictures painted on the device (Image Playground).
+- **Live code**: the agent's own HTML/JS, for what no skill can show.
+
+Skills are data (a JSON `spec`), so they're reliable and always on-style. They run in the same sandbox as live code: ENJIN's runtime source is injected (`live/documents.ts`). The animated runtimes keep a timer watchdog, because WebKit can withhold animation frames from a sandboxed frame.
+
 - Nothing is pre-built: every notebook is generated live by Enjin from the topic the explorer types and the **depth** they choose (Curious, Student or Expert, stored per notebook and sent with every turn), then grown by their dives and questions. The hand-made **Electric motors** notebook (`tools/samples/motors.py`, en/da) is a test and dev fixture only: `-seedSample` in debug builds, `?fixture=motors` in the dev host.
 - **Visualize:** a button in a filled card's action pill. Enjin turns that card's idea into one figure or live model and places it beside the card.
 

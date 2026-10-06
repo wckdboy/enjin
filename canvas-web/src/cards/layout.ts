@@ -9,7 +9,7 @@ export interface Rect {
 
 export const CARD_W = 320;
 /** Text area height; picture cards add the image area on top. */
-export const CARD_H = 196;
+export const CARD_H = 216;
 export const IMAGE_H = 190;
 export const GAP = 48;
 export const COLUMNS = 3;

@@ -22,6 +22,8 @@
       "parentPortalId": "p-root",
       "cardIds": [
         "c-live",
+        "c-model",
+        "c-push",
         "c-steps",
         "c-force",
         "c-torque",
@@ -57,6 +59,7 @@
       "ownerCardId": "c-everywhere",
       "parentPortalId": "p-root",
       "cardIds": [
+        "c-windfarm",
         "c-efficiency",
         "c-types",
         "c-drones",
@@ -78,10 +81,516 @@
       "type": "note",
       "state": "filled",
       "title": "Drive it yourself",
-      "summary": "The orange coil pulls the rotor's orange pole. Switch faster and it spins faster, until it can't keep up.",
+      "summary": "The lit coil pulls the rotor's matching pole. Switch faster and it spins faster, until it can't keep up.",
       "visual": {
         "kind": "live",
-        "html": "<canvas id=\"c\"></canvas>\n<div id=\"ui\"><button id=\"run\">Pause</button><button id=\"step\">Step</button>\n<label>Switching <input id=\"speed\" type=\"range\" min=\"1\" max=\"40\" value=\"6\"></label><span id=\"ro\"></span></div>\n<style>\n#c{position:absolute;inset:0;width:100%;height:100%}\n#ui{position:absolute;left:12px;right:12px;bottom:10px;display:flex;gap:10px;align-items:center;font:600 13px -apple-system,sans-serif}\nbutton{font:inherit;border:1px solid #0b0b0c;background:#fff;border-radius:999px;padding:6px 14px}\nbutton:active{background:#0b0b0c;color:#fff}\nlabel{display:flex;gap:8px;align-items:center;color:#6a6a70}\ninput{width:140px;accent-color:#0b0b0c}\n#ro{margin-left:auto;font:600 12px ui-monospace,Menlo,monospace;letter-spacing:1px;color:#0b0b0c}\n</style>\n<script>\nconst c=document.getElementById('c'),x=c.getContext('2d');\nlet W,H,dpr=devicePixelRatio||1;\nfunction size(){W=innerWidth;H=innerHeight;c.width=W*dpr;c.height=H*dpr;x.setTransform(dpr,0,0,dpr,0,0)}\naddEventListener('resize',size);size();\n// Six stator coils; the ESC energises opposite pairs in six steps.\nlet step=0,angle=0,vel=0,running=true,acc=0,turns=0,last=performance.now(),rpmT=0,rpm=0,prevA=0;\nconst ro=document.getElementById('ro'),sp=document.getElementById('speed');\ndocument.getElementById('run').onclick=e=>{running=!running;e.target.textContent=running?'Pause':'Run'};\ndocument.getElementById('step').onclick=()=>{running=false;document.getElementById('run').textContent='Run';step=(step+1)%6};\nfunction target(){return step*Math.PI/3}\nfunction frame(t){\n  const dt=Math.min(0.05,(t-last)/1000);last=t;\n  if(running){acc+=dt*sp.value;while(acc>=1){acc-=1;step=(step+1)%6}}\n  // The rotor's north pole is pulled toward the energised coil (a spring with damping).\n  let d=target()-angle;d=Math.atan2(Math.sin(d),Math.cos(d));\n  vel+=(d*60-vel*9)*dt;angle+=vel*dt;\n  rpmT+=dt;if(rpmT>0.5){rpm=Math.abs((angle-prevA)/rpmT)/(2*Math.PI)*60;prevA=angle;rpmT=0}\n  draw();requestAnimationFrame(frame)}\nfunction draw(){\n  x.clearRect(0,0,W,H);\n  const cx=W/2,cy=(H-44)/2,R=Math.min(W,H-44)/2-14;if(R<20)return;\n  x.lineWidth=R*0.09;x.strokeStyle='#0b0b0c';x.beginPath();x.arc(cx,cy,R,0,7);x.stroke();\n  for(let i=0;i<6;i++){\n    const a=i*Math.PI/3,on=i===step||i===(step+3)%6,north=i===step;\n    x.save();x.translate(cx,cy);x.rotate(a);\n    x.fillStyle=on?(north?'#e8590c':'#0b0b0c'):'#e9e9e9';x.strokeStyle='#0b0b0c';x.lineWidth=1.5;\n    const r0=R*0.56,r1=R*0.86,w=R*0.26;\n    x.beginPath();x.roundRect(r0,-w/2,r1-r0,w,6);x.fill();x.stroke();\n    x.strokeStyle=on?'#fff':'#9a9aa0';x.lineWidth=1;\n    for(let k=1;k<5;k++){const xx=r0+(r1-r0)*k/5;x.beginPath();x.moveTo(xx,-w/2+4);x.lineTo(xx,w/2-4);x.stroke()}\n    x.fillStyle=on?'#fff':'#6a6a70';x.font='600 11px ui-monospace,Menlo,monospace';x.textAlign='center';x.textBaseline='middle';\n    x.translate((r0+r1)/2,0);x.rotate(-a);x.fillText(on?(north?'S':'N'):'ABC'[i%3],0,0);\n    x.restore()}\n  // Rotor: a disc with a north (orange) and south (ink) magnet.\n  x.save();x.translate(cx,cy);x.rotate(angle);\n  x.fillStyle='#fff';x.strokeStyle='#0b0b0c';x.lineWidth=2;x.beginPath();x.arc(0,0,R*0.46,0,7);x.fill();x.stroke();\n  x.fillStyle='#0b0b0c';x.beginPath();x.moveTo(0,0);x.arc(0,0,R*0.42,Math.PI*0.75,Math.PI*1.25);x.fill();\n  x.fillStyle='#e8590c';x.beginPath();x.moveTo(0,0);x.arc(0,0,R*0.42,-Math.PI*0.25,Math.PI*0.25);x.fill();\n  x.fillStyle='#fff';x.strokeStyle='#0b0b0c';x.beginPath();x.arc(0,0,R*0.12,0,7);x.fill();x.stroke();\n  x.restore();\n  ro.textContent='STEP '+(step+1)+'/6 · '+Math.round(rpm)+' RPM';\n}\nrequestAnimationFrame(frame);\n</script>\n"
+        "html": "<canvas id=\"c\"></canvas>\n<div id=\"ui\"><button id=\"run\">Pause</button><button id=\"step\">Step</button>\n<label>Switching <input id=\"speed\" type=\"range\" min=\"1\" max=\"40\" value=\"6\"></label><span id=\"ro\"></span></div>\n<style>\n#c{position:absolute;inset:0;width:100%;height:100%}\n#ui{position:absolute;left:12px;right:12px;bottom:10px;display:flex;gap:10px;align-items:center;font:600 13px -apple-system,sans-serif}\nbutton{font:inherit;border:1px solid #e0e0de;background:#f4f4f3;color:#0b0b0c;border-radius:999px;padding:6px 14px}\nbutton:active{background:#0b0b0c;color:#ffffff}\nlabel{display:flex;gap:8px;align-items:center;color:#66666b}\ninput{width:140px;accent-color:#0b0b0c}\n#ro{margin-left:auto;font:600 12px ui-monospace,Menlo,monospace;letter-spacing:1px;color:#0b0b0c}\n</style>\n<script>\nconst c=document.getElementById('c'),x=c.getContext('2d');\nlet W,H,dpr=devicePixelRatio||1;\nfunction size(){W=innerWidth;H=innerHeight;c.width=W*dpr;c.height=H*dpr;x.setTransform(dpr,0,0,dpr,0,0)}\naddEventListener('resize',size);size();\n// Six stator coils; the ESC energises opposite pairs in six steps.\nlet step=0,angle=0,vel=0,running=true,acc=0,turns=0,last=performance.now(),rpmT=0,rpm=0,prevA=0;\nconst ro=document.getElementById('ro'),sp=document.getElementById('speed');\ndocument.getElementById('run').onclick=e=>{running=!running;e.target.textContent=running?'Pause':'Run'};\ndocument.getElementById('step').onclick=()=>{running=false;document.getElementById('run').textContent='Run';step=(step+1)%6};\nfunction target(){return step*Math.PI/3}\nfunction frame(t){\n  const dt=Math.min(0.05,(t-last)/1000);last=t;\n  if(running){acc+=dt*sp.value;while(acc>=1){acc-=1;step=(step+1)%6}}\n  // The rotor's north pole is pulled toward the energised coil (a spring with damping).\n  let d=target()-angle;d=Math.atan2(Math.sin(d),Math.cos(d));\n  vel+=(d*60-vel*9)*dt;angle+=vel*dt;\n  rpmT+=dt;if(rpmT>0.5){rpm=Math.abs((angle-prevA)/rpmT)/(2*Math.PI)*60;prevA=angle;rpmT=0}\n  draw();requestAnimationFrame(frame)}\nfunction draw(){\n  x.clearRect(0,0,W,H);\n  const cx=W/2,cy=(H-44)/2,R=Math.min(W,H-44)/2-14;if(R<20)return;\n  x.lineWidth=R*0.06;x.strokeStyle='#c6c6ca';x.beginPath();x.arc(cx,cy,R,0,7);x.stroke();\n  for(let i=0;i<6;i++){\n    const a=i*Math.PI/3,on=i===step||i===(step+3)%6,north=i===step;\n    x.save();x.translate(cx,cy);x.rotate(a);\n    x.fillStyle=on?(north?'#0b0b0c':'#e8590c'):'#f4f4f3';x.strokeStyle=on?'#0b0b0c':'#c6c6ca';x.lineWidth=1.5;\n    const r0=R*0.56,r1=R*0.86,w=R*0.26;\n    x.beginPath();x.roundRect(r0,-w/2,r1-r0,w,6);x.fill();x.stroke();\n    x.strokeStyle=on?'#ffffff':'#c6c6ca';x.lineWidth=1;\n    for(let k=1;k<5;k++){const xx=r0+(r1-r0)*k/5;x.beginPath();x.moveTo(xx,-w/2+4);x.lineTo(xx,w/2-4);x.stroke()}\n    x.fillStyle=on?'#ffffff':'#66666b';x.font='600 11px ui-monospace,Menlo,monospace';x.textAlign='center';x.textBaseline='middle';\n    x.translate((r0+r1)/2,0);x.rotate(-a);x.fillText(on?(north?'S':'N'):'ABC'[i%3],0,0);\n    x.restore()}\n  // Rotor: a disc with a north (orange) and south (ink) magnet.\n  x.save();x.translate(cx,cy);x.rotate(angle);\n  x.fillStyle='#ffffff';x.strokeStyle='#0b0b0c';x.lineWidth=1.5;x.beginPath();x.arc(0,0,R*0.46,0,7);x.fill();x.stroke();\n  x.fillStyle='#e8590c';x.beginPath();x.moveTo(0,0);x.arc(0,0,R*0.42,Math.PI*0.75,Math.PI*1.25);x.fill();\n  x.fillStyle='#0b0b0c';x.beginPath();x.moveTo(0,0);x.arc(0,0,R*0.42,-Math.PI*0.25,Math.PI*0.25);x.fill();\n  x.fillStyle='#ffffff';x.strokeStyle='#0b0b0c';x.beginPath();x.arc(0,0,R*0.12,0,7);x.fill();x.stroke();\n  x.restore();\n  ro.textContent='STEP '+(step+1)+'/6 · '+Math.round(rpm)+' RPM';\n}\nrequestAnimationFrame(frame);\n</script>\n"
+      }
+    },
+    {
+      "id": "c-model",
+      "type": "note",
+      "state": "filled",
+      "title": "Spin the motor",
+      "summary": "An outrunner: the magnets sit in the bell that turns around the still coils.",
+      "visual": {
+        "kind": "model3d",
+        "spec": {
+          "parts": [
+            {
+              "shape": "cylinder",
+              "radius": 0.5,
+              "height": 0.9,
+              "position": [
+                0,
+                0,
+                0
+              ],
+              "color": "grey",
+              "label": "Stator"
+            },
+            {
+              "shape": "box",
+              "size": [
+                0.42,
+                0.7,
+                0.34
+              ],
+              "position": [
+                0.95,
+                0,
+                0.0
+              ],
+              "rotation": [
+                0,
+                0,
+                0
+              ],
+              "color": "dark",
+              "label": "Coil"
+            },
+            {
+              "shape": "box",
+              "size": [
+                0.42,
+                0.7,
+                0.34
+              ],
+              "position": [
+                0.475,
+                0,
+                0.823
+              ],
+              "rotation": [
+                0,
+                -60,
+                0
+              ],
+              "color": "dark"
+            },
+            {
+              "shape": "box",
+              "size": [
+                0.42,
+                0.7,
+                0.34
+              ],
+              "position": [
+                -0.475,
+                0,
+                0.823
+              ],
+              "rotation": [
+                0,
+                -120,
+                0
+              ],
+              "color": "dark"
+            },
+            {
+              "shape": "box",
+              "size": [
+                0.42,
+                0.7,
+                0.34
+              ],
+              "position": [
+                -0.95,
+                0,
+                0.0
+              ],
+              "rotation": [
+                0,
+                -180,
+                0
+              ],
+              "color": "dark"
+            },
+            {
+              "shape": "box",
+              "size": [
+                0.42,
+                0.7,
+                0.34
+              ],
+              "position": [
+                -0.475,
+                0,
+                -0.823
+              ],
+              "rotation": [
+                0,
+                -240,
+                0
+              ],
+              "color": "dark"
+            },
+            {
+              "shape": "box",
+              "size": [
+                0.42,
+                0.7,
+                0.34
+              ],
+              "position": [
+                0.475,
+                0,
+                -0.823
+              ],
+              "rotation": [
+                0,
+                -300,
+                0
+              ],
+              "color": "dark"
+            },
+            {
+              "shape": "ring",
+              "radius": 1.55,
+              "inner": 1.4,
+              "height": 0.95,
+              "position": [
+                0,
+                0,
+                0
+              ],
+              "color": "glass",
+              "spin": {
+                "axis": "y",
+                "rpm": 20
+              }
+            },
+            {
+              "shape": "box",
+              "size": [
+                0.12,
+                0.8,
+                0.3
+              ],
+              "position": [
+                1.229,
+                0,
+                0.509
+              ],
+              "rotation": [
+                0,
+                -22.5,
+                0
+              ],
+              "color": "accent",
+              "orbit": {
+                "center": [
+                  0,
+                  0,
+                  0
+                ],
+                "rpm": 20
+              }
+            },
+            {
+              "shape": "box",
+              "size": [
+                0.12,
+                0.8,
+                0.3
+              ],
+              "position": [
+                0.509,
+                0,
+                1.229
+              ],
+              "rotation": [
+                0,
+                -67.5,
+                0
+              ],
+              "color": "accent",
+              "orbit": {
+                "center": [
+                  0,
+                  0,
+                  0
+                ],
+                "rpm": 20
+              },
+              "label": "Magnet"
+            },
+            {
+              "shape": "box",
+              "size": [
+                0.12,
+                0.8,
+                0.3
+              ],
+              "position": [
+                -0.509,
+                0,
+                1.229
+              ],
+              "rotation": [
+                0,
+                -112.5,
+                0
+              ],
+              "color": "accent",
+              "orbit": {
+                "center": [
+                  0,
+                  0,
+                  0
+                ],
+                "rpm": 20
+              }
+            },
+            {
+              "shape": "box",
+              "size": [
+                0.12,
+                0.8,
+                0.3
+              ],
+              "position": [
+                -1.229,
+                0,
+                0.509
+              ],
+              "rotation": [
+                0,
+                -157.5,
+                0
+              ],
+              "color": "accent",
+              "orbit": {
+                "center": [
+                  0,
+                  0,
+                  0
+                ],
+                "rpm": 20
+              }
+            },
+            {
+              "shape": "box",
+              "size": [
+                0.12,
+                0.8,
+                0.3
+              ],
+              "position": [
+                -1.229,
+                0,
+                -0.509
+              ],
+              "rotation": [
+                0,
+                -202.5,
+                0
+              ],
+              "color": "accent",
+              "orbit": {
+                "center": [
+                  0,
+                  0,
+                  0
+                ],
+                "rpm": 20
+              }
+            },
+            {
+              "shape": "box",
+              "size": [
+                0.12,
+                0.8,
+                0.3
+              ],
+              "position": [
+                -0.509,
+                0,
+                -1.229
+              ],
+              "rotation": [
+                0,
+                -247.5,
+                0
+              ],
+              "color": "accent",
+              "orbit": {
+                "center": [
+                  0,
+                  0,
+                  0
+                ],
+                "rpm": 20
+              }
+            },
+            {
+              "shape": "box",
+              "size": [
+                0.12,
+                0.8,
+                0.3
+              ],
+              "position": [
+                0.509,
+                0,
+                -1.229
+              ],
+              "rotation": [
+                0,
+                -292.5,
+                0
+              ],
+              "color": "accent",
+              "orbit": {
+                "center": [
+                  0,
+                  0,
+                  0
+                ],
+                "rpm": 20
+              }
+            },
+            {
+              "shape": "box",
+              "size": [
+                0.12,
+                0.8,
+                0.3
+              ],
+              "position": [
+                1.229,
+                0,
+                -0.509
+              ],
+              "rotation": [
+                0,
+                -337.5,
+                0
+              ],
+              "color": "accent",
+              "orbit": {
+                "center": [
+                  0,
+                  0,
+                  0
+                ],
+                "rpm": 20
+              }
+            },
+            {
+              "shape": "cylinder",
+              "radius": 0.08,
+              "height": 2.6,
+              "position": [
+                0,
+                0.6,
+                0
+              ],
+              "color": "black",
+              "spin": {
+                "axis": "y",
+                "rpm": 20
+              },
+              "label": "Shaft"
+            },
+            {
+              "shape": "cylinder",
+              "radius": 1.2,
+              "height": 0.12,
+              "position": [
+                0,
+                -0.6,
+                0
+              ],
+              "color": "light",
+              "label": "Mount"
+            }
+          ],
+          "camera": {
+            "azimuth": 30,
+            "elevation": 28
+          },
+          "caption": "Drag to turn · the bell of magnets spins round the coils"
+        }
+      }
+    },
+    {
+      "id": "c-push",
+      "type": "note",
+      "state": "filled",
+      "title": "Push harder",
+      "summary": "The force on a wire, live. Every motor's torque starts here.",
+      "visual": {
+        "kind": "ui",
+        "spec": {
+          "state": {
+            "B": 0.5,
+            "I": 2,
+            "L": 0.1
+          },
+          "blocks": [
+            {
+              "type": "heading",
+              "text": "F = B · I · L"
+            },
+            {
+              "type": "text",
+              "text": "A wire carrying current in a magnetic field gets pushed. Change each part and watch the push."
+            },
+            {
+              "type": "row",
+              "blocks": [
+                {
+                  "type": "slider",
+                  "var": "B",
+                  "min": 0,
+                  "max": 1.5,
+                  "step": 0.05,
+                  "label": "Field B",
+                  "unit": "T"
+                },
+                {
+                  "type": "slider",
+                  "var": "I",
+                  "min": 0,
+                  "max": 10,
+                  "step": 0.1,
+                  "label": "Current I",
+                  "unit": "A"
+                },
+                {
+                  "type": "slider",
+                  "var": "L",
+                  "min": 0.01,
+                  "max": 0.3,
+                  "step": 0.01,
+                  "label": "Length L",
+                  "unit": "m"
+                }
+              ]
+            },
+            {
+              "type": "row",
+              "blocks": [
+                {
+                  "type": "readout",
+                  "label": "Force",
+                  "expr": "B*I*L",
+                  "unit": "N",
+                  "digits": 3
+                },
+                {
+                  "type": "meter",
+                  "label": "of the strongest push here",
+                  "expr": "B*I*L",
+                  "max": 4.5,
+                  "unit": "N"
+                }
+              ]
+            },
+            {
+              "type": "plot",
+              "label": "Force as the current rises",
+              "expr": "B*x*L",
+              "xmin": 0,
+              "xmax": 10,
+              "xLabel": "current, A",
+              "marker": "I"
+            },
+            {
+              "type": "quiz",
+              "question": "Double the current. The force…",
+              "options": [
+                "halves",
+                "stays the same",
+                "doubles",
+                "quadruples"
+              ],
+              "answer": 2,
+              "explain": "F is proportional to I: twice the current, twice the push."
+            }
+          ]
+        }
       }
     },
     {
@@ -329,6 +838,172 @@
       "title": "Motors are everywhere",
       "summary": "Your phone's vibration, a fridge, a lift, a Mars rover: all motors.",
       "body": "A phone vibrates with a tiny motor spinning an off-centre weight. Hard drives spin a platter at 7,200 turns a minute. A modern car has dozens of small motors for windows, seats, mirrors, wipers and pumps, before you even count an electric car's drive motor. Robots are mostly motors with sensors and a computer: every joint in a robot arm is a motor with a gearbox and a sensor that measures its angle."
+    },
+    {
+      "id": "c-windfarm",
+      "type": "note",
+      "state": "filled",
+      "title": "A wind farm is motors run backwards",
+      "summary": "Spin a motor and it makes electricity. Wind turbines do exactly that.",
+      "visual": {
+        "kind": "diorama",
+        "spec": {
+          "layers": [
+            {
+              "depth": 0.05,
+              "items": [
+                {
+                  "shape": "rect",
+                  "x": 0,
+                  "y": 0,
+                  "w": 100,
+                  "h": 60,
+                  "fill": "sky"
+                },
+                {
+                  "shape": "circle",
+                  "x": 82,
+                  "y": 14,
+                  "r": 5,
+                  "fill": "white",
+                  "opacity": 0.9,
+                  "anim": "pulse"
+                }
+              ]
+            },
+            {
+              "depth": 0.25,
+              "items": [
+                {
+                  "shape": "path",
+                  "d": "M0 44 C 20 34, 40 40, 60 35 S 90 38, 100 33 L100 60 L0 60 Z",
+                  "fill": "light"
+                }
+              ]
+            },
+            {
+              "depth": 0.55,
+              "items": [
+                {
+                  "shape": "rect",
+                  "x": 27.3,
+                  "y": 22,
+                  "w": 1.4,
+                  "h": 38,
+                  "fill": "white",
+                  "stroke": "grey",
+                  "strokeWidth": 0.25
+                },
+                {
+                  "shape": "path",
+                  "d": "M28.99 21.83 L28.00 13.00 L27.01 21.83 Z M27.65 22.94 L35.79 26.50 L28.64 21.23 Z M27.36 21.23 L20.21 26.50 L28.35 22.94 Z",
+                  "fill": "white",
+                  "stroke": "dark",
+                  "strokeWidth": 0.3,
+                  "anim": "spin"
+                },
+                {
+                  "shape": "circle",
+                  "x": 28,
+                  "y": 22,
+                  "r": 1.1,
+                  "fill": "dark"
+                },
+                {
+                  "shape": "rect",
+                  "x": 54.3,
+                  "y": 26,
+                  "w": 1.4,
+                  "h": 34,
+                  "fill": "white",
+                  "stroke": "grey",
+                  "strokeWidth": 0.25
+                },
+                {
+                  "shape": "path",
+                  "d": "M55.99 25.83 L55.00 19.00 L54.01 25.83 Z M54.65 26.94 L61.06 29.50 L55.64 25.23 Z M54.36 25.23 L48.94 29.50 L55.35 26.94 Z",
+                  "fill": "white",
+                  "stroke": "dark",
+                  "strokeWidth": 0.3,
+                  "anim": "spin"
+                },
+                {
+                  "shape": "circle",
+                  "x": 55,
+                  "y": 26,
+                  "r": 1.1,
+                  "fill": "dark"
+                },
+                {
+                  "shape": "rect",
+                  "x": 77.3,
+                  "y": 29,
+                  "w": 1.4,
+                  "h": 31,
+                  "fill": "white",
+                  "stroke": "grey",
+                  "strokeWidth": 0.25
+                },
+                {
+                  "shape": "path",
+                  "d": "M78.99 28.83 L78.00 23.50 L77.01 28.83 Z M77.65 29.94 L82.76 31.75 L78.64 28.23 Z M77.36 28.23 L73.24 31.75 L78.35 29.94 Z",
+                  "fill": "white",
+                  "stroke": "dark",
+                  "strokeWidth": 0.3,
+                  "anim": "spin"
+                },
+                {
+                  "shape": "circle",
+                  "x": 78,
+                  "y": 29,
+                  "r": 1.1,
+                  "fill": "dark"
+                }
+              ]
+            },
+            {
+              "depth": 0.9,
+              "items": [
+                {
+                  "shape": "path",
+                  "d": "M0 52 C 25 47, 55 55, 100 49 L100 60 L0 60 Z",
+                  "fill": "grey"
+                },
+                {
+                  "shape": "rect",
+                  "x": 8,
+                  "y": 50,
+                  "w": 6,
+                  "h": 4,
+                  "fill": "dark",
+                  "rx": 0.4
+                }
+              ]
+            }
+          ],
+          "hotspots": [
+            {
+              "x": 22,
+              "y": 15,
+              "label": "Rotor",
+              "detail": "Wind pushes the blades; they turn a shaft about 15 times a minute."
+            },
+            {
+              "x": 32,
+              "y": 25,
+              "label": "Generator",
+              "detail": "A motor run backwards: magnets sweep past coils and push current out."
+            },
+            {
+              "x": 11,
+              "y": 50,
+              "label": "Substation",
+              "detail": "Raises the voltage so the power can travel far with little loss."
+            }
+          ],
+          "caption": "Drag to look around · tap the dots"
+        }
+      }
     },
     {
       "id": "c-efficiency",

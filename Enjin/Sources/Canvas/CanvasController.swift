@@ -60,7 +60,7 @@ final class CanvasController: NSObject {
         webView.navigationDelegate = self
         webView.isInspectable = true
         webView.isOpaque = false
-        webView.backgroundColor = UIColor(red: 0.98, green: 0.98, blue: 0.976, alpha: 1)
+        webView.backgroundColor = UIColor(red: 0.949, green: 0.949, blue: 0.941, alpha: 1) // Theme.void
         webView.scrollView.isScrollEnabled = false
         webView.scrollView.bounces = false
         webView.scrollView.contentInsetAdjustmentBehavior = .never

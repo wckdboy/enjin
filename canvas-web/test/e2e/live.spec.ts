@@ -84,3 +84,45 @@ test("Visualize is offered on filled cards, not stubs or figures, and asks nativ
   await page.touchscreen.tap(p.x, p.y);
   await expect(visualize).toBeHidden();
 });
+
+test("skills: generative UI recomputes from a slider, and a 3D model draws", async ({ page }) => {
+  await ready(page);
+  await call(page, "canvas.applyOps", {
+    portalId: "p-root",
+    ops: [
+      { op: "upsert", card: { id: "c-ui", type: "note", title: "Push", summary: "", state: "filled", childCount: 0, visual: { kind: "ui", spec: {
+        state: { I: 2 }, blocks: [{ type: "slider", var: "I", min: 0, max: 10, step: 1, label: "Current" }, { type: "readout", label: "Force", expr: "0.5 * I", digits: 2 }] } } } },
+      { op: "upsert", card: { id: "c-3d", type: "note", title: "Box", summary: "", state: "filled", childCount: 0, visual: { kind: "model3d", spec: {
+        parts: [{ shape: "box", size: [1, 1, 1], color: "black" }], autoRotate: false } } } },
+    ],
+  });
+  await expect(page.locator('[data-enjin="live"] iframe')).toHaveCount(2);
+  const frameFor = async (id: string) => {
+    const handle = await page.locator(`[data-enjin="live"] iframe[data-card-id="${id}"]`).elementHandle();
+    return (await handle!.contentFrame())!;
+  };
+  const ui = await frameFor("c-ui");
+  await ui.waitForSelector("input[type=range]");
+  expect(await ui.locator(".big").textContent()).toBe("1.00");
+  await ui.evaluate(() => {
+    const r = document.querySelector("input[type=range]") as HTMLInputElement;
+    r.value = "8";
+    r.dispatchEvent(new Event("input"));
+  });
+  expect(await ui.locator(".big").textContent()).toBe("4.00");
+
+  // On screen (off-screen frames don't get animation frames), then look.
+  await call(page, "canvas.frame", { cardId: "c-3d" });
+  await page.waitForTimeout(900);
+  const model = await frameFor("c-3d");
+  await model.waitForSelector("canvas");
+  await page.waitForTimeout(400);
+  const darkPixels = () => model.evaluate(() => {
+    const c = document.querySelector("canvas")!;
+    const d = c.getContext("2d")!.getImageData(0, 0, c.width, c.height).data;
+    let n = 0;
+    for (let i = 0; i < d.length; i += 4) if (d[i]! < 90 && d[i + 3]! > 200) n++;
+    return n;
+  });
+  await expect.poll(darkPixels, { message: "the black box was drawn", timeout: 8000 }).toBeGreaterThan(500);
+});

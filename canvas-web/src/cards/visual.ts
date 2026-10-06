@@ -11,10 +11,11 @@ import { CARD_W, GAP, type Rect } from "./layout";
 
 type Skeleton = NonNullable<Parameters<typeof convertToExcalidrawElements>[0]>[number];
 
-const INK = "#0b0b0c";
-const MUTED = "#6a6a70";
-const HAIR = "#c9c9cd";
-const SOFT = "#f2f2f2";
+import { EDGE, EDGE_STRONG, EMBER, FACE, FACE_LOW, FG, MUTED, RAISED, SIGNAL, TRACK } from "./palette";
+
+const INK = FG; // lines and type on a dark card
+const HAIR = EDGE_STRONG;
+const SOFT = TRACK;
 const SANS = FONT_FAMILY.Helvetica; // Inter, see style.css
 const MONO = FONT_FAMILY.Cascadia;
 
@@ -22,14 +23,14 @@ const MONO = FONT_FAMILY.Cascadia;
 export const WIDE_W = 2 * CARD_W + GAP;
 const FIG_LABEL_H = 22;
 
-const MAX_ITEMS: Record<Visual["kind"], number> = { flow: 5, cycle: 6, timeline: 6, bars: 6, parts: 6, stat: 0, formula: 4, code: 0, live: 0, graph: 8, table: 0, chart: 0 };
-const ACCENT = "#e8590c";
+const MAX_ITEMS: Record<Visual["kind"], number> = { flow: 5, cycle: 6, timeline: 6, bars: 6, parts: 6, stat: 0, formula: 4, code: 0, live: 0, graph: 8, table: 0, chart: 0, model3d: 0, diorama: 0, ui: 0 };
+const ACCENT = SIGNAL;
 const TABLE_COLS = 5;
 const TABLE_ROWS = 6;
 const TABLE_ROW_H = 32;
 const SERIES_STYLE = [
-  { color: INK, dash: "solid" },
-  { color: ACCENT, dash: "solid" },
+  { color: FG, dash: "solid" },
+  { color: EMBER, dash: "solid" },
   { color: MUTED, dash: "dashed" },
 ] as const;
 /** Live models run in an iframe laid over this slot (see LiveLayer). */
@@ -61,6 +62,9 @@ export function visualHeight(v: Visual): number {
     formula: 52 + 4 * 26,
     code: Math.max(1, codeLines(v).length) * CODE_LINE_H + 24,
     live: LIVE_H,
+    model3d: 400,
+    diorama: 400,
+    ui: 420,
     graph: 290,
     table: 30 + TABLE_ROWS * TABLE_ROW_H,
     chart: 262,
@@ -88,8 +92,10 @@ export function visualSkeletons(v: Visual, box: Rect, cardId: string, base: Base
     label: { text: s, fontSize: size, fontFamily: opts.family ?? SANS, strokeColor: opts.color ?? INK, textAlign: opts.align ?? "center", verticalAlign: opts.v ?? "middle", customData: { cardId, role: "label" } } as never,
   });
   /** A white pill with an ink edge and a label: a step, a part, a stage. */
-  const pill = (key: string, r: Rect, s: string, size = 15, fill = "#ffffff"): Skeleton => ({
-    ...base, type: "rectangle", id: id(key), ...r, backgroundColor: fill, fillStyle: "solid", strokeWidth: 1.5, roundness: { type: 3 }, customData: data,
+  /** A raised node: a slightly lighter panel with a fine edge. */
+  const pill = (key: string, r: Rect, s: string, size = 15, fill = RAISED): Skeleton => ({
+    ...base, type: "rectangle", id: id(key), ...r, backgroundColor: fill, fillStyle: "solid", strokeColor: EDGE_STRONG, strokeWidth: 1.5,
+    roundness: { type: 3 }, customData: data,
     label: { text: s, fontSize: size, fontFamily: SANS, strokeColor: INK, textAlign: "center", verticalAlign: "middle", customData: { cardId, role: "label" } } as never,
   });
   const arrow = (key: string, x1: number, y1: number, x2: number, y2: number, color = INK): Skeleton => ({
@@ -179,7 +185,7 @@ export function visualSkeletons(v: Visual, box: Rect, cardId: string, base: Base
         const value = values[i]!;
         out.push(label(`l${i}`, { x: x0, y: ry, width: labelW - 8, height: row - 6 }, it.label, 14, { align: "left" }));
         out.push({ ...base, type: "rectangle", id: id(`track${i}`), x: x0 + labelW, y: ry + (row - 6) / 2 - 7, width: track, height: 14, backgroundColor: SOFT, fillStyle: "solid", strokeColor: "transparent", roundness: { type: 3 }, customData: data });
-        out.push({ ...base, type: "rectangle", id: id(`bar${i}`), x: x0 + labelW, y: ry + (row - 6) / 2 - 7, width: Math.max(4, track * share(value)), height: 14, backgroundColor: value === max ? INK : MUTED, fillStyle: "solid", strokeColor: "transparent", roundness: { type: 3 }, customData: data });
+        out.push({ ...base, type: "rectangle", id: id(`bar${i}`), x: x0 + labelW, y: ry + (row - 6) / 2 - 7, width: Math.max(4, track * share(value)), height: 14, backgroundColor: value === max ? SIGNAL : MUTED, fillStyle: "solid", strokeColor: "transparent", roundness: { type: 3 }, customData: data });
         out.push(label(`v${i}`, { x: x0 + labelW + track + 12, y: ry, width: valueW, height: row - 6 }, `${fmt(it.value ?? 0)}${v.unit ? ` ${v.unit}` : ""}`, 12, { align: "left", family: MONO }));
       });
       break;
@@ -219,12 +225,15 @@ export function visualSkeletons(v: Visual, box: Rect, cardId: string, base: Base
       });
       break;
     }
-    case "live": {
+    case "live":
+    case "model3d":
+    case "diorama":
+    case "ui": {
       // The slot: what exports, previews and the dive animation show; the running model sits on top of it.
       out.push({
-        ...base, type: "rectangle", id: id("live"), x: x0, y: y0, width: W, height: LIVE_H, backgroundColor: SOFT, fillStyle: "solid",
+        ...base, type: "rectangle", id: id("live"), x: x0, y: y0, width: W, height: visualHeight(v) - FIG_LABEL_H, backgroundColor: SOFT, fillStyle: "solid",
         strokeColor: HAIR, strokeWidth: 1, roundness: { type: 3 }, customData: { cardId, role: "live" },
-        label: { text: v.html ? "" : t.building(), fontSize: 14, fontFamily: MONO, strokeColor: MUTED, customData: { cardId, role: "label" } } as never,
+        label: { text: v.html || v.spec ? "" : t.building(), fontSize: 14, fontFamily: MONO, strokeColor: MUTED, customData: { cardId, role: "label" } } as never,
       });
       break;
     }
@@ -250,7 +259,7 @@ export function visualSkeletons(v: Visual, box: Rect, cardId: string, base: Base
           const steep = Math.abs(q.x - p.x) < Math.abs(q.y - p.y);
           out.push({
             ...base, type: "rectangle", id: id(`el${i}`), x: steep ? (p.x + q.x) / 2 + 6 : (p.x + q.x) / 2 - lw / 2, y: (p.y + q.y) / 2 - 10,
-            width: lw, height: 20, backgroundColor: steep ? "transparent" : "#ffffff", fillStyle: "solid", strokeColor: "transparent",
+            width: lw, height: 20, backgroundColor: steep ? "transparent" : FACE, fillStyle: "solid", strokeColor: "transparent",
             roundness: { type: 3 }, customData: data,
             label: { text: l.label, fontSize: 11, fontFamily: MONO, strokeColor: MUTED, textAlign: steep ? "left" : "center", customData: { cardId, role: "label" } } as never,
           });
@@ -259,7 +268,7 @@ export function visualSkeletons(v: Visual, box: Rect, cardId: string, base: Base
       list.forEach((it, i) => {
         const P = pos[i]!;
         const z = sizes[i]!;
-        out.push(pill(`n${i}`, { x: P.cx - z.w / 2, y: P.cy - z.h / 2, width: z.w, height: z.h }, it.label, 14, i === 0 ? SOFT : "#ffffff"));
+        out.push(pill(`n${i}`, { x: P.cx - z.w / 2, y: P.cy - z.h / 2, width: z.w, height: z.h }, it.label, 14, i === 0 ? SOFT : RAISED));
       });
       break;
     }
@@ -339,8 +348,8 @@ export function visualSkeletons(v: Visual, box: Rect, cardId: string, base: Base
     }
     case "code": {
       const lines = codeLines(v);
-      out.push({ ...base, type: "rectangle", id: id("block"), x: x0, y: y0, width: W, height: Math.max(1, lines.length) * CODE_LINE_H + 24, backgroundColor: INK, fillStyle: "solid", strokeColor: INK, roundness: { type: 3 }, customData: data });
-      out.push({ ...base, type: "text", id: id("code"), x: x0 + 16, y: y0 + 12, text: lines.join("\n") || " ", fontSize: 14, fontFamily: MONO, strokeColor: "#f2f2f2", lineHeight: (CODE_LINE_H / 14) as never, customData: data });
+      out.push({ ...base, type: "rectangle", id: id("block"), x: x0, y: y0, width: W, height: Math.max(1, lines.length) * CODE_LINE_H + 24, backgroundColor: FACE_LOW, fillStyle: "solid", strokeColor: EDGE, roundness: { type: 3 }, customData: data });
+      out.push({ ...base, type: "text", id: id("code"), x: x0 + 16, y: y0 + 12, text: lines.join("\n") || " ", fontSize: 14, fontFamily: MONO, strokeColor: SIGNAL, lineHeight: (CODE_LINE_H / 14) as never, customData: data });
       break;
     }
   }

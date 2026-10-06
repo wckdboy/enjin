@@ -4,33 +4,34 @@ import type { Card, PortalScene } from "../bridge/schema";
 import { t } from "../i18n";
 import { CARD_H, CARD_W, COLUMNS, GAP, HEADER_H, IMAGE_H, type Rect, coverCrop, placeCards, union } from "./layout";
 import { WIDE_W, isWide, visualHeight, visualSkeletons } from "./visual";
+import { DANGER, EDGE, FACE, FACE_LOW, FAINT, FG, MUTED, SIGNAL } from "./palette";
 
-export type CardRole = "frame" | "image" | "placeholder" | "textbox" | "title" | "summary" | "label" | "badge" | "cue" | "figure" | "live"
+export type CardRole = "frame" | "image" | "placeholder" | "textbox" | "title" | "summary" | "label" | "badge" | "cue" | "figure" | "live" | "depth"
   | "header" | "subtitle" | "hero";
 export interface EnjinData {
   cardId?: string;
   role: CardRole;
 }
 
-// The ENJIN palette, monochrome like the mark (same values as the native Theme).
-// Cards are machined panels: white, a hairline edge; a stub is a dashed outline.
-const STYLE: Record<Card["state"], { bg: string; edge: string; stroke: "solid" | "dashed" }> = {
-  stub: { bg: "#f2f2f2", edge: "#9a9aa0", stroke: "dashed" },
-  filling: { bg: "#e9e9e9", edge: "#c9c9cd", stroke: "solid" },
-  filled: { bg: "#ffffff", edge: "#c9c9cd", stroke: "solid" },
-  error: { bg: "#f6e3e3", edge: "#c92a2a", stroke: "solid" },
+// White, black and glass (same values as the native Theme): a card is a white face
+// with a fine edge; one being written has a black edge; stubs are dashed.
+const STYLE: Record<Card["state"], { bg: string; edge: string; stroke: "solid" | "dashed"; width: number }> = {
+  stub: { bg: FACE_LOW, edge: FAINT, stroke: "dashed", width: 1.5 },
+  filling: { bg: FACE, edge: SIGNAL, stroke: "solid", width: 2 },
+  filled: { bg: FACE, edge: EDGE, stroke: "solid", width: 1.5 },
+  error: { bg: "#fdf1f1", edge: DANGER, stroke: "solid", width: 1.5 },
 };
 
-const INK = "#0b0b0c";
-const MUTED = "#6a6a70";
-const ACCENT = INK;
+const INK = FG; // the card's type and lines
+const ACCENT = SIGNAL;
 /** Inter on cards, like the native UI ("Helvetica" is mapped to Inter in style.css). */
 const DISPLAY = FONT_FAMILY.Helvetica;
 const READING = FONT_FAMILY.Helvetica;
 /** Machine readouts ("3 INSIDE", "DIVE IN"): monospace capitals, like the native Readout. */
 const READOUT = FONT_FAMILY.Cascadia;
 const READOUT_PX = 13;
-const INSET = 10;
+/** Inner margin: text and figures keep well clear of the card's edge. */
+const INSET = 20;
 const TITLE_PX = 24;
 const SUMMARY_PX = 17;
 /** Width of the three-column card area; portal banners span it. */
@@ -65,7 +66,7 @@ export function cardSize(card: Card): { width: number; height: number } {
   if (card.visual) {
     const wide = isWide(card.visual);
     const summaryH = card.summary ? summaryLines(wide) * SUMMARY_PX * 1.25 + 8 : 0;
-    const readouts = card.type === "topic" ? 40 : 16; // room for "dive in" / "3 inside"
+    const readouts = card.type === "topic" ? 50 : 24; // room for "dive in" / "3 inside", and the bottom margin
     const width = wide ? WIDE_W : CARD_W;
     return { width, height: INSET + 6 + titleHeight(card.title, width) + 8 + visualHeight(card.visual) + 12 + summaryH + readouts };
   }
@@ -91,9 +92,10 @@ function cardSkeletons(card: Card, at: Rect): Skeleton[] {
   const common = { groupIds: [`g:${card.id}`], strokeColor: INK, roughness: 0 } as const;
   const clear = { strokeColor: "transparent", backgroundColor: "transparent" } as const;
   const picture = hasPicture(card);
-  const textTop = (picture ? at.y + IMAGE_H : at.y) + 6;
+  const textTop = (picture ? at.y + IMAGE_H + 4 : at.y) + 14;
   const textW = at.width - 2 * INSET;
-  const out: Skeleton[] = [
+  const out: Skeleton[] = [];
+  out.push(
     {
       ...common,
       type: "rectangle",
@@ -106,11 +108,11 @@ function cardSkeletons(card: Card, at: Rect): Skeleton[] {
       backgroundColor: style.bg,
       fillStyle: "solid",
       strokeStyle: style.stroke,
-      strokeWidth: 1,
+      strokeWidth: style.width,
       roundness: { type: 3 },
       customData: { cardId: card.id, role: "frame" },
     },
-  ];
+  );
   if (picture) {
     const box = { x: at.x + INSET, y: at.y + INSET, width: at.width - 2 * INSET, height: IMAGE_H - INSET };
     if (card.image) {
@@ -131,12 +133,12 @@ function cardSkeletons(card: Card, at: Rect): Skeleton[] {
         type: "rectangle",
         id: `${card.id}:placeholder`,
         ...box,
-        backgroundColor: "#e9ecef",
+        backgroundColor: FACE_LOW,
         fillStyle: "solid",
         strokeColor: "transparent",
         roundness: { type: 3 },
         customData: { cardId: card.id, role: "placeholder" },
-        label: { text: t.findingPicture(), fontSize: 16, fontFamily: READING, strokeColor: "#868e96", customData: { cardId: card.id, role: "label" } } as never,
+        label: { text: t.findingPicture(), fontSize: 16, fontFamily: READING, strokeColor: MUTED, customData: { cardId: card.id, role: "label" } } as never,
       });
     }
   }
@@ -157,7 +159,7 @@ function cardSkeletons(card: Card, at: Rect): Skeleton[] {
   });
   let afterTitle = textTop + titleH + 2;
   if (card.visual) {
-    const box = { x: at.x + INSET + 6, y: afterTitle + 6, width: at.width - 2 * INSET - 12, height: visualHeight(card.visual) };
+    const box = { x: at.x + INSET, y: afterTitle + 6, width: at.width - 2 * INSET, height: visualHeight(card.visual) };
     out.push(...visualSkeletons(card.visual, box, card.id, common));
     afterTitle = box.y + box.height + 12;
   }
@@ -171,14 +173,14 @@ function cardSkeletons(card: Card, at: Rect): Skeleton[] {
       x: at.x + INSET - 4,
       y: top,
       width: textW + 8,
-      height: Math.max(30, at.y + at.height - top - 34),
+      height: Math.max(30, at.y + at.height - top - 44),
       customData: { cardId: card.id, role: "summary" },
       label: { text: card.summary, strokeColor: MUTED, fontSize: SUMMARY_PX, fontFamily: READING, textAlign: "left", verticalAlign: "top", customData: { cardId: card.id, role: "label" } } as never,
     });
   }
 
   // Bottom line: what you can do with it.
-  const bottom = at.y + at.height - 30;
+  const bottom = at.y + at.height - 36;
   if (card.type === "topic" && (card.state === "stub" || card.childCount === 0)) {
     out.push({
       ...common,
@@ -204,7 +206,7 @@ function cardSkeletons(card: Card, at: Rect): Skeleton[] {
       text: label,
       fontSize: READOUT_PX,
       fontFamily: READOUT,
-      strokeColor: ACCENT,
+      strokeColor: MUTED,
       customData: { cardId: card.id, role: "badge" },
     });
   }

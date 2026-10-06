@@ -39,14 +39,14 @@ struct CanvasScreen: View {
             VStack(spacing: 12) {
                 if !diveTipSeen && controller.status == .ready && controller.agent.nextSteps.contains(where: \.isDive) {
                     HStack(spacing: 14) {
-                        Image(systemName: "hand.pinch").font(.system(size: 24, weight: .semibold)).foregroundStyle(Theme.accent)
+                        Image(systemName: "hand.pinch").font(.system(size: 24, weight: .semibold))
                         Text("Tip: pinch a card open, or tap it and press **Dive in**, to go inside it.")
-                            .font(Theme.body(16)).foregroundStyle(Theme.ink)
-                        Button("Got it") { diveTipSeen = true }.buttonStyle(MachineButtonStyle(kind: .primary))
+                            .font(Theme.body(16))
+                        Button("Got it") { diveTipSeen = true }.buttonStyle(KeyButtonStyle(kind: .primary, size: .small))
                     }
                     .padding(.vertical, 12)
                     .padding(.horizontal, 18)
-                    .chrome(radius: 28)
+                    .chrome(radius: 24)
                     .transition(.move(edge: .bottom).combined(with: .opacity))
                 }
                 if controller.status == .ready {
@@ -92,17 +92,18 @@ struct CanvasScreen: View {
     /// Back to the notebooks, and the path of portals you dived through.
     private var navigation: some View {
         HStack(spacing: 4) {
-            Button { dismiss() } label: { Image(systemName: "chevron.left").font(.system(size: 18, weight: .bold)) }
-                .buttonStyle(IconButtonStyle(active: true, size: 40))
+            Button { dismiss() } label: { Image(systemName: "chevron.left").font(.system(size: 17, weight: .heavy)) }
+                .buttonStyle(RotorKeyStyle(active: true, size: 40))
                 .accessibilityLabel(Text("Notebooks"))
                 .accessibilityIdentifier("notebooks")
                 .padding(.trailing, 8)
             ForEach(Array(controller.path.enumerated()), id: \.element.portalId) { i, crumb in
-                if i > 0 { Image(systemName: "chevron.right").font(.system(size: 12, weight: .bold)).foregroundStyle(Theme.inkSoft) }
+                if i > 0 { Image(systemName: "chevron.right").font(.system(size: 11, weight: .bold)).foregroundStyle(Theme.fgFaint) }
                 if i == controller.path.count - 1 {
                     Text(crumb.title)
                         .font(Theme.display(22))
-                        .foregroundStyle(Theme.ink)
+                        .tracking(-0.4)
+                        .foregroundStyle(Theme.fg)
                         .lineLimit(1)
                         .padding(.horizontal, 6)
                         .accessibilityAddTraits(.isHeader)
@@ -110,7 +111,7 @@ struct CanvasScreen: View {
                     Button { controller.jump(to: crumb.portalId) } label: {
                         Text(crumb.title)
                             .font(Theme.body(16, weight: .semibold))
-                            .foregroundStyle(Theme.inkSoft)
+                            .foregroundStyle(Theme.fgSoft)
                             .lineLimit(1)
                             .padding(.horizontal, 6)
                     }
@@ -119,9 +120,9 @@ struct CanvasScreen: View {
                 }
             }
         }
-        .padding(.vertical, 6)
-        .padding(.leading, 6)
-        .padding(.trailing, 14)
+        .padding(.vertical, 7)
+        .padding(.leading, 7)
+        .padding(.trailing, 18)
         .chrome()
         .animation(.snappy, value: controller.path)
     }
@@ -129,16 +130,16 @@ struct CanvasScreen: View {
     private var actions: some View {
         HStack(spacing: 12) {
             Button { showNewCard = true } label: { Image(systemName: "plus") }
-                .buttonStyle(IconButtonStyle())
+                .buttonStyle(RotorKeyStyle())
                 .accessibilityLabel(Text("New card"))
                 .accessibilityIdentifier("newCard")
                 .disabled(controller.status != .ready)
             Button { showMap = true } label: { Image(systemName: "map") }
-                .buttonStyle(IconButtonStyle())
+                .buttonStyle(RotorKeyStyle())
                 .accessibilityLabel(Text("Map"))
                 .accessibilityIdentifier("map")
             Button { showSettings = true } label: { Image(systemName: "gearshape") }
-                .buttonStyle(IconButtonStyle())
+                .buttonStyle(RotorKeyStyle())
                 .accessibilityLabel(Text("Settings"))
                 .accessibilityIdentifier("settings")
             #if DEBUG
@@ -149,7 +150,7 @@ struct CanvasScreen: View {
                 Button { showAgentSpike = true } label: { Text(verbatim: "Agent spike…") }
                 if let ms = controller.lastInkHandoffMs { Text(verbatim: String(format: "Last ink handoff: %.1f ms", ms)) }
             } label: { Image(systemName: "ladybug") }
-                .buttonStyle(IconButtonStyle())
+                .buttonStyle(RotorKeyStyle())
             #endif
         }
     }
@@ -170,10 +171,11 @@ struct ToolRail: View {
             Ticks()
             ForEach(Theme.inkColors) { c in
                 Button { controller.select(color: c) } label: {
-                    // A color is a little rotor face: chosen, it gets the housing ring.
+                    // A colour is a little rotor: chosen, it gets the white housing ring.
                     Circle().fill(c.color).frame(width: 20, height: 20)
+                        .shadow(color: c.color.opacity(controller.inkColor == c ? 0.7 : 0), radius: 6)
                         .padding(4)
-                        .overlay(Circle().strokeBorder(controller.inkColor == c ? Theme.ink : .clear, lineWidth: 2))
+                        .overlay(Circle().strokeBorder(controller.inkColor == c ? Theme.signal : .clear, lineWidth: 1.5))
                         .frame(width: 44, height: 38)
                 }
                 .buttonStyle(.plain)
@@ -186,8 +188,8 @@ struct ToolRail: View {
             Button { controller.history(.redo) } label: { Image(systemName: "arrow.uturn.forward") }
                 .buttonStyle(RailButtonStyle()).accessibilityLabel(Text("Redo"))
         }
-        .padding(.vertical, 8)
-        .padding(.horizontal, 5)
+        .padding(.vertical, 9)
+        .padding(.horizontal, 6)
         .chrome()
     }
 }
@@ -196,25 +198,10 @@ struct ToolRail: View {
 private struct Ticks: View {
     var body: some View {
         HStack(spacing: 5) {
-            ForEach(0..<3) { _ in Capsule().fill(Theme.ink.opacity(0.22)).frame(width: 2, height: 6) }
+            ForEach(0..<3) { _ in Capsule().fill(Theme.fgFaint).frame(width: 2, height: 6) }
         }
         .frame(height: 14)
         .accessibilityHidden(true)
-    }
-}
-
-struct RailButtonStyle: ButtonStyle {
-    var active = false
-
-    func makeBody(configuration: Configuration) -> some View {
-        configuration.label
-            .font(.system(size: 19, weight: .semibold))
-            .foregroundStyle(active ? Color.white : Theme.ink)
-            .frame(width: 44, height: 44)
-            .background(active ? Theme.ink : (configuration.isPressed ? Theme.ink.opacity(0.08) : .clear), in: .circle)
-            .scaleEffect(configuration.isPressed ? 0.92 : 1)
-            .animation(.spring(duration: 0.15), value: configuration.isPressed)
-            .contentShape(.circle)
     }
 }
 

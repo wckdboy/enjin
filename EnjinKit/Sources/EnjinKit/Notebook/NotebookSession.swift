@@ -257,7 +257,8 @@ public final class NotebookSession {
                               createdBy: author, createdByTurnId: turnId, now: clock())
         if let cardId { card.id = cardId }
         card.sources = sources
-        card.imageQuery = visual == nil ? imageQuery : nil
+        // Figures replace pictures, except a diorama, whose backdrop is a picture.
+        card.imageQuery = visual == nil || visual?.kind == .diorama ? imageQuery : nil
         card.visual = visual
         card.imagePrefer = imagePrefer
         data.cards.append(card)
