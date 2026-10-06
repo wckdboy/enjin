@@ -19,6 +19,7 @@ make setup      # once
 make app        # build web bundle + Xcode project + simulator build
 make test       # tsc + vitest, swift test, Playwright (WebKit, incl. 300-card perf)
 make ui         # XCUITest smoke flow in the simulator
+make bump testflight   # next build number, archive, upload to TestFlight
 open Enjin.xcodeproj   # run on a real iPad for the Pencil spike
 ```
 

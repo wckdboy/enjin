@@ -1,6 +1,6 @@
 SIM ?= iPad Pro 11-inch (M5)
 
-.PHONY: setup web fixtures project app test test-web test-swift e2e ui bump archive
+.PHONY: setup web fixtures project app test test-web test-swift e2e ui bump archive testflight
 
 setup:            ## Install tools and deps
 	brew list xcodegen >/dev/null || brew install xcodegen
@@ -40,3 +40,7 @@ bump:             ## Next build number for an App Store Connect upload
 archive: web project  ## Release archive for TestFlight (then Organizer > Distribute)
 	xcodebuild -project Enjin.xcodeproj -scheme Enjin -configuration Release -destination 'generic/platform=iOS' \
 	  -archivePath build/Enjin.xcarchive -allowProvisioningUpdates archive
+
+testflight: archive  ## Upload the archive to App Store Connect (run `make bump` first)
+	xcodebuild -exportArchive -archivePath build/Enjin.xcarchive -exportOptionsPlist Config/ExportOptions-TestFlight.plist \
+	  -exportPath build/export -allowProvisioningUpdates
