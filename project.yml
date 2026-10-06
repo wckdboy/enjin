@@ -1,0 +1,44 @@
+name: Enjin
+options:
+  bundleIdPrefix: cc.wckd
+  deploymentTarget:
+    iOS: "26.0"
+  createIntermediateGroups: true
+settings:
+  base:
+    SWIFT_VERSION: "6.0"
+    DEVELOPMENT_TEAM: ""
+    CODE_SIGN_STYLE: Automatic
+packages:
+  EnjinKit:
+    path: EnjinKit
+targets:
+  Enjin:
+    type: application
+    platform: iOS
+    sources:
+      - path: App/Sources
+      - path: App/Resources/canvas-web
+        type: folder
+        buildPhase: resources
+      - path: shared/demo-notebook.json
+        buildPhase: resources
+    dependencies:
+      - package: EnjinKit
+    preBuildScripts:
+      - name: Check canvas-web bundle
+        script: |
+          if [ ! -f "${SRCROOT}/App/Resources/canvas-web/index.html" ]; then
+            echo "error: canvas-web not built. Run: (cd canvas-web && npm run build)"
+            exit 1
+          fi
+        basedOnDependencyAnalysis: false
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: cc.wckd.enjin
+        TARGETED_DEVICE_FAMILY: "2"
+        GENERATE_INFOPLIST_FILE: YES
+        INFOPLIST_KEY_UILaunchScreen_Generation: YES
+        INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad: "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight"
+        INFOPLIST_KEY_CFBundleDisplayName: Enjin
+        ENABLE_USER_SCRIPT_SANDBOXING: NO

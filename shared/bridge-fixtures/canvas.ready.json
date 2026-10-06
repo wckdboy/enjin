@@ -1,0 +1,19 @@
+{
+  "direction": "webToNative",
+  "request": {
+    "v": 1,
+    "id": "fx-1",
+    "method": "canvas.ready",
+    "params": {
+      "protocolVersion": 1,
+      "excalidrawVersion": "0.18.1"
+    }
+  },
+  "response": {
+    "v": 1,
+    "id": "fx-1",
+    "result": {
+      "accepted": true
+    }
+  }
+}

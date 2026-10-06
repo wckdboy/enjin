@@ -1,0 +1,21 @@
+{
+  "direction": "webToNative",
+  "request": {
+    "v": 1,
+    "id": "fx-1",
+    "method": "focus.changed",
+    "params": {
+      "portalId": "p-legions",
+      "cardId": null,
+      "zoom": 1.25,
+      "visibleCardIds": [
+        "c-why-won"
+      ]
+    }
+  },
+  "response": {
+    "v": 1,
+    "id": "fx-1",
+    "result": null
+  }
+}

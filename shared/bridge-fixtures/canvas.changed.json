@@ -1,0 +1,37 @@
+{
+  "direction": "webToNative",
+  "request": {
+    "v": 1,
+    "id": "fx-1",
+    "method": "canvas.changed",
+    "params": {
+      "portalId": "p-legions",
+      "elements": [
+        {
+          "id": "ink:s1:1",
+          "type": "freedraw",
+          "x": 10,
+          "y": 20,
+          "points": [
+            [
+              0,
+              0
+            ],
+            [
+              5,
+              5
+            ]
+          ],
+          "customData": {
+            "role": "ink"
+          }
+        }
+      ]
+    }
+  },
+  "response": {
+    "v": 1,
+    "id": "fx-1",
+    "result": null
+  }
+}

@@ -1,0 +1,8 @@
+.DS_Store
+build/
+*.xcodeproj/xcuserdata/
+*.xcodeproj/project.xcworkspace/xcuserdata/
+EnjinKit/.build/
+EnjinKit/.swiftpm/
+# Generated from canvas-web; rebuilt by `make web`
+App/Resources/canvas-web/

@@ -1,0 +1,28 @@
+{
+  "title": "Roman Empire",
+  "rootPortalId": "p-root",
+  "portals": [
+    { "portalId": "p-root", "title": "Roman Empire", "ownerCardId": null, "parentPortalId": null,
+      "cardIds": ["c-legions", "c-roads", "c-emperors", "c-fall"] },
+    { "portalId": "p-legions", "title": "Legions", "ownerCardId": "c-legions", "parentPortalId": "p-root",
+      "cardIds": ["c-why-won", "c-equipment", "c-life"] },
+    { "portalId": "p-why-won", "title": "Why Rome won so much", "ownerCardId": "c-why-won", "parentPortalId": "p-legions",
+      "cardIds": ["c-discipline", "c-logistics", "c-allies"] },
+    { "portalId": "p-logistics", "title": "Logistics", "ownerCardId": "c-logistics", "parentPortalId": "p-why-won",
+      "cardIds": ["c-marching-camps", "c-grain"] }
+  ],
+  "cards": [
+    { "id": "c-legions", "type": "topic", "title": "Legions", "summary": "Rome's professional heavy infantry: ~5,000 citizen soldiers per legion.", "state": "filled" },
+    { "id": "c-roads", "type": "topic", "title": "Roads", "summary": "80,000 km of paved roads that moved armies, mail and trade.", "state": "filled" },
+    { "id": "c-emperors", "type": "topic", "title": "Emperors", "summary": "From Augustus in 27 BC to Romulus Augustulus in AD 476.", "state": "stub" },
+    { "id": "c-fall", "type": "topic", "title": "Why did it fall?", "summary": "Historians still argue: money, plague, migration, civil wars.", "state": "stub" },
+    { "id": "c-why-won", "type": "topic", "title": "Why Rome won so much", "summary": "Not better weapons — better organisation, and refusing to quit.", "state": "filled" },
+    { "id": "c-equipment", "type": "topic", "title": "Equipment", "summary": "Gladius, pilum, scutum, and segmented armour.", "state": "stub" },
+    { "id": "c-life", "type": "topic", "title": "A soldier's life", "summary": "25 years of service, marching 30 km a day.", "state": "stub" },
+    { "id": "c-discipline", "type": "topic", "title": "Discipline", "summary": "Drill every day; harsh punishments; units that held formation.", "state": "filled" },
+    { "id": "c-logistics", "type": "topic", "title": "Logistics", "summary": "Food, roads and camps meant armies could stay in the field.", "state": "filled" },
+    { "id": "c-allies", "type": "topic", "title": "Allies", "summary": "Conquered peoples supplied troops — and later became citizens.", "state": "stub" },
+    { "id": "c-marching-camps", "type": "topic", "title": "Marching camps", "summary": "A fortified camp built every night, same layout everywhere.", "state": "filled" },
+    { "id": "c-grain", "type": "topic", "title": "Grain supply", "summary": "Each soldier ate about 1 kg of grain a day.", "state": "stub" }
+  ]
+}

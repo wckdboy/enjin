@@ -1,0 +1,71 @@
+{
+  "direction": "webToNative",
+  "request": {
+    "v": 1,
+    "id": "fx-1",
+    "method": "portal.exit",
+    "params": {
+      "portalId": "p-legions"
+    }
+  },
+  "response": {
+    "v": 1,
+    "id": "fx-1",
+    "result": {
+      "scene": {
+        "portalId": "p-legions",
+        "title": "Legions",
+        "path": [
+          {
+            "portalId": "p-root",
+            "title": "Roman Empire"
+          },
+          {
+            "portalId": "p-legions",
+            "title": "Legions"
+          }
+        ],
+        "cards": [
+          {
+            "id": "c-why-won",
+            "type": "topic",
+            "title": "Why Rome won so much",
+            "summary": "Organisation.",
+            "state": "filled",
+            "childCount": 3
+          },
+          {
+            "id": "c-equipment",
+            "type": "topic",
+            "title": "Equipment",
+            "summary": "Gladius, pilum.",
+            "state": "stub",
+            "childCount": 0
+          }
+        ],
+        "elements": [
+          {
+            "id": "ink:s1:1",
+            "type": "freedraw",
+            "x": 10,
+            "y": 20,
+            "points": [
+              [
+                0,
+                0
+              ],
+              [
+                5,
+                5
+              ]
+            ],
+            "customData": {
+              "role": "ink"
+            }
+          }
+        ]
+      },
+      "focusCardId": "c-legions"
+    }
+  }
+}
