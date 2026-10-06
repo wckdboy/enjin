@@ -1,6 +1,6 @@
 SIM ?= iPad Pro 11-inch (M5)
 
-.PHONY: setup web fixtures project app test test-web test-swift e2e run
+.PHONY: setup web fixtures project app test test-web test-swift e2e ui
 
 setup:            ## Install tools and deps
 	brew list xcodegen >/dev/null || brew install xcodegen
@@ -19,6 +19,10 @@ app: web project  ## Build the iPad app for the simulator
 	xcodebuild -project Enjin.xcodeproj -scheme Enjin -destination 'platform=iOS Simulator,name=$(SIM)' -derivedDataPath build/dd build
 
 test: test-web test-swift e2e
+
+ui: web project   ## XCUITest smoke flow on the simulator
+	xcodebuild -project Enjin.xcodeproj -scheme Enjin -destination 'platform=iOS Simulator,name=$(SIM)' -derivedDataPath build/dd \
+	  -collect-test-diagnostics never -test-timeouts-enabled YES -default-test-execution-time-allowance 180 test
 
 test-web:
 	cd canvas-web && npx tsc --noEmit && npx vitest run

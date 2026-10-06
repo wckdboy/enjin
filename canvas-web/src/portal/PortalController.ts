@@ -2,8 +2,8 @@ import { CaptureUpdateAction, getSceneVersion, newElementWith, restoreElements, 
 import type { ExcalidrawElement, NonDeletedExcalidrawElement } from "@excalidraw/excalidraw/element/types";
 import type { ExcalidrawImperativeAPI } from "@excalidraw/excalidraw/types";
 import type { Bridge } from "../bridge/client";
-import type { Card, Params, NativeToWeb, PortalScene } from "../bridge/schema";
-import { buildPortalElements, cardRects } from "../cards/render";
+import type { Card, Params, NativeToWeb, PortalScene, Result } from "../bridge/schema";
+import { buildPortalElements, cardRects, renderCards } from "../cards/render";
 import { type Rect, type Viewport, centerOn, containsPoint, fitZoom, nearestToCenter, toView, union } from "../cards/layout";
 import type { InputGate } from "../inputGate";
 import { cssTransition, nextPaint, setStyleNow, tween } from "./animate";
@@ -24,6 +24,7 @@ export class PortalController {
   private lastSceneVersion = -1;
   private changeTimer: number | undefined;
   private pendingFlush: (() => void) | null = null;
+  private lastSelection = "";
   private focusTimer: number | undefined;
   private lastTap: { t: number; x: number; y: number } | null = null;
   private unsubs: (() => void)[] = [];
@@ -37,12 +38,16 @@ export class PortalController {
   ) {
     this.unsubs.push(api.onScrollChange(() => this.onViewportChanged()));
     this.unsubs.push(api.onChange((els) => this.onElementsChanged(els)));
-    stage.addEventListener("pointerup", this.onPointerUp);
+    // Capture phase on window: we must see double-taps before Excalidraw does,
+    // because its own double-tap starts editing the card's text.
+    window.addEventListener("touchstart", this.onTouchStart, { capture: true, passive: false });
+    window.addEventListener("dblclick", this.onDoubleClick, { capture: true });
   }
 
   dispose(): void {
     this.unsubs.forEach((u) => u());
-    this.stage.removeEventListener("pointerup", this.onPointerUp);
+    window.removeEventListener("touchstart", this.onTouchStart, { capture: true });
+    window.removeEventListener("dblclick", this.onDoubleClick, { capture: true });
   }
 
   get portalId(): string | null {
@@ -79,6 +84,22 @@ export class PortalController {
       recolor("#343a40");
       await new Promise((r) => setTimeout(r, 160));
     }
+  }
+
+  applyOps({ portalId, ops }: Params<NativeToWeb, "canvas.applyOps">): Result<NativeToWeb, "canvas.applyOps"> {
+    if (!this.scene || this.scene.portalId !== portalId) return { placed: [] };
+    const upserts = ops.flatMap((o) => (o.op === "upsert" ? [o.card] : []));
+    const deletes = ops.flatMap((o) => (o.op === "delete" ? [o.cardId] : []));
+    // Keep our copy of the card list in sync so dive/focus logic sees new cards.
+    const byId = new Map(this.scene.cards.map((c) => [c.id, c]));
+    for (const c of upserts) byId.set(c.id, c);
+    for (const id of deletes) byId.delete(id);
+    this.scene = { ...this.scene, cards: [...byId.values()] };
+
+    const { elements, placed } = renderCards(this.api.getSceneElementsIncludingDeleted(), upserts, deletes);
+    // Agent/native ops stay out of the kid's undo stack (plan §5.3).
+    this.api.updateScene({ elements, captureUpdate: CaptureUpdateAction.NEVER });
+    return { placed: placed.map((p) => ({ cardId: p.cardId, ...p.rect })) };
   }
 
   // ---------- transitions ----------
@@ -263,7 +284,20 @@ export class PortalController {
     });
   }
 
+  private emitSelection(): void {
+    if (!this.scene) return;
+    const selected = this.api.getAppState().selectedElementIds;
+    const cardIds = cardRects(this.api.getSceneElements())
+      .filter((c) => selected[`${c.cardId}:frame`])
+      .map((c) => c.cardId);
+    const key = `${this.scene.portalId}|${cardIds.join(",")}`;
+    if (key === this.lastSelection) return;
+    this.lastSelection = key;
+    this.bridge.notify("selection.changed", { portalId: this.scene.portalId, cardIds });
+  }
+
   private onElementsChanged(elements: readonly ExcalidrawElement[]): void {
+    this.emitSelection();
     if (this.transitioning || !this.scene) return;
     const version = getSceneVersion(elements as never);
     if (version === this.lastSceneVersion) return;
@@ -284,17 +318,38 @@ export class PortalController {
     this.pendingFlush?.();
   }
 
-  private onPointerUp = (e: PointerEvent): void => {
-    if (e.pointerType === "pen" || this.transitioning || !this.scene) return;
+  private cardAt(clientX: number, clientY: number): string | null {
+    const p = viewportCoordsToSceneCoords({ clientX, clientY }, this.api.getAppState());
+    // Topmost card wins when cards overlap.
+    const hit = cardRects(this.api.getSceneElements()).reverse().find((c) => containsPoint(c.rect, p.x, p.y));
+    return hit?.cardId ?? null;
+  }
+
+  /** Second finger-tap on the same card within the window dives instead of editing text. */
+  private onTouchStart = (e: TouchEvent): void => {
+    if (e.touches.length !== 1 || this.transitioning || !this.scene) return;
+    const t = e.touches[0] as Touch & { touchType?: string };
+    if (t.touchType === "stylus") return;
     const now = performance.now();
     const prev = this.lastTap;
-    this.lastTap = { t: now, x: e.clientX, y: e.clientY };
-    if (!prev || now - prev.t > DOUBLE_TAP_MS || Math.hypot(e.clientX - prev.x, e.clientY - prev.y) > DOUBLE_TAP_PX) return;
+    this.lastTap = { t: now, x: t.clientX, y: t.clientY };
+    if (!prev || now - prev.t > DOUBLE_TAP_MS || Math.hypot(t.clientX - prev.x, t.clientY - prev.y) > DOUBLE_TAP_PX) return;
+    const cardId = this.cardAt(t.clientX, t.clientY);
+    if (!cardId) return; // double-tap on empty canvas keeps Excalidraw's behavior (e.g. new text)
     this.lastTap = null;
-    const s = this.api.getAppState();
-    const p = viewportCoordsToSceneCoords({ clientX: e.clientX, clientY: e.clientY }, s);
-    const hit = cardRects(this.api.getSceneElements()).find((c) => containsPoint(c.rect, p.x, p.y));
-    if (hit) void this.requestDive(hit.cardId);
+    e.stopImmediatePropagation();
+    if (e.cancelable) e.preventDefault();
+    void this.requestDive(cardId);
+  };
+
+  /** Mouse / trackpad equivalent. */
+  private onDoubleClick = (e: MouseEvent): void => {
+    if (this.transitioning || !this.scene) return;
+    const cardId = this.cardAt(e.clientX, e.clientY);
+    if (!cardId) return;
+    e.stopImmediatePropagation();
+    e.preventDefault();
+    void this.requestDive(cardId);
   };
 
   /** For ink: current elements, used by the ink service. */

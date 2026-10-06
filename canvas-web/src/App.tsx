@@ -20,6 +20,7 @@ export function App({ bridge }: { bridge: Bridge }) {
     const gate = new InputGate();
     const portals = new PortalController(api, bridge, gate, stageRef.current);
     bridge.on("portal.load", (p) => portals.load(p).then(() => null));
+    bridge.on("canvas.applyOps", (p) => portals.applyOps(p));
     bridge.on("canvas.flash", (p) => portals.flash(p.cardId).then(() => null));
     bridge.on("ink.lock", ({ locked }) => {
       if (locked) gate.block("ink");

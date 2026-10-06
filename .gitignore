@@ -6,3 +6,4 @@ EnjinKit/.build/
 EnjinKit/.swiftpm/
 # Generated from canvas-web; rebuilt by `make web`
 App/Resources/canvas-web/
+Config/Local.xcconfig

@@ -1,16 +1,21 @@
+import EnjinKit
 import SwiftUI
 
 @main
 struct EnjinApp: App {
+    private let store = NotebookStore(root: EnjinApp.storeRoot())
+
+    private static func storeRoot() -> URL {
+        // UI tests get a fresh, throwaway store on every launch.
+        if ProcessInfo.processInfo.arguments.contains("-uiTestingFreshStore") {
+            return FileManager.default.temporaryDirectory.appendingPathComponent("uitest-\(UUID().uuidString)")
+        }
+        return (try? NotebookStore.defaultRoot()) ?? FileManager.default.temporaryDirectory.appendingPathComponent("Notebooks")
+    }
+
     var body: some Scene {
         WindowGroup {
-            RootView()
+            LibraryView(store: store)
         }
-    }
-}
-
-struct RootView: View {
-    var body: some View {
-        CanvasScreen()
     }
 }

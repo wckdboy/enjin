@@ -1,0 +1,3 @@
+// Shared settings. Per-developer signing lives in Local.xcconfig (gitignored):
+//   DEVELOPMENT_TEAM = <your team id>
+#include? "Local.xcconfig"

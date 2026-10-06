@@ -12,12 +12,38 @@ interface DemoPortal {
   cardIds: string[];
 }
 
-const portals = demo.portals as DemoPortal[];
+interface DemoData {
+  rootPortalId: string;
+  portals: DemoPortal[];
+  cards: { id: string; type: string; title: string; summary: string; state: string }[];
+}
+
+/** `?fixture=big`: 20 portals x 15 cards (300 cards), for performance tests. */
+function bigFixture(): DemoData {
+  const cards: DemoData["cards"] = [];
+  const portals: DemoPortal[] = [{ portalId: "p-root", title: "Big notebook", ownerCardId: null, parentPortalId: null, cardIds: [] }];
+  for (let i = 0; i < 20; i++) {
+    const owner = `c-${i}`;
+    cards.push({ id: owner, type: "topic", title: `Topic ${i}`, summary: "A topic with fifteen cards inside it.", state: "filled" });
+    portals[0]!.cardIds.push(owner);
+    const p: DemoPortal = { portalId: `p-${i}`, title: `Topic ${i}`, ownerCardId: owner, parentPortalId: "p-root", cardIds: [] };
+    for (let j = 0; j < 15; j++) {
+      const id = `c-${i}-${j}`;
+      cards.push({ id, type: "topic", title: `Card ${i}.${j}`, summary: "Some words about this card so the label wraps onto two lines.", state: j % 3 ? "filled" : "stub" });
+      p.cardIds.push(id);
+    }
+    portals.push(p);
+  }
+  return { rootPortalId: "p-root", portals, cards };
+}
+
+const data: DemoData = new URLSearchParams(location.search).get("fixture") === "big" ? bigFixture() : (demo as DemoData);
+const portals = data.portals;
 const savedElements = new Map<string, Record<string, unknown>[]>();
 
 function cardsIn(p: DemoPortal): Card[] {
   return p.cardIds.map((id) => {
-    const c = demo.cards.find((c) => c.id === id)!;
+    const c = data.cards.find((c) => c.id === id)!;
     const childCount = portals.find((q) => q.ownerCardId === id)?.cardIds.length ?? 0;
     return { ...c, childCount } as Card;
   });
@@ -35,14 +61,15 @@ export function sceneFor(portalId: string): PortalScene {
 export function devHost(getBridge: () => Bridge): NativeTransport {
   const ok = (req: Request, result: unknown): Response => ({ v: PROTOCOL_VERSION, id: req.id, result });
   const log: unknown[] = [];
-  (window as unknown as { __devLog: unknown[] }).__devLog = log;
+  (window as unknown as { __devLog: unknown[]; __devScene: typeof sceneFor }).__devLog = log;
+  (window as unknown as { __devScene: typeof sceneFor }).__devScene = sceneFor;
   return {
     async post(req) {
       log.push(req);
       const params = req.params as Record<string, string>;
       switch (req.method) {
         case "canvas.ready":
-          setTimeout(() => getBridge().handle({ v: PROTOCOL_VERSION, id: "n1", method: "portal.load", params: { scene: sceneFor(demo.rootPortalId), transition: "jump" } }));
+          setTimeout(() => getBridge().handle({ v: PROTOCOL_VERSION, id: "n1", method: "portal.load", params: { scene: sceneFor(data.rootPortalId), transition: "jump" } }));
           return ok(req, { accepted: true });
         case "portal.enter": {
           const p = portals.find((q) => q.ownerCardId === params.cardId);

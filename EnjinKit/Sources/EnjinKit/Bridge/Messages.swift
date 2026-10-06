@@ -38,6 +38,38 @@ public struct PortalScene: Codable, Equatable, Sendable {
 
 public enum Transition: String, Codable, Sendable { case dive, exit, jump }
 
+public enum CardOp: Codable, Equatable, Sendable {
+    case upsert(Card)
+    case delete(cardId: String)
+
+    private enum CodingKeys: String, CodingKey { case op, card, cardId }
+
+    public init(from decoder: Decoder) throws {
+        let c = try decoder.container(keyedBy: CodingKeys.self)
+        switch try c.decode(String.self, forKey: .op) {
+        case "upsert": self = .upsert(try c.decode(Card.self, forKey: .card))
+        case "delete": self = .delete(cardId: try c.decode(String.self, forKey: .cardId))
+        case let op: throw DecodingError.dataCorruptedError(forKey: .op, in: c, debugDescription: "unknown op \(op)")
+        }
+    }
+
+    public func encode(to encoder: Encoder) throws {
+        var c = encoder.container(keyedBy: CodingKeys.self)
+        switch self {
+        case .upsert(let card): try c.encode("upsert", forKey: .op); try c.encode(card, forKey: .card)
+        case .delete(let id): try c.encode("delete", forKey: .op); try c.encode(id, forKey: .cardId)
+        }
+    }
+}
+
+public struct PlacedCard: Codable, Equatable, Sendable {
+    public var cardId: String
+    public var x: Double
+    public var y: Double
+    public var width: Double
+    public var height: Double
+}
+
 // MARK: - Native -> Web
 
 public enum NativeMethod {
@@ -76,6 +108,16 @@ public enum NativeMethod {
         public init(strokeId: String, elementId: String) { self.strokeId = strokeId; self.elementId = elementId }
     }
 
+    public struct ApplyOps: Codable, Sendable {
+        public var portalId: String
+        public var ops: [CardOp]
+        public init(portalId: String, ops: [CardOp]) { self.portalId = portalId; self.ops = ops }
+    }
+
+    public struct ApplyOpsResult: Codable, Sendable {
+        public var placed: [PlacedCard]
+    }
+
     public struct CanvasFlash: Codable, Sendable {
         public var cardId: String
         public init(cardId: String) { self.cardId = cardId }
@@ -106,6 +148,11 @@ public enum WebMethod {
         public var cardId: String?
         public var zoom: Double
         public var visibleCardIds: [String]
+    }
+
+    public struct SelectionChanged: Codable, Sendable {
+        public var portalId: String
+        public var cardIds: [String]
     }
 
     public struct PortalEnter: Codable, Sendable {

@@ -26,10 +26,22 @@ export const examples: Record<string, { direction: "nativeToWeb" | "webToNative"
     params: { strokeId: "s1", tool: "pen", color: "#1e1e1e", width: 3, points: [[1, 2], [3.5, 4]], pressures: [0.2, 0.9] },
     result: { strokeId: "s1", elementId: "ink:s1:1" },
   },
+  "canvas.applyOps": {
+    direction: "nativeToWeb",
+    params: {
+      portalId: "p-legions",
+      ops: [
+        { op: "upsert", card: { id: "c-new", type: "topic", title: "Testudo", summary: "Shields locked like a tortoise shell.", state: "filling", childCount: 0 } },
+        { op: "delete", cardId: "c-equipment" },
+      ],
+    },
+    result: { placed: [{ cardId: "c-new", x: 368, y: 110, width: 320, height: 180 }] },
+  },
   "canvas.flash": { direction: "nativeToWeb", params: { cardId: "c-why-won" }, result: null },
   "canvas.ready": { direction: "webToNative", params: { protocolVersion: PROTOCOL_VERSION, excalidrawVersion: "0.18.1" }, result: { accepted: true } },
   "canvas.changed": { direction: "webToNative", params: { portalId: "p-legions", elements: scene.elements }, result: null },
   "focus.changed": { direction: "webToNative", params: { portalId: "p-legions", cardId: null, zoom: 1.25, visibleCardIds: ["c-why-won"] }, result: null },
+  "selection.changed": { direction: "webToNative", params: { portalId: "p-legions", cardIds: ["c-why-won"] }, result: null },
   "portal.enter": { direction: "webToNative", params: { portalId: "p-root", cardId: "c-legions" }, result: scene },
   "portal.exit": { direction: "webToNative", params: { portalId: "p-legions" }, result: { scene, focusCardId: "c-legions" } },
   "log.event": { direction: "webToNative", params: { level: "warn", message: "hello", data: { n: 1 } }, result: null },

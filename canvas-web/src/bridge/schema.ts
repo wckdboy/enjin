@@ -36,6 +36,14 @@ export type PortalScene = z.infer<typeof PortalScene>;
 
 export const Transition = z.enum(["dive", "exit", "jump"]);
 
+export const CardOp = z.discriminatedUnion("op", [
+  z.object({ op: z.literal("upsert"), card: Card }),
+  z.object({ op: z.literal("delete"), cardId: z.string() }),
+]);
+export type CardOp = z.infer<typeof CardOp>;
+
+export const PlacedCard = z.object({ cardId: z.string(), x: z.number(), y: z.number(), width: z.number(), height: z.number() });
+
 // ---------- methods ----------
 // Every method has params and a result schema. Notifications return null.
 
@@ -69,6 +77,15 @@ export const nativeToWeb = {
     /** Resolves after the element has been rendered. */
     result: z.object({ strokeId: z.string(), elementId: z.string() }),
   },
+  "canvas.applyOps": {
+    params: z.object({
+      /** Ops for a portal that isn't on screen are ignored (native already stored them). */
+      portalId: z.string(),
+      ops: z.array(CardOp),
+    }),
+    /** Where each upserted card ended up (empty if the portal isn't current). */
+    result: z.object({ placed: z.array(PlacedCard) }),
+  },
   "canvas.flash": {
     params: z.object({ cardId: z.string() }),
     result: Null,
@@ -94,6 +111,11 @@ export const webToNative = {
       zoom: z.number().positive(),
       visibleCardIds: z.array(z.string()),
     }),
+    result: Null,
+  },
+  "selection.changed": {
+    /** Cards whose frame is selected (a card is selected as a group). */
+    params: z.object({ portalId: z.string(), cardIds: z.array(z.string()) }),
     result: Null,
   },
   "portal.enter": {

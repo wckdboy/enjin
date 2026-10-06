@@ -1,0 +1,43 @@
+{
+  "direction": "nativeToWeb",
+  "request": {
+    "v": 1,
+    "id": "fx-1",
+    "method": "canvas.applyOps",
+    "params": {
+      "portalId": "p-legions",
+      "ops": [
+        {
+          "op": "upsert",
+          "card": {
+            "id": "c-new",
+            "type": "topic",
+            "title": "Testudo",
+            "summary": "Shields locked like a tortoise shell.",
+            "state": "filling",
+            "childCount": 0
+          }
+        },
+        {
+          "op": "delete",
+          "cardId": "c-equipment"
+        }
+      ]
+    }
+  },
+  "response": {
+    "v": 1,
+    "id": "fx-1",
+    "result": {
+      "placed": [
+        {
+          "cardId": "c-new",
+          "x": 368,
+          "y": 110,
+          "width": 320,
+          "height": 180
+        }
+      ]
+    }
+  }
+}

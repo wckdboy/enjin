@@ -6,7 +6,7 @@ import Testing
 /// Fails if web adds/renames a field Swift doesn't know (or vice versa).
 @MainActor
 struct ContractTests {
-    static let fixtures = URL(fileURLWithPath: #filePath)
+    nonisolated static let fixtures = URL(fileURLWithPath: #filePath)
         .deletingLastPathComponent().deletingLastPathComponent().deletingLastPathComponent().deletingLastPathComponent()
         .appendingPathComponent("shared/bridge-fixtures")
 
@@ -41,8 +41,8 @@ struct ContractTests {
         let files = try FileManager.default.contentsOfDirectory(atPath: Self.fixtures.path).filter { $0.hasSuffix(".json") }
         let methods = Set(files.map { String($0.dropLast(5)) })
         #expect(methods == [
-            "portal.load", "ink.lock", "ink.commit", "canvas.flash",
-            "canvas.ready", "canvas.changed", "focus.changed", "portal.enter", "portal.exit", "log.event",
+            "portal.load", "ink.lock", "ink.commit", "canvas.flash", "canvas.applyOps",
+            "canvas.ready", "canvas.changed", "focus.changed", "selection.changed", "portal.enter", "portal.exit", "log.event",
         ])
     }
 
@@ -51,12 +51,14 @@ struct ContractTests {
         try roundTrip("ink.lock", NativeMethod.InkLock.self, Empty?.self)
         try roundTrip("ink.commit", NativeMethod.InkCommit.self, NativeMethod.InkCommitResult.self)
         try roundTrip("canvas.flash", NativeMethod.CanvasFlash.self, Empty?.self)
+        try roundTrip("canvas.applyOps", NativeMethod.ApplyOps.self, NativeMethod.ApplyOpsResult.self)
     }
 
     @Test func webToNative() throws {
         try roundTrip("canvas.ready", WebMethod.CanvasReady.self, WebMethod.CanvasReadyResult.self)
         try roundTrip("canvas.changed", WebMethod.CanvasChanged.self, Empty?.self)
         try roundTrip("focus.changed", WebMethod.FocusChanged.self, Empty?.self)
+        try roundTrip("selection.changed", WebMethod.SelectionChanged.self, Empty?.self)
         try roundTrip("portal.enter", WebMethod.PortalEnter.self, PortalScene?.self)
         try roundTrip("portal.exit", WebMethod.PortalExit.self, WebMethod.PortalExitResult?.self)
         try roundTrip("log.event", WebMethod.LogEvent.self, Empty?.self)

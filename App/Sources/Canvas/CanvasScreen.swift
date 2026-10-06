@@ -2,16 +2,27 @@ import EnjinKit
 import SwiftUI
 
 struct CanvasScreen: View {
-    @State private var controller = CanvasController()
+    let controller: CanvasController
+    @Environment(\.dismiss) private var dismiss
     @State private var tool: InkTool = .pen
     @State private var routing: InkRouting = .relocatedRecognizer
     @State private var showAgentSpike = false
+    @State private var showMap = false
+    @State private var showNewCard = false
+    @State private var openCardId: String?
 
     var body: some View {
         VStack(spacing: 0) {
             HStack(spacing: 16) {
+                Button { dismiss() } label: { Image(systemName: "chevron.left") }
+                    .accessibilityLabel("Notebooks")
                 BreadcrumbBar(path: controller.path) { controller.jump(to: $0) }
                 Spacer()
+                Button { showNewCard = true } label: { Image(systemName: "plus.rectangle.on.rectangle") }
+                    .accessibilityLabel("New card")
+                    .disabled(controller.status != .ready)
+                Button { showMap = true } label: { Image(systemName: "map") }
+                    .accessibilityLabel("Map")
                 InkPalette(tool: $tool)
                 Menu {
                     Picker("Pencil routing", selection: $routing) {
@@ -29,8 +40,18 @@ struct CanvasScreen: View {
             .padding(.vertical, 10)
             .background(.bar)
 
-            ZStack {
+            ZStack(alignment: .bottom) {
                 CanvasRepresentable(controller: controller, tool: tool, routing: routing)
+                if let id = controller.selectedCardId, let card = controller.session.card(id) {
+                    Button { openCardId = id } label: {
+                        Label("Open “\(card.title)”", systemImage: "rectangle.portrait.and.arrow.forward")
+                            .lineLimit(1)
+                    }
+                    .buttonStyle(.borderedProminent)
+                    .controlSize(.large)
+                    .padding(.bottom, 96)
+                    .transition(.move(edge: .bottom).combined(with: .opacity))
+                }
                 switch controller.status {
                 case .loading: ProgressView()
                 case .ready: EmptyView()
@@ -42,6 +63,25 @@ struct CanvasScreen: View {
         }
         .ignoresSafeArea(edges: .bottom)
         .sheet(isPresented: $showAgentSpike) { AgentSpikeView() }
+        .sheet(isPresented: $showMap) {
+            MapView(session: controller.session, current: controller.currentPortalId) { portalId in
+                showMap = false
+                controller.jump(to: portalId)
+            }
+        }
+        .animation(.snappy, value: controller.selectedCardId)
+        .sheet(item: Binding(get: { openCardId.map(IdentifiedString.init) }, set: { openCardId = $0?.id })) { item in
+            if let card = controller.session.card(item.id) {
+                CardDetailSheet(card: card,
+                                onSave: { t, s, b in Task { await controller.updateCard(card.id, title: t, summary: s, body: b) } },
+                                onDive: card.type == .topic ? { openCardId = nil; controller.dive(into: card.id) } : nil)
+            }
+        }
+        .sheet(isPresented: $showNewCard) {
+            NewCardSheet { type, title, summary in
+                Task { await controller.createCard(type: type, title: title, summary: summary) }
+            }
+        }
     }
 }
 
