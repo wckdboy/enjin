@@ -7,6 +7,8 @@ import WebKit
 final class SchemeHandler: NSObject, WKURLSchemeHandler {
     static let scheme = "enjin"
     static let indexURL = URL(string: "enjin://app/index.html")!
+    /// The 3D world (same bridge as the card canvas).
+    static let worldURL = URL(string: "enjin://app/world.html")!
 
     private let root: URL
 

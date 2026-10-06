@@ -14,6 +14,8 @@ export default defineConfig({
     outDir: "../Enjin/Resources/canvas-web",
     emptyOutDir: true,
     chunkSizeWarningLimit: 5000,
+    // Two pages: the card canvas (index) and the world (world.html).
+    rollupOptions: { input: { index: "index.html", world: "world.html" } },
   },
   server: { fs: { allow: [".."] } },
 });

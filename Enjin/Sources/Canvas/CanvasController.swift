@@ -18,6 +18,9 @@ final class CanvasController: NSObject {
     var openCardId: String?
     /// The tool rail's choice.
     private(set) var tool: EnjinTool = .pen
+    /// The world (default) or the classic card canvas, fixed when the notebook opens.
+    let isWorld: Bool
+    private var pageURL: URL { isWorld ? SchemeHandler.worldURL : SchemeHandler.indexURL }
     private(set) var inkColor: Theme.InkColor = Theme.inkColors[0]
     /// Last ink handoff time (stroke end -> rendered on canvas), for the spike HUD.
     var lastInkHandoffMs: Double?
@@ -41,6 +44,9 @@ final class CanvasController: NSObject {
         self.session = session
         self.settings = settings
         self.telemetry = telemetry
+        isWorld = !settings.classicCanvas
+        // In the world, Pencil touches the world like a finger (sketch panels come later).
+        if isWorld { tool = .select }
         agent = AgentSession(session: session, backend: settings.makeBackend(), telemetry: telemetry)
         agent.dailyCapUSD = settings.dailyCapUSD
         agent.imageFinder = settings.makeImageFinder()
@@ -67,7 +73,7 @@ final class CanvasController: NSObject {
 
         agent.canvas = self
         registerHandlers()
-        webView.load(URLRequest(url: SchemeHandler.indexURL))
+        webView.load(URLRequest(url: pageURL))
     }
 
     // MARK: - Native -> web
@@ -343,7 +349,7 @@ extension CanvasController: WKNavigationDelegate {
     func webViewWebContentProcessDidTerminate(_ webView: WKWebView) {
         log.error("web content process terminated; reloading")
         status = .loading
-        webView.load(URLRequest(url: SchemeHandler.indexURL))
+        webView.load(URLRequest(url: pageURL))
     }
 }
 

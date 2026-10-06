@@ -33,7 +33,8 @@ struct CanvasScreen: View {
         .overlay(alignment: .topLeading) { navigation.padding(.leading, 20).padding(.top, 12) }
         .overlay(alignment: .topTrailing) { actions.padding(.trailing, 20).padding(.top, 12) }
         .overlay(alignment: .leading) {
-            if controller.status == .ready { ToolRail(controller: controller).padding(.leading, 20) }
+            // The world is touched, not drawn on (sketch panels come later): no drawing rail there.
+            if controller.status == .ready && !controller.isWorld { ToolRail(controller: controller).padding(.leading, 20) }
         }
         .overlay(alignment: .bottom) {
             VStack(spacing: 12) {

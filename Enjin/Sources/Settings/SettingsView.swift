@@ -99,6 +99,14 @@ struct SettingsView: View {
                 }
 
                 Section {
+                    Toggle("Classic canvas", isOn: $settings.classicCanvas)
+                } header: {
+                    Text("View")
+                } footer: {
+                    Text("Notebooks open as 3D worlds you fly through. Turn this on for the flat canvas of cards with drawing tools. Takes effect when a notebook is opened.")
+                }
+
+                Section {
                     Toggle("Prepare cards ahead", isOn: $settings.prepareAhead)
                 } footer: {
                     Text("Fills unexplored cards in the background while your kid looks at them, so diving in is instant. Uses noticeably more of the daily limit.")

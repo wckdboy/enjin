@@ -41,6 +41,8 @@ final class AppSettings {
     var prepareAhead: Bool { didSet { defaults.set(prepareAhead, forKey: "prepareAhead") } }
     /// Real pictures from Wikipedia on Enjin's cards.
     var showPictures: Bool { didSet { defaults.set(showPictures, forKey: "showPictures") } }
+    /// The flat card canvas instead of the 3D world (the world is the default).
+    var classicCanvas: Bool { didSet { defaults.set(classicCanvas, forKey: "classicCanvas") } }
     private(set) var hasKey: Bool
 
     init(defaults: UserDefaults = .standard) {
@@ -52,6 +54,7 @@ final class AppSettings {
         showPictures = defaults.object(forKey: "showPictures") as? Bool ?? true
         workspaceId = defaults.string(forKey: "workspaceId") ?? ""
         prepareAhead = defaults.bool(forKey: "prepareAhead")
+        classicCanvas = defaults.bool(forKey: "classicCanvas")
         languageChoice = defaults.string(forKey: "language").flatMap(AppLanguage.init(rawValue:))
         hasKey = Keychain.read(Self.keyAccount)?.isEmpty == false
     }

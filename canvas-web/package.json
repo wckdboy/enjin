@@ -13,6 +13,7 @@
     "@excalidraw/excalidraw": "0.18.1",
     "react": "19.3.0",
     "react-dom": "19.3.0",
+    "three": "0.186.1",
     "zod": "4.6.5"
   },
   "devDependencies": {
@@ -20,6 +21,7 @@
     "@types/node": "^24.19.1",
     "@types/react": "^19",
     "@types/react-dom": "^19",
+    "@types/three": "^0.186.0",
     "@vitejs/plugin-react": "^6.1.2",
     "tsx": "^4",
     "typescript": "~5.9.0",

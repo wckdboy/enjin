@@ -209,6 +209,16 @@
         }
       }
     },
+    "Classic canvas": {
+      "localizations": {
+        "da": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Klassisk lærred"
+          }
+        }
+      }
+    },
     "Claude %@ with web search": {
       "localizations": {
         "da": {
@@ -699,6 +709,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Notesbøger"
+          }
+        }
+      }
+    },
+    "Notebooks open as 3D worlds you fly through. Turn this on for the flat canvas of cards with drawing tools. Takes effect when a notebook is opened.": {
+      "localizations": {
+        "da": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Notesbøger åbner som 3D-verdener, du flyver igennem. Slå dette til for det flade lærred med kort og tegneværktøjer. Træder i kraft, når en notesbog åbnes."
           }
         }
       }
@@ -1206,6 +1226,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Det koster penge på din Anthropic-konto at bruge nøglen. Du sætter en daglig grænse, og når den er nået, stopper Enjin til i morgen."
+          }
+        }
+      }
+    },
+    "View": {
+      "localizations": {
+        "da": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Visning"
           }
         }
       }
