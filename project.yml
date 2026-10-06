@@ -1,12 +1,13 @@
 name: Enjin
 options:
-  bundleIdPrefix: cc.wckd
+  bundleIdPrefix: ai.wckd
   deploymentTarget:
     iOS: "26.0"
   createIntermediateGroups: true
 settings:
   base:
     SWIFT_VERSION: "6.0"
+    STRING_CATALOG_GENERATE_SYMBOLS: YES
     CODE_SIGN_STYLE: Automatic
 packages:
   EnjinKit:
@@ -19,8 +20,8 @@ targets:
       Debug: Config/Base.xcconfig
       Release: Config/Base.xcconfig
     sources:
-      - path: App/Sources
-      - path: App/Resources/canvas-web
+      - path: Enjin/Sources
+      - path: Enjin/Resources/canvas-web
         type: folder
         buildPhase: resources
       - path: shared/demo-notebook.json
@@ -30,14 +31,14 @@ targets:
     preBuildScripts:
       - name: Check canvas-web bundle
         script: |
-          if [ ! -f "${SRCROOT}/App/Resources/canvas-web/index.html" ]; then
+          if [ ! -f "${SRCROOT}/Enjin/Resources/canvas-web/index.html" ]; then
             echo "error: canvas-web not built. Run: (cd canvas-web && npm run build)"
             exit 1
           fi
         basedOnDependencyAnalysis: false
     settings:
       base:
-        PRODUCT_BUNDLE_IDENTIFIER: cc.wckd.enjin
+        PRODUCT_BUNDLE_IDENTIFIER: ai.wckd.enjin
         TARGETED_DEVICE_FAMILY: "2"
         GENERATE_INFOPLIST_FILE: YES
         INFOPLIST_KEY_UILaunchScreen_Generation: YES
@@ -49,7 +50,7 @@ targets:
   EnjinUITests:
     type: bundle.ui-testing
     platform: iOS
-    sources: [App/UITests]
+    sources: [Enjin/UITests]
     dependencies:
       - target: Enjin
     configFiles:
@@ -57,7 +58,7 @@ targets:
       Release: Config/Base.xcconfig
     settings:
       base:
-        PRODUCT_BUNDLE_IDENTIFIER: cc.wckd.enjin.uitests
+        PRODUCT_BUNDLE_IDENTIFIER: ai.wckd.enjin.uitests
         GENERATE_INFOPLIST_FILE: YES
         TEST_TARGET_NAME: Enjin
 schemes:

@@ -10,7 +10,7 @@ M2 (agent on canvas) built and tested against a scripted model, waiting on a rea
 canvas-web/   React + Excalidraw (pinned 0.18.1), bridge client, portals, ink commit
 EnjinKit/     Swift package: bridge, file store, notebook session, agent (prompt composer,
               tools, AgentSession), Anthropic + Apple on-device backends, telemetry
-App/          SwiftUI shell: WKWebView over enjin://, PencilKit overlay, breadcrumb, agent spike
+Enjin/        SwiftUI shell: WKWebView over enjin://, PencilKit overlay, breadcrumb, agent spike
 shared/       bridge fixtures (generated) + demo notebook, read by both sides
 ```
 

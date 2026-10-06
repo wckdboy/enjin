@@ -11,7 +11,7 @@ export default defineConfig({
   base: "./",
   define: { "process.env.IS_PREACT": JSON.stringify("false") },
   build: {
-    outDir: "../App/Resources/canvas-web",
+    outDir: "../Enjin/Resources/canvas-web",
     emptyOutDir: true,
     chunkSizeWarningLimit: 5000,
   },

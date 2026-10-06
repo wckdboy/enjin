@@ -6,7 +6,7 @@ setup:            ## Install tools and deps
 	brew list xcodegen >/dev/null || brew install xcodegen
 	cd canvas-web && npm install && npx playwright install webkit
 
-web:              ## Build canvas-web into App/Resources/canvas-web
+web:              ## Build canvas-web into Enjin/Resources/canvas-web
 	cd canvas-web && npm run build
 
 fixtures:         ## Regenerate shared bridge fixtures from the zod schema
