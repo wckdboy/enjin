@@ -4,7 +4,7 @@ import type { ExcalidrawImperativeAPI } from "@excalidraw/excalidraw/types";
 import type { Bridge } from "../bridge/client";
 import type { BridgeFile, Card, Params, NativeToWeb, PortalScene, Result } from "../bridge/schema";
 import { buildPortalElements, cardRects, renderCards, withHeader } from "../cards/render";
-import { type Rect, type Viewport, centerOn, containsPoint, fitZoom, framedRect, mapRect, nearestToCenter, toView, union, visibleRect, windowIn } from "../cards/layout";
+import { type Insets, NO_INSETS, type Rect, type Viewport, centerOn, containsPoint, fitZoom, frame, framedRect, mapRect, nearestToCenter, toView, union, visibleRect, windowIn } from "../cards/layout";
 import type { InputGate } from "../inputGate";
 import { cssTransition, nextPaint, setStyleNow, tween } from "./animate";
 import { CardActions } from "./CardActions";
@@ -44,6 +44,13 @@ export class PortalController {
     dive: (cardId) => void this.requestDive(cardId),
   });
   private selectedCardId: string | null = null;
+  /** Native chrome over the canvas; framing keeps content clear of it. */
+  private insets: Insets = NO_INSETS;
+
+  setInsets(insets: Insets): void {
+    this.insets = insets;
+    if (this.scene && !this.transitioning) this.setViewport(this.frameAll());
+  }
 
   constructor(
     private api: ExcalidrawImperativeAPI,
@@ -99,6 +106,14 @@ export class PortalController {
       settle();
       this.loading = null;
     }
+  }
+
+  /** Re-render the cards on screen in the current language (cues, placeholders). */
+  relabel(): void {
+    if (!this.scene || this.transitioning) return;
+    const { elements } = renderCards(this.api.getSceneElementsIncludingDeleted(), this.scene.cards, []);
+    this.api.updateScene({ elements, captureUpdate: CaptureUpdateAction.NEVER });
+    this.refreshImages();
   }
 
   /** The banner/title/subtitle of the portal on screen changed (e.g. its card got a picture). */
@@ -261,10 +276,9 @@ export class PortalController {
 
   private frameAll(): { scrollX: number; scrollY: number; zoom: number } {
     const vp = this.viewport();
-    const r = this.contentRect();
-    const z = fitZoom(r, vp.width, vp.height);
-    this.fittedZoom = z;
-    return centerOn(r, z, vp.width, vp.height);
+    const f = frame(this.contentRect(), vp.width, vp.height, this.insets);
+    this.fittedZoom = f.zoom;
+    return { scrollX: f.scrollX, scrollY: f.scrollY, zoom: f.zoom };
   }
 
   /** Render `elements` exactly as they'd look on screen when the view shows `region`. */
@@ -306,7 +320,7 @@ export class PortalController {
     const prepared = nextScene.then(async (scene) => {
       if (!scene) return null;
       const elements = this.buildElements(scene);
-      const region = framedRect(PortalController.bounds(elements), vp.width, vp.height);
+      const region = framedRect(PortalController.bounds(elements), vp.width, vp.height, this.insets);
       const preview = await this.renderRegion(elements, region).catch(() => null);
       return { scene, elements, preview };
     });
@@ -351,7 +365,7 @@ export class PortalController {
       return;
     }
     const win = windowIn(card.rect, vp.width / vp.height);
-    const framed = framedRect(PortalController.bounds(childEls), vp.width, vp.height);
+    const framed = framedRect(PortalController.bounds(childEls), vp.width, vp.height, this.insets);
     const preview = await this.renderRegion(childEls, framed).catch(() => null);
     // Where the current child view sits in the parent's coordinates.
     const start = mapRect(visibleRect(vp), framed, win);

@@ -1,5 +1,6 @@
 import EnjinKit
 import Foundation
+import UIKit
 import Observation
 import os
 
@@ -7,6 +8,8 @@ import os
 @Observable
 final class Library {
     private(set) var notebooks: [NotebookMeta] = []
+    private(set) var covers: [String: UIImage] = [:]
+    private(set) var counts: [String: Int] = [:]
     private(set) var error: String?
     let store: NotebookStore
     @ObservationIgnored private let log = Logger(subsystem: "cc.wckd.enjin", category: "library")
@@ -16,13 +19,15 @@ final class Library {
     }
 
     /// First launch: seed the Roman Empire sample so there is something to explore.
-    func load() async {
+    func load(language: AppLanguage) async {
         do {
             notebooks = await store.list()
-            if notebooks.isEmpty, let url = Bundle.main.url(forResource: "demo-notebook", withExtension: "json") {
+            let name = language == .da ? "demo-notebook.da" : "demo-notebook"
+            if notebooks.isEmpty, let url = Bundle.main.url(forResource: name, withExtension: "json") {
                 try await store.save(DemoNotebook.make(from: Data(contentsOf: url)))
                 notebooks = await store.list()
             }
+            await loadCovers()
         } catch {
             log.error("library load failed: \(error.localizedDescription)")
             self.error = error.localizedDescription
@@ -52,5 +57,13 @@ final class Library {
 
     func refresh() async {
         notebooks = await store.list()
+        await loadCovers()
+    }
+
+    private func loadCovers() async {
+        for nb in notebooks {
+            counts[nb.id] = await store.cardCount(nb.id)
+            if let data = await store.cover(nb.id), let img = UIImage(data: data) { covers[nb.id] = img }
+        }
     }
 }

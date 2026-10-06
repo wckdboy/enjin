@@ -24,7 +24,7 @@ final class SmokeTests: XCTestCase {
         waitForExpectations(timeout: 15)
 
         newCard.tap()
-        let title = app.textFields["Title"]
+        let title = app.textFields["cardTitle"]
         XCTAssertTrue(title.waitForExistence(timeout: 5))
         title.tap()
         title.typeText("Aqueducts")
@@ -37,8 +37,9 @@ final class SmokeTests: XCTestCase {
         XCTAssertEqual(rootRow.value as? String, "5 cards", "root portal now has 5 cards")
         XCTAssertTrue(app.buttons["map:Logistics"].exists, "map is fully expanded down to depth 3")
         app.buttons["map:Legions"].tap()
-        XCTAssertTrue(app.buttons["Roman Empire"].waitForExistence(timeout: 5), "breadcrumb shows the path")
-        XCTAssertFalse(app.buttons["Legions"].isEnabled, "current crumb is not tappable")
+        XCTAssertTrue(app.buttons["crumb:Roman Empire"].waitForExistence(timeout: 5), "breadcrumb shows the path")
+        XCTAssertTrue(app.staticTexts["Legions"].exists, "current portal is named")
+        XCTAssertFalse(app.buttons["crumb:Legions"].exists, "current crumb is not a button")
 
         // Back to the library and in again: the card survived (persisted).
         app.buttons["Notebooks"].tap()
@@ -59,7 +60,7 @@ final class SmokeTests: XCTestCase {
 
     func testAskTheAgentThenUndo() {
         app.staticTexts["Roman Empire"].firstMatch.tap()
-        let ask = app.textFields["Ask Enjin anything…"]
+        let ask = app.textFields["askField"]
         XCTAssertTrue(ask.waitForExistence(timeout: 15), "agent dock appears once the canvas is ready")
         ask.tap()
         ask.typeText("what did they eat?\n")

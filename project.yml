@@ -1,6 +1,7 @@
 name: Enjin
 options:
   bundleIdPrefix: ai.wckd
+  developmentLanguage: en
   deploymentTarget:
     iOS: "26.0"
   createIntermediateGroups: true
@@ -8,6 +9,8 @@ settings:
   base:
     SWIFT_VERSION: "6.0"
     STRING_CATALOG_GENERATE_SYMBOLS: YES
+    SWIFT_EMIT_LOC_STRINGS: YES
+    LOCALIZATION_PREFERS_STRING_CATALOGS: YES
     CODE_SIGN_STYLE: Automatic
 packages:
   EnjinKit:
@@ -21,10 +24,18 @@ targets:
       Release: Config/Base.xcconfig
     sources:
       - path: Enjin/Sources
+      - path: Enjin/Resources/Fonts
+        buildPhase: resources
+      - path: Enjin/Resources/Localizable.xcstrings
+        buildPhase: resources
+      - path: Enjin/Resources/Assets.xcassets
+        buildPhase: resources
       - path: Enjin/Resources/canvas-web
         type: folder
         buildPhase: resources
       - path: shared/demo-notebook.json
+        buildPhase: resources
+      - path: shared/demo-notebook.da.json
         buildPhase: resources
     dependencies:
       - package: EnjinKit
@@ -39,6 +50,8 @@ targets:
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: ai.wckd.enjin
+        ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
+        ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME: AccentColor
         TARGETED_DEVICE_FAMILY: "2"
         GENERATE_INFOPLIST_FILE: YES
         INFOPLIST_KEY_UILaunchScreen_Generation: YES

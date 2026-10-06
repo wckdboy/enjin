@@ -16,6 +16,9 @@ final class CanvasController: NSObject {
     private(set) var selectedCardId: String?
     /// Card whose detail sheet should be showing (set by the card's Open action).
     var openCardId: String?
+    /// The tool rail's choice.
+    private(set) var tool: EnjinTool = .pen
+    private(set) var inkColor: Theme.InkColor = Theme.inkColors[0]
     /// Last ink handoff time (stroke end -> rendered on canvas), for the spike HUD.
     var lastInkHandoffMs: Double?
 
@@ -45,6 +48,7 @@ final class CanvasController: NSObject {
         agent.imageStylizer = PrintStylizer()
         agent.assist = settings.makeAssist()
         agent.prefetchEnabled = settings.prepareAhead
+        agent.language = settings.language
 
         let config = WKWebViewConfiguration()
         config.setURLSchemeHandler(SchemeHandler(root: bundle.resourceURL!.appendingPathComponent("canvas-web")), forURLScheme: SchemeHandler.scheme)
@@ -103,6 +107,25 @@ final class CanvasController: NSObject {
         agent.imageFinder = settings.makeImageFinder()
         agent.imageGenerator = settings.makeIllustrator()
         agent.prefetchEnabled = settings.prepareAhead
+        if agent.language != settings.language {
+            agent.language = settings.language
+            agent.clearNextSteps()
+            Task { _ = try? await call("canvas.setLanguage", NativeMethod.SetLanguage(language: settings.language)) }
+        }
+    }
+
+    func select(tool: EnjinTool? = nil, color: Theme.InkColor? = nil) {
+        if let tool { self.tool = tool }
+        if let color { self.inkColor = color }
+        sendTool()
+    }
+
+    private func sendTool() {
+        Task { _ = try? await call("canvas.setTool", NativeMethod.SetTool(tool: tool.canvasTool, color: inkColor.id)) }
+    }
+
+    func history(_ action: NativeMethod.History.Action) {
+        Task { _ = try? await call("canvas.history", NativeMethod.History(action: action)) }
     }
 
     func takeNextStep(_ step: AgentSession.NextStep) {
@@ -255,6 +278,10 @@ final class CanvasController: NSObject {
     private func loadInitialPortal() async {
         // After a web process crash, come back to where the kid was.
         let portalId = path.last?.portalId ?? session.rootPortalId
+        _ = try? await call("canvas.setLanguage", NativeMethod.SetLanguage(language: settings.language))
+        // Keep cards clear of the floating chrome: top bar, tool rail, dock.
+        _ = try? await call("canvas.setInsets", NativeMethod.SetInsets(top: 84, left: 96, bottom: 150, right: 24))
+        sendTool()
         do {
             guard let scene = try await session.scene(for: portalId) else { return }
             path = scene.path

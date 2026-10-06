@@ -19,6 +19,8 @@ function isPencil(e: Event): boolean {
 }
 
 export class InputGate {
+  /** True while a native ink tool is active: Pencil draws in PencilKit, not here. */
+  pencilToNative = true;
   private reasons = new Set<string>();
   private activeTouches = 0;
   /** Set when a gesture was in progress at block time; we stay blocked until all fingers lift. */
@@ -52,7 +54,7 @@ export class InputGate {
   };
 
   private onPen = (e: Event) => {
-    if (!isPencil(e)) return;
+    if (!this.pencilToNative || !isPencil(e)) return;
     e.stopImmediatePropagation();
     if (e.cancelable) e.preventDefault();
   };

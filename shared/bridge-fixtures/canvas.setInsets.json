@@ -1,0 +1,19 @@
+{
+  "direction": "nativeToWeb",
+  "request": {
+    "v": 1,
+    "id": "fx-1",
+    "method": "canvas.setInsets",
+    "params": {
+      "top": 80,
+      "left": 100,
+      "bottom": 150,
+      "right": 24
+    }
+  },
+  "response": {
+    "v": 1,
+    "id": "fx-1",
+    "result": null
+  }
+}

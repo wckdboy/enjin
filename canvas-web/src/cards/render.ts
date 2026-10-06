@@ -1,6 +1,7 @@
-import { convertToExcalidrawElements } from "@excalidraw/excalidraw";
+import { FONT_FAMILY, convertToExcalidrawElements } from "@excalidraw/excalidraw";
 import type { ExcalidrawElement } from "@excalidraw/excalidraw/element/types";
 import type { Card, PortalScene } from "../bridge/schema";
+import { t } from "../i18n";
 import { CARD_H, CARD_W, COLUMNS, GAP, HEADER_H, IMAGE_H, type Rect, coverCrop, placeCards, union } from "./layout";
 
 export type CardRole = "frame" | "image" | "placeholder" | "textbox" | "title" | "summary" | "label" | "badge" | "cue"
@@ -10,16 +11,20 @@ export interface EnjinData {
   role: CardRole;
 }
 
+// The ENJIN palette (same values as the native Theme).
 const STYLE: Record<Card["state"], { bg: string; stroke: "solid" | "dashed" }> = {
   stub: { bg: "#f1f3f5", stroke: "dashed" },
-  filling: { bg: "#e7f5ff", stroke: "solid" },
+  filling: { bg: "#ffe8d9", stroke: "solid" },
   filled: { bg: "#fff4e6", stroke: "solid" },
   error: { bg: "#ffe3e3", stroke: "solid" },
 };
 
-const INK = "#1e1e1e";
-const MUTED = "#495057";
-const ACCENT = "#1971c2";
+const INK = "#2a2a3c";
+const MUTED = "#5c5f73";
+const ACCENT = "#e8590c";
+/** Display face for titles (Lilita One), reading face for everything else (Nunito). */
+const DISPLAY = FONT_FAMILY["Lilita One"];
+const READING = FONT_FAMILY.Nunito;
 const INSET = 10;
 const TITLE_PX = 24;
 const SUMMARY_PX = 17;
@@ -49,8 +54,8 @@ export function cardSize(card: Card, width = CARD_W): { width: number; height: n
 }
 
 /** Rough line count for Excalifont at `px` in `width` (avg glyph ≈ 0.53em). */
-export function estimateLines(text: string, px: number, width: number): number {
-  const perLine = Math.max(8, Math.floor(width / (px * 0.53)));
+export function estimateLines(text: string, px: number, width: number, em = 0.53): number {
+  const perLine = Math.max(8, Math.floor(width / (px * em)));
   return text.split("\n").reduce((n, para) => n + Math.max(1, Math.ceil(para.length / perLine)), 0);
 }
 
@@ -64,7 +69,7 @@ type Skeleton = NonNullable<Parameters<typeof convertToExcalidrawElements>[0]>[n
  */
 function cardSkeletons(card: Card, at: Rect): Skeleton[] {
   const style = STYLE[card.state];
-  const common = { groupIds: [`g:${card.id}`], strokeColor: "#343a40", roughness: 0 } as const;
+  const common = { groupIds: [`g:${card.id}`], strokeColor: INK, roughness: 0 } as const;
   const clear = { strokeColor: "transparent", backgroundColor: "transparent" } as const;
   const picture = hasPicture(card);
   const textTop = (picture ? at.y + IMAGE_H : at.y) + 6;
@@ -111,13 +116,13 @@ function cardSkeletons(card: Card, at: Rect): Skeleton[] {
         strokeColor: "transparent",
         roundness: { type: 3 },
         customData: { cardId: card.id, role: "placeholder" },
-        label: { text: "finding a picture…", fontSize: 16, strokeColor: "#868e96", customData: { cardId: card.id, role: "label" } } as never,
+        label: { text: t.findingPicture(), fontSize: 16, fontFamily: READING, strokeColor: "#868e96", customData: { cardId: card.id, role: "label" } } as never,
       });
     }
   }
 
   // Title, then summary under it: two sizes so the eye finds the title first.
-  const titleLines = Math.min(3, estimateLines(card.title, TITLE_PX, textW - 10));
+  const titleLines = Math.min(3, estimateLines(card.title, TITLE_PX, textW - 10, 0.56));
   const titleH = titleLines * TITLE_PX * 1.25 + 6;
   out.push({
     ...common,
@@ -129,7 +134,7 @@ function cardSkeletons(card: Card, at: Rect): Skeleton[] {
     width: textW + 8,
     height: titleH,
     customData: { cardId: card.id, role: "title" },
-    label: { text: card.title, strokeColor: INK, fontSize: TITLE_PX, textAlign: "left", verticalAlign: "top", customData: { cardId: card.id, role: "label" } } as never,
+    label: { text: card.title, strokeColor: INK, fontSize: TITLE_PX, fontFamily: DISPLAY, textAlign: "left", verticalAlign: "top", customData: { cardId: card.id, role: "label" } } as never,
   });
   if (card.summary) {
     const top = textTop + titleH + 2;
@@ -143,7 +148,7 @@ function cardSkeletons(card: Card, at: Rect): Skeleton[] {
       width: textW + 8,
       height: Math.max(30, at.y + at.height - top - 34),
       customData: { cardId: card.id, role: "summary" },
-      label: { text: card.summary, strokeColor: MUTED, fontSize: SUMMARY_PX, textAlign: "left", verticalAlign: "top", customData: { cardId: card.id, role: "label" } } as never,
+      label: { text: card.summary, strokeColor: MUTED, fontSize: SUMMARY_PX, fontFamily: READING, textAlign: "left", verticalAlign: "top", customData: { cardId: card.id, role: "label" } } as never,
     });
   }
 
@@ -156,14 +161,15 @@ function cardSkeletons(card: Card, at: Rect): Skeleton[] {
       id: `${card.id}:cue`,
       x: at.x + INSET,
       y: bottom,
-      text: card.state === "stub" ? "dive in →" : "",
+      text: card.state === "stub" ? t.diveIn() : "",
       fontSize: 16,
+      fontFamily: READING,
       strokeColor: ACCENT,
       customData: { cardId: card.id, role: "cue" },
     });
   }
   if (card.childCount > 0) {
-    const label = `${card.childCount} inside →`;
+    const label = t.inside(card.childCount);
     out.push({
       ...common,
       type: "text",
@@ -172,6 +178,7 @@ function cardSkeletons(card: Card, at: Rect): Skeleton[] {
       y: bottom,
       text: label,
       fontSize: 16,
+      fontFamily: READING,
       strokeColor: ACCENT,
       customData: { cardId: card.id, role: "badge" },
     });
@@ -188,13 +195,13 @@ export interface Header {
 /** Portal header: title at the top-left, the owner card's summary under it, its picture as a banner above. */
 function headerSkeletons(h: Header): Skeleton[] {
   const out: Skeleton[] = [
-    { type: "text", id: "header", x: 0, y: 0, text: h.title, fontSize: 44, strokeColor: INK, locked: true, customData: { role: "header" } },
+    { type: "text", id: "header", x: 0, y: 0, text: h.title, fontSize: 48, fontFamily: DISPLAY, strokeColor: INK, locked: true, customData: { role: "header" } },
   ];
   if (h.subtitle) {
     out.push({
       type: "rectangle", id: "header:subtitle", x: -4, y: 58, width: CONTENT_W, height: 44, strokeColor: "transparent",
       backgroundColor: "transparent", locked: true, customData: { role: "subtitle" },
-      label: { text: h.subtitle, strokeColor: MUTED, fontSize: 20, textAlign: "left", verticalAlign: "top", customData: { role: "subtitle" } } as never,
+      label: { text: h.subtitle, strokeColor: MUTED, fontSize: 20, fontFamily: READING, textAlign: "left", verticalAlign: "top", customData: { role: "subtitle" } } as never,
     });
   }
   if (h.hero) {

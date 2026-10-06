@@ -12,8 +12,20 @@ struct SettingsView: View {
     @State private var testResult: (ok: Bool, message: String)?
 
     var body: some View {
-        NavigationStack {
+        EnjinSheet(title: "Settings") {
             Form {
+                Section {
+                    Picker("Language", selection: $settings.languageChoice) {
+                        Text("Same as the iPad").tag(AppLanguage?.none)
+                        ForEach(AppLanguage.allCases) { Text(verbatim: $0.displayName).tag(Optional($0)) }
+                    }
+                    .accessibilityIdentifier("languagePicker")
+                } header: {
+                    Text("Language")
+                } footer: {
+                    Text("The app, the canvas and Enjin's answers. Cards already made stay as they are.")
+                }
+
                 Section {
                     Picker("Enjin uses", selection: $settings.provider) {
                         ForEach(AppSettings.Provider.allCases) { Text($0.label).tag($0) }
@@ -39,7 +51,7 @@ struct SettingsView: View {
                             Task {
                                 testing = true
                                 let err = await settings.testConnection()
-                                testResult = err.map { (false, $0) } ?? (true, "Connected. Enjin is ready.")
+                                testResult = err.map { (false, $0) } ?? (true, "")
                                 testing = false
                             }
                         } label: {
@@ -50,7 +62,9 @@ struct SettingsView: View {
                         }
                         .disabled(testing)
                         if let r = testResult {
-                            Label(r.message, systemImage: r.ok ? "checkmark.circle.fill" : "exclamationmark.triangle.fill")
+                            Label { r.ok ? Text("Connected. Enjin is ready.") : Text(verbatim: r.message) } icon: {
+                                Image(systemName: r.ok ? "checkmark.circle.fill" : "exclamationmark.triangle.fill")
+                            }
                                 .foregroundStyle(r.ok ? .green : .red)
                                 .font(.callout)
                             if !r.ok && r.message.localizedCaseInsensitiveContains("workspace") {
@@ -101,9 +115,7 @@ struct SettingsView: View {
                     Text("When the limit is reached, Enjin rests until tomorrow.")
                 }
             }
-            .navigationTitle("Settings")
-            .navigationBarTitleDisplayMode(.inline)
-            .toolbar { Button("Done") { dismiss() } }
+            .enjinForm()
             .task { spentToday = await telemetry.spentToday() }
             .sheet(isPresented: $showConsent) {
                 ParentConsentView { settings.consentGiven = true }
@@ -114,32 +126,28 @@ struct SettingsView: View {
 
 /// Plan §7: a parent sees what goes where and what it costs before any key is used.
 struct ParentConsentView: View {
-    @Environment(\.dismiss) private var dismiss
     let onAgree: () -> Void
 
     var body: some View {
-        NavigationStack {
+        EnjinSheet(title: "Before you add a key", cancel: "Not now", confirm: "I agree", onConfirm: onAgree) {
             ScrollView {
-                VStack(alignment: .leading, spacing: 16) {
-                    Text("Before you add a key").font(.title.bold())
-                    Label("When your kid asks Enjin something, what they typed and a short description of their canvas (card titles and summaries, counts of their drawings, and any text notes) are sent to Anthropic to generate an answer.", systemImage: "arrow.up.message")
-                    Label("Enjin searches the web to back up facts. Adult and gambling sites are blocked, but no filter is perfect.", systemImage: "globe")
-                    Label("Using the key costs money on your Anthropic account. You set a daily limit; when it's reached, Enjin stops until tomorrow.", systemImage: "creditcard")
-                    Label("Nothing is shared with anyone else. Notebooks and usage logs stay on this iPad.", systemImage: "lock.ipad")
-                    Text("Enjin is an AI. It can be wrong; it shows its sources so you can check.").foregroundStyle(.secondary)
+                VStack(alignment: .leading, spacing: 18) {
+                    point("arrow.up.message", "When your kid asks Enjin something, what they typed and a short description of their canvas (card titles and summaries, counts of their drawings, and any text notes) are sent to Anthropic to generate an answer.")
+                    point("globe", "Enjin searches the web to back up facts. Adult and gambling sites are blocked, but no filter is perfect.")
+                    point("creditcard", "Using the key costs money on your Anthropic account. You set a daily limit; when it's reached, Enjin stops until tomorrow.")
+                    point("lock.ipad", "Nothing is shared with anyone else. Notebooks and usage logs stay on this iPad.")
+                    Text("Enjin is an AI. It can be wrong; it shows its sources so you can check.")
+                        .font(Theme.body(16)).foregroundStyle(Theme.inkSoft)
                 }
                 .padding(24)
             }
-            .navigationBarTitleDisplayMode(.inline)
-            .toolbar {
-                ToolbarItem(placement: .cancellationAction) { Button("Not now") { dismiss() } }
-                ToolbarItem(placement: .confirmationAction) {
-                    Button("I agree") {
-                        onAgree()
-                        dismiss()
-                    }
-                }
-            }
+        }
+    }
+
+    private func point(_ symbol: String, _ text: LocalizedStringKey) -> some View {
+        HStack(alignment: .top, spacing: 14) {
+            Image(systemName: symbol).font(.system(size: 20, weight: .semibold)).foregroundStyle(Theme.ember).frame(width: 28)
+            Text(text).font(Theme.body(17)).foregroundStyle(Theme.ink)
         }
     }
 }

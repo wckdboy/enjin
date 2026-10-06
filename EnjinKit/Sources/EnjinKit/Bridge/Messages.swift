@@ -158,6 +158,35 @@ public enum NativeMethod {
         }
     }
 
+    public struct SetInsets: Codable, Sendable {
+        public var top: Double
+        public var left: Double
+        public var bottom: Double
+        public var right: Double
+        public init(top: Double, left: Double, bottom: Double, right: Double) { self.top = top; self.left = left; self.bottom = bottom; self.right = right }
+    }
+
+    public struct SetTool: Codable, Sendable {
+        public enum Tool: String, Codable, Sendable, CaseIterable {
+            case selection, freedraw, highlighter, text, rectangle, ellipse, arrow, eraser
+        }
+        public var tool: Tool
+        /// Excalidraw hex color, e.g. "#2a2a3c".
+        public var color: String
+        public init(tool: Tool, color: String) { self.tool = tool; self.color = color }
+    }
+
+    public struct History: Codable, Sendable {
+        public enum Action: String, Codable, Sendable { case undo, redo }
+        public var action: Action
+        public init(action: Action) { self.action = action }
+    }
+
+    public struct SetLanguage: Codable, Sendable {
+        public var language: AppLanguage
+        public init(language: AppLanguage) { self.language = language }
+    }
+
     public struct SetBusy: Codable, Sendable {
         public var portalId: String
         /// Shown in an empty portal while Enjin fills it; nil hides it.

@@ -3,7 +3,7 @@ import Testing
 @testable import EnjinKit
 
 struct FakeAssist: AssistHelper {
-    func nextQuestions(path: [String], cards: [(title: String, summary: String)], lastAsk: String?) async -> [String] {
+    func nextQuestions(path: [String], cards: [(title: String, summary: String)], lastAsk: String?, language: AppLanguage) async -> [String] {
         ["Did they have horses?", "Who led them?", "Third one"]
     }
     func imagePhrase(title: String, summary: String, topic: String) async -> String? { "phrase for \(title)" }
@@ -119,5 +119,18 @@ struct GuidanceTests {
         agent.prefetch(cardId: "c-fall")
         try await Task.sleep(for: .milliseconds(30))
         #expect((agent.backend as! ScriptedBackend).prompts.isEmpty)
+    }
+
+    @Test func danishKidsGetDanishMessagesAndClaudeIsAskedForDanish() async throws {
+        let (agent, canvas) = try await make([.init(calls: [createCards([card("Åbning")])], text: "Kom i gang!")],
+                                             notebook: NotebookData.new(title: "Vulkaner"))
+        agent.language = .da
+        agent.begin(portalId: agent.session.rootPortalId)
+        try await settle(agent)
+        #expect(canvas.busy.first?.1 == "Enjin udforsker Vulkaner…")
+        let prompt = (agent.backend as! ScriptedBackend).prompts.first ?? ""
+        #expect(prompt.contains("in Danish (dansk)"))
+        #expect(prompt.contains("Keep image phrases in English"))
+        #expect(AgentSession.kidMessage(for: URLError(.notConnectedToInternet), KidStrings(.da)) == "Ingen forbindelse til internettet. Prøv igen, når du er online.")
     }
 }

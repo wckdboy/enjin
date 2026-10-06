@@ -24,6 +24,9 @@ test("dive is seamless: the last preview frame matches the live portal", async (
   await page.goto("/");
   await page.waitForFunction(() => (window as unknown as { __enjinDebug?: Debug }).__enjinDebug?.portals.portalId === "p-root");
   await page.waitForTimeout(300);
+  // Same chrome insets as the app (rail, top bar, dock), so framing is off-center.
+  await page.evaluate(() => window.enjin!.handle({ v: 1, id: "i", method: "canvas.setInsets", params: { top: 80, left: 100, bottom: 150, right: 24 } }));
+  await page.waitForTimeout(100);
   // Keep the final preview around so we can compare it with what Excalidraw draws.
   await page.evaluate(() => {
     const o = (window as unknown as { __enjinDebug: Debug }).__enjinDebug.portals.overlay;

@@ -6,27 +6,18 @@ body { background: #fffdf8; -webkit-user-select: none; user-select: none; -webki
 /* Cards are styled by Enjin, not by hand: no style panel when only cards are selected. */
 [data-card-selection] .excalidraw .selected-shape-actions { display: none !important; }
 
-/* A calmer canvas for kids: no keyboard hints, library, menu, help or rarely-used tools. */
-.excalidraw .HintViewer,
-.excalidraw .main-menu-trigger,
-.excalidraw .sidebar-trigger,
-.excalidraw .default-sidebar-trigger,
-.excalidraw .help-icon,
-.excalidraw .App-toolbar__extra-tools-trigger,
-.excalidraw .ToolIcon__lock,
-.excalidraw label:has([data-testid="toolbar-lock"]),
-.excalidraw label:has([data-testid="toolbar-diamond"]),
-.excalidraw label:has([data-testid="toolbar-line"]),
-.excalidraw .App-toolbar__divider { display: none !important; }
+/* ENJIN draws its own tools (native tool rail): Excalidraw's UI stays in the DOM
+   (its undo/redo buttons are driven from there) but is never shown. */
+.excalidraw .layer-ui__wrapper { display: none !important; }
 
 /* "Enjin is exploring…" */
 [data-enjin="busy"] {
   position: absolute; left: 50%; top: 42%; transform: translate(-50%, -50%); z-index: 3; pointer-events: none;
-  display: flex; align-items: center; gap: 12px; padding: 14px 22px; border-radius: 999px;
-  background: rgba(255, 255, 255, 0.92); box-shadow: 0 4px 20px rgba(0,0,0,0.08), 0 0 0 1px rgba(0,0,0,0.05);
-  font: 600 18px -apple-system, system-ui, sans-serif; color: #343a40; transition: opacity 200ms ease;
+  display: flex; align-items: center; gap: 12px; padding: 14px 22px; border-radius: 16px;
+  background: #fffaf0; border: 2px solid #2a2a3c; box-shadow: 3px 4px 0 #2a2a3c;
+  font: 700 18px ui-rounded, -apple-system, system-ui, sans-serif; color: #2a2a3c; transition: opacity 200ms ease;
 }
-[data-enjin="busy"] i { width: 10px; height: 10px; border-radius: 50%; background: #1971c2; animation: enjin-pulse 1s ease-in-out infinite; }
+[data-enjin="busy"] i { width: 10px; height: 10px; border-radius: 50%; background: #e8590c; animation: enjin-pulse 1s ease-in-out infinite; }
 [data-enjin="busy"] i:nth-child(2) { animation-delay: 0.15s; }
 [data-enjin="busy"] i:nth-child(3) { animation-delay: 0.3s; }
 @keyframes enjin-pulse { 0%, 100% { opacity: 0.25; transform: scale(0.8); } 50% { opacity: 1; transform: scale(1); } }

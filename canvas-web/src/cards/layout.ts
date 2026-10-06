@@ -125,12 +125,34 @@ export function windowIn(card: Rect, aspect: number, margin = 0.06): Rect {
   return { x: inner.x + (inner.width - w) / 2, y: inner.y + (inner.height - h) / 2, width: w, height: h };
 }
 
-/** The scene rect visible when `content` is framed by fitZoom in a viewW x viewH view. */
-export function framedRect(content: Rect, viewW: number, viewH: number, padding = 0.08): Rect {
-  const z = fitZoom(content, viewW, viewH, padding);
-  const w = viewW / z;
-  const h = viewH / z;
-  return { x: content.x + content.width / 2 - w / 2, y: content.y + content.height / 2 - h / 2, width: w, height: h };
+/** Screen space taken by floating chrome (native tool rail, top bar, dock). */
+export interface Insets {
+  top: number;
+  left: number;
+  bottom: number;
+  right: number;
+}
+export const NO_INSETS: Insets = { top: 0, left: 0, bottom: 0, right: 0 };
+
+/**
+ * How `content` is framed: fitted into the view minus the chrome insets and
+ * centered there. Returns the camera and the full scene rect on screen.
+ * Normal framing and the dive's end state both use this, so they always agree.
+ */
+export function frame(content: Rect, viewW: number, viewH: number, insets: Insets = NO_INSETS, padding = 0.08) {
+  const aw = Math.max(1, viewW - insets.left - insets.right);
+  const ah = Math.max(1, viewH - insets.top - insets.bottom);
+  const zoom = fitZoom(content, aw, ah, padding);
+  const sx = insets.left + aw / 2;
+  const sy = insets.top + ah / 2;
+  const scrollX = sx / zoom - (content.x + content.width / 2);
+  const scrollY = sy / zoom - (content.y + content.height / 2);
+  return { zoom, scrollX, scrollY, visible: { x: -scrollX, y: -scrollY, width: viewW / zoom, height: viewH / zoom } };
+}
+
+/** The scene rect visible when `content` is framed (see `frame`). */
+export function framedRect(content: Rect, viewW: number, viewH: number, insets: Insets = NO_INSETS, padding = 0.08): Rect {
+  return frame(content, viewW, viewH, insets, padding).visible;
 }
 
 /** Map `r` from the `from` rect's space into the `to` rect's space (uniform scale; same aspect). */

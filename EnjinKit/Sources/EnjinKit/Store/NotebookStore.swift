@@ -116,6 +116,20 @@ public actor NotebookStore {
         try? Data(contentsOf: dir(id).appendingPathComponent("files", isDirectory: true).appendingPathComponent(fileId))
     }
 
+    /// A picture for the notebook's cover: the first card picture on its top
+    /// canvas, else any card picture. Nil for notebooks without pictures yet.
+    public func cover(_ id: String) -> Data? {
+        guard let data = try? load(id) else { return nil }
+        let withImages = data.cards.filter { $0.isActive && $0.image != nil }
+        let pick = withImages.first { $0.portalId == data.meta.rootPortalId } ?? withImages.first
+        return pick?.image.flatMap { file(id, fileId: $0.fileId) }
+    }
+
+    /// Active cards in a notebook (for "12 cards" on its cover).
+    public func cardCount(_ id: String) -> Int {
+        ((try? load(id))?.cards.filter(\.isActive).count) ?? 0
+    }
+
     // MARK: - Files
 
     private func dir(_ id: String) -> URL { root.appendingPathComponent(id, isDirectory: true) }

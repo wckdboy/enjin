@@ -2,7 +2,7 @@
 
 iPad canvas for curious kids: an Excalidraw canvas in a WKWebView, a PencilKit
 ink layer, and a Claude agent that grows the canvas into nested "portals" you
-dive into. Plan: [docs/plan.md](docs/plan.md). Status: M0 spikes waiting on device
+dive into. Plan: [docs/plan.md](docs/plan.md). Design system: [docs/design.md](docs/design.md). Status: M0 spikes waiting on device
 tests ([docs/m0-spikes.md](docs/m0-spikes.md)); M1 (static canvas loop) done;
 M2 (agent on canvas) built and tested against a scripted model, waiting on a real key run.
 

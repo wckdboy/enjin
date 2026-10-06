@@ -1,18 +1,56 @@
 import EnjinKit
 import os
 import PencilKit
+import SwiftUI
 import UIKit
 
-enum InkTool: String, CaseIterable, Identifiable {
-    case pen, blue, highlighter
+/// The tools on ENJIN's rail. Pen and highlighter ink with Pencil through
+/// PencilKit (and with a finger through the canvas); every other tool lets
+/// Pencil act on the canvas like a finger.
+enum EnjinTool: String, CaseIterable, Identifiable {
+    case select, pen, highlighter, text, box, arrow, eraser
     var id: String { rawValue }
 
-    var pkTool: PKInkingTool {
+    var isInk: Bool { self == .pen || self == .highlighter }
+
+    var canvasTool: NativeMethod.SetTool.Tool {
         switch self {
-        case .pen: PKInkingTool(.pen, color: .init(white: 0.12, alpha: 1), width: 3)
-        case .blue: PKInkingTool(.pen, color: .systemBlue, width: 3)
-        case .highlighter: PKInkingTool(.marker, color: .systemYellow, width: 18)
+        case .select: .selection
+        case .pen: .freedraw
+        case .highlighter: .highlighter
+        case .text: .text
+        case .box: .rectangle
+        case .arrow: .arrow
+        case .eraser: .eraser
         }
+    }
+
+    var symbol: String {
+        switch self {
+        case .select: "cursorarrow"
+        case .pen: "pencil.tip"
+        case .highlighter: "highlighter"
+        case .text: "textformat"
+        case .box: "square"
+        case .arrow: "arrow.up.right"
+        case .eraser: "eraser"
+        }
+    }
+
+    var label: LocalizedStringKey {
+        switch self {
+        case .select: "Select"
+        case .pen: "Pen"
+        case .highlighter: "Highlighter"
+        case .text: "Text"
+        case .box: "Box"
+        case .arrow: "Arrow"
+        case .eraser: "Eraser"
+        }
+    }
+
+    func pkTool(color: UIColor) -> PKInkingTool {
+        self == .highlighter ? PKInkingTool(.marker, color: color.withAlphaComponent(0.9), width: 18) : PKInkingTool(.pen, color: color, width: 3)
     }
 }
 
@@ -69,14 +107,16 @@ final class CanvasContainerView: UIView, PKCanvasViewDelegate {
         ink.isScrollEnabled = false
         ink.contentInsetAdjustmentBehavior = .never
         ink.delegate = self
-        ink.tool = InkTool.pen.pkTool
+        ink.tool = EnjinTool.pen.pkTool(color: UIColor(Theme.ink))
         setRouting(.relocatedRecognizer)
     }
 
     required init?(coder: NSCoder) { fatalError() }
 
-    func setTool(_ tool: InkTool) {
-        ink.tool = tool.pkTool
+    /// Pen/highlighter: Pencil inks here. Anything else: Pencil goes to the canvas.
+    func setTool(_ tool: EnjinTool, color: Color) {
+        if tool.isInk { ink.tool = tool.pkTool(color: UIColor(color)) }
+        ink.drawingGestureRecognizer.isEnabled = tool.isInk
     }
 
     private var routing: InkRouting?

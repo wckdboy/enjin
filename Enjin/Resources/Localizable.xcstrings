@@ -1,0 +1,1198 @@
+{
+  "sourceLanguage": "en",
+  "strings": {
+    "%lld cards": {
+      "localizations": {
+        "da": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld kort"
+          }
+        }
+      }
+    },
+    "A topic, a question, anything…": {
+      "localizations": {
+        "da": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Et emne, et spørgsmål, hvad som helst…"
+          }
+        }
+      }
+    },
+    "API key": {
+      "localizations": {
+        "da": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "API-nøgle"
+          }
+        }
+      }
+    },
+    "About this picture": {
+      "localizations": {
+        "da": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Om billedet"
+          }
+        }
+      }
+    },
+    "Add": {
+      "localizations": {
+        "da": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tilføj"
+          }
+        }
+      }
+    },
+    "Agent spike": {
+      "shouldTranslate": false
+    },
+    "All its cards, drawings and pictures will be gone.": {
+      "localizations": {
+        "da": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Alle dens kort, tegninger og billeder forsvinder."
+          }
+        }
+      }
+    },
+    "Ancient Egypt": {
+      "localizations": {
+        "da": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Det gamle Egypten"
+          }
+        }
+      }
+    },
+    "Anything else…": {
+      "localizations": {
+        "da": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Andet…"
+          }
+        }
+      }
+    },
+    "Apple on-device model (no web search, simpler answers)": {
+      "localizations": {
+        "da": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Apples model på enheden (ingen websøgning, enklere svar)"
+          }
+        }
+      }
+    },
+    "Apple's on-device model is still downloading.": {
+      "extractionState": "manual",
+      "localizations": {
+        "da": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Apples model på enheden er stadig ved at blive hentet."
+          }
+        }
+      }
+    },
+    "Apple's on-device model isn't available.": {
+      "extractionState": "manual",
+      "localizations": {
+        "da": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Apples model på enheden er ikke tilgængelig."
+          }
+        }
+      }
+    },
+    "Arrow": {
+      "localizations": {
+        "da": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Pil"
+          }
+        }
+      }
+    },
+    "Ask Enjin anything…": {
+      "localizations": {
+        "da": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Spørg Enjin om hvad som helst…"
+          }
+        }
+      }
+    },
+    "Automatic": {
+      "localizations": {
+        "da": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Automatisk"
+          }
+        }
+      }
+    },
+    "Before you add a key": {
+      "localizations": {
+        "da": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Før du tilføjer en nøgle"
+          }
+        }
+      }
+    },
+    "Black holes": {
+      "localizations": {
+        "da": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sorte huller"
+          }
+        }
+      }
+    },
+    "Box": {
+      "localizations": {
+        "da": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Kasse"
+          }
+        }
+      }
+    },
+    "Cache read / write": {
+      "shouldTranslate": false
+    },
+    "Cancel": {
+      "localizations": {
+        "da": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Annuller"
+          }
+        }
+      }
+    },
+    "Card": {
+      "localizations": {
+        "da": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Kort"
+          }
+        }
+      }
+    },
+    "Claude %@ with web search": {
+      "localizations": {
+        "da": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Claude %@ med websøgning"
+          }
+        }
+      }
+    },
+    "Claude (needs key)": {
+      "localizations": {
+        "da": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Claude (kræver nøgle)"
+          }
+        }
+      }
+    },
+    "Connected. Enjin is ready.": {
+      "extractionState": "manual",
+      "localizations": {
+        "da": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Forbundet. Enjin er klar."
+          }
+        }
+      }
+    },
+    "Couldn't open notebook": {
+      "localizations": {
+        "da": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Notesbogen kunne ikke åbnes"
+          }
+        }
+      }
+    },
+    "Daily limit": {
+      "localizations": {
+        "da": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Daglig grænse"
+          }
+        }
+      }
+    },
+    "Delete notebook": {
+      "localizations": {
+        "da": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Slet notesbog"
+          }
+        }
+      }
+    },
+    "Delete this notebook?": {
+      "localizations": {
+        "da": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Slet denne notesbog?"
+          }
+        }
+      }
+    },
+    "Delete “%@”": {
+      "localizations": {
+        "da": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Slet “%@”"
+          }
+        }
+      }
+    },
+    "Dinosaurs": {
+      "localizations": {
+        "da": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Dinosaurer"
+          }
+        }
+      }
+    },
+    "Dive in": {
+      "localizations": {
+        "da": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Dyk ind"
+          }
+        }
+      }
+    },
+    "Done": {
+      "localizations": {
+        "da": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Færdig"
+          }
+        }
+      }
+    },
+    "Ember": {
+      "localizations": {
+        "da": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Glød"
+          }
+        }
+      }
+    },
+    "Enjin is an AI. It can be wrong; it shows its sources so you can check.": {
+      "localizations": {
+        "da": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Enjin er en AI. Den kan tage fejl, så den viser sine kilder, så du kan tjekke dem."
+          }
+        }
+      }
+    },
+    "Enjin searches the web to back up facts. Adult and gambling sites are blocked, but no filter is perfect.": {
+      "localizations": {
+        "da": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Enjin søger på nettet for at underbygge fakta. Sider for voksne og med spil om penge er blokeret, men intet filter er perfekt."
+          }
+        }
+      }
+    },
+    "Enjin uses": {
+      "localizations": {
+        "da": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Enjin bruger"
+          }
+        }
+      }
+    },
+    "Enjin's brain": {
+      "localizations": {
+        "da": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Enjins hjerne"
+          }
+        }
+      }
+    },
+    "Eraser": {
+      "localizations": {
+        "da": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Viskelæder"
+          }
+        }
+      }
+    },
+    "Error": {
+      "shouldTranslate": false
+    },
+    "Explore": {
+      "localizations": {
+        "da": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Udforsk"
+          }
+        }
+      }
+    },
+    "Facts get real pictures from Wikipedia (free-licensed, credited; a word filter skips unsuitable ones, but no filter is perfect). Ideas get illustrations made on this iPad with Image Playground, where available. Everything gets Enjin's sketchbook look.": {
+      "localizations": {
+        "da": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Fakta får rigtige billeder fra Wikipedia (frit licenserede og krediterede; et ordfilter springer upassende billeder over, men intet filter er perfekt). Idéer får illustrationer lavet på denne iPad med Image Playground, hvor det findes. Alt får Enjins skitsebogs-look."
+          }
+        }
+      }
+    },
+    "Fills unexplored cards in the background while your kid looks at them, so diving in is instant. Uses noticeably more of the daily limit.": {
+      "localizations": {
+        "da": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Udfylder uudforskede kort i baggrunden, mens dit barn kigger på dem, så det går hurtigt at dykke ind. Bruger mærkbart mere af den daglige grænse."
+          }
+        }
+      }
+    },
+    "First event": {
+      "shouldTranslate": false
+    },
+    "For parents: Claude API key": {
+      "localizations": {
+        "da": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "For forældre: Claude API-nøgle"
+          }
+        }
+      }
+    },
+    "Got it": {
+      "localizations": {
+        "da": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Forstået"
+          }
+        }
+      }
+    },
+    "Highlighter": {
+      "localizations": {
+        "da": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Overstregningstusch"
+          }
+        }
+      }
+    },
+    "I agree": {
+      "localizations": {
+        "da": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Jeg accepterer"
+          }
+        }
+      }
+    },
+    "Illustration made on this iPad (not a real photo)": {
+      "localizations": {
+        "da": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Illustration lavet på denne iPad (ikke et rigtigt foto)"
+          }
+        }
+      }
+    },
+    "Ink": {
+      "localizations": {
+        "da": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Blæk"
+          }
+        }
+      }
+    },
+    "Key (stored in Keychain, this device only)": {
+      "shouldTranslate": false
+    },
+    "Language": {
+      "localizations": {
+        "da": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sprog"
+          }
+        }
+      }
+    },
+    "Leaf": {
+      "localizations": {
+        "da": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Blad"
+          }
+        }
+      }
+    },
+    "Looking things up…": {
+      "extractionState": "manual",
+      "localizations": {
+        "da": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Slår ting op…"
+          }
+        }
+      }
+    },
+    "Looking up “%@”…": {
+      "extractionState": "manual",
+      "localizations": {
+        "da": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Slår “%@” op…"
+          }
+        }
+      }
+    },
+    "Made by Enjin": {
+      "localizations": {
+        "da": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Lavet af Enjin"
+          }
+        }
+      }
+    },
+    "Made by you": {
+      "localizations": {
+        "da": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Lavet af dig"
+          }
+        }
+      }
+    },
+    "Making cards…": {
+      "extractionState": "manual",
+      "localizations": {
+        "da": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Laver kort…"
+          }
+        }
+      }
+    },
+    "Map": {
+      "localizations": {
+        "da": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Oversigt"
+          }
+        }
+      }
+    },
+    "Model": {
+      "localizations": {
+        "da": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Model"
+          }
+        }
+      }
+    },
+    "Needs iPadOS 26.": {
+      "extractionState": "manual",
+      "localizations": {
+        "da": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Kræver iPadOS 26."
+          }
+        }
+      }
+    },
+    "New card": {
+      "localizations": {
+        "da": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Nyt kort"
+          }
+        }
+      }
+    },
+    "Not explored yet. Dive in to fill it.": {
+      "localizations": {
+        "da": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ikke udforsket endnu. Dyk ind for at fylde det ud."
+          }
+        }
+      }
+    },
+    "Not now": {
+      "localizations": {
+        "da": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ikke nu"
+          }
+        }
+      }
+    },
+    "Not set up: add a key, or use an iPad with Apple Intelligence.": {
+      "localizations": {
+        "da": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ikke sat op: tilføj en nøgle, eller brug en iPad med Apple Intelligence."
+          }
+        }
+      }
+    },
+    "Note": {
+      "localizations": {
+        "da": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Note"
+          }
+        }
+      }
+    },
+    "Notebooks": {
+      "localizations": {
+        "da": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Notesbøger"
+          }
+        }
+      }
+    },
+    "Notes are for your own thoughts.": {
+      "localizations": {
+        "da": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Noter er til dine egne tanker."
+          }
+        }
+      }
+    },
+    "Nothing is shared with anyone else. Notebooks and usage logs stay on this iPad.": {
+      "localizations": {
+        "da": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Intet deles med andre. Notesbøger og forbrugslogs bliver på denne iPad."
+          }
+        }
+      }
+    },
+    "Numbers": {
+      "shouldTranslate": false
+    },
+    "OK": {
+      "localizations": {
+        "da": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "OK"
+          }
+        }
+      }
+    },
+    "On-device only": {
+      "localizations": {
+        "da": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Kun på enheden"
+          }
+        }
+      }
+    },
+    "Pen": {
+      "localizations": {
+        "da": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Pen"
+          }
+        }
+      }
+    },
+    "Picture for %@": {
+      "localizations": {
+        "da": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Billede til %@"
+          }
+        }
+      }
+    },
+    "Picture: %@": {
+      "localizations": {
+        "da": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Billede: %@"
+          }
+        }
+      }
+    },
+    "Pictures": {
+      "localizations": {
+        "da": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Billeder"
+          }
+        }
+      }
+    },
+    "Prepare cards ahead": {
+      "localizations": {
+        "da": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Forbered kort på forhånd"
+          }
+        }
+      }
+    },
+    "Prompt": {
+      "shouldTranslate": false
+    },
+    "Redo": {
+      "localizations": {
+        "da": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Gentag"
+          }
+        }
+      }
+    },
+    "Remove key": {
+      "localizations": {
+        "da": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Fjern nøgle"
+          }
+        }
+      }
+    },
+    "Rounds / stop": {
+      "shouldTranslate": false
+    },
+    "Run": {
+      "shouldTranslate": false
+    },
+    "Same as the iPad": {
+      "localizations": {
+        "da": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Samme som iPad'en"
+          }
+        }
+      }
+    },
+    "Save": {
+      "localizations": {
+        "da": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Gem"
+          }
+        }
+      }
+    },
+    "Save key": {
+      "localizations": {
+        "da": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Gem nøgle"
+          }
+        }
+      }
+    },
+    "Select": {
+      "localizations": {
+        "da": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Vælg"
+          }
+        }
+      }
+    },
+    "Send": {
+      "localizations": {
+        "da": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Send"
+          }
+        }
+      }
+    },
+    "Set up a Claude key…": {
+      "localizations": {
+        "da": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Opsæt en Claude-nøgle…"
+          }
+        }
+      }
+    },
+    "Settings": {
+      "localizations": {
+        "da": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Indstillinger"
+          }
+        }
+      }
+    },
+    "Show pictures on cards": {
+      "localizations": {
+        "da": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Vis billeder på kort"
+          }
+        }
+      }
+    },
+    "Sky": {
+      "localizations": {
+        "da": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Himmel"
+          }
+        }
+      }
+    },
+    "Sources": {
+      "localizations": {
+        "da": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Kilder"
+          }
+        }
+      }
+    },
+    "Spending": {
+      "localizations": {
+        "da": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Forbrug"
+          }
+        }
+      }
+    },
+    "Spent today": {
+      "localizations": {
+        "da": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Brugt i dag"
+          }
+        }
+      }
+    },
+    "Stop": {
+      "localizations": {
+        "da": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Stop"
+          }
+        }
+      }
+    },
+    "Stream": {
+      "shouldTranslate": false
+    },
+    "Summary": {
+      "localizations": {
+        "da": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Resumé"
+          }
+        }
+      }
+    },
+    "Test connection": {
+      "localizations": {
+        "da": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Test forbindelse"
+          }
+        }
+      }
+    },
+    "Text": {
+      "localizations": {
+        "da": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tekst"
+          }
+        }
+      }
+    },
+    "The Vikings": {
+      "localizations": {
+        "da": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Vikingerne"
+          }
+        }
+      }
+    },
+    "The app, the canvas and Enjin's answers. Cards already made stay as they are.": {
+      "localizations": {
+        "da": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Appen, lærredet og Enjins svar. Kort, der allerede er lavet, forbliver som de er."
+          }
+        }
+      }
+    },
+    "The canvas didn't start": {
+      "localizations": {
+        "da": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Lærredet startede ikke"
+          }
+        }
+      }
+    },
+    "The human brain": {
+      "localizations": {
+        "da": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Den menneskelige hjerne"
+          }
+        }
+      }
+    },
+    "The key is stored in this iPad's Keychain and never leaves it except to talk to Anthropic.": {
+      "localizations": {
+        "da": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Nøglen gemmes i denne iPads nøglering og forlader den kun for at tale med Anthropic."
+          }
+        }
+      }
+    },
+    "Thinking…": {
+      "extractionState": "manual",
+      "localizations": {
+        "da": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tænker…"
+          }
+        }
+      }
+    },
+    "This iPad can't run Apple's on-device model.": {
+      "extractionState": "manual",
+      "localizations": {
+        "da": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Denne iPad kan ikke køre Apples model på enheden."
+          }
+        }
+      }
+    },
+    "This key belongs to an organization but doesn't pick a workspace. Paste a workspace ID from the Claude Console (it starts with wrkspc_), or create a new key inside a workspace.": {
+      "localizations": {
+        "da": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Denne nøgle hører til en organisation, men vælger ikke et workspace. Indsæt et workspace-ID fra Claude Console (det starter med wrkspc_), eller opret en ny nøgle inde i et workspace."
+          }
+        }
+      }
+    },
+    "Tip: pinch a card open, or tap it and press **Dive in**, to go inside it.": {
+      "localizations": {
+        "da": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tip: knib et kort op, eller tryk på det og vælg **Dyk ind**, for at gå ind i det."
+          }
+        }
+      }
+    },
+    "Title": {
+      "localizations": {
+        "da": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Titel"
+          }
+        }
+      }
+    },
+    "Tokens in / out": {
+      "shouldTranslate": false
+    },
+    "Topic": {
+      "localizations": {
+        "da": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Emne"
+          }
+        }
+      }
+    },
+    "Topics can be dived into and explored.": {
+      "localizations": {
+        "da": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Emner kan man dykke ind i og udforske."
+          }
+        }
+      }
+    },
+    "Total": {
+      "shouldTranslate": false
+    },
+    "Turn": {
+      "shouldTranslate": false
+    },
+    "Turn on Apple Intelligence in Settings to use Enjin without a key.": {
+      "extractionState": "manual",
+      "localizations": {
+        "da": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Slå Apple Intelligence til under Indstillinger for at bruge Enjin uden en nøgle."
+          }
+        }
+      }
+    },
+    "Undo": {
+      "localizations": {
+        "da": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Fortryd"
+          }
+        }
+      }
+    },
+    "Undo Enjin's last change": {
+      "localizations": {
+        "da": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Fortryd Enjins seneste ændring"
+          }
+        }
+      }
+    },
+    "Using the key costs money on your Anthropic account. You set a daily limit; when it's reached, Enjin stops until tomorrow.": {
+      "localizations": {
+        "da": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Det koster penge på din Anthropic-konto at bruge nøglen. Du sætter en daglig grænse, og når den er nået, stopper Enjin til i morgen."
+          }
+        }
+      }
+    },
+    "Volcanoes": {
+      "localizations": {
+        "da": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Vulkaner"
+          }
+        }
+      }
+    },
+    "What do you want to explore?": {
+      "localizations": {
+        "da": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Hvad vil du udforske?"
+          }
+        }
+      }
+    },
+    "What's it about?": {
+      "localizations": {
+        "da": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Hvad handler det om?"
+          }
+        }
+      }
+    },
+    "When the limit is reached, Enjin rests until tomorrow.": {
+      "localizations": {
+        "da": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Når grænsen er nået, hviler Enjin til i morgen."
+          }
+        }
+      }
+    },
+    "When your kid asks Enjin something, what they typed and a short description of their canvas (card titles and summaries, counts of their drawings, and any text notes) are sent to Anthropic to generate an answer.": {
+      "localizations": {
+        "da": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Når dit barn spørger Enjin om noget, sendes det, de skrev, og en kort beskrivelse af deres lærred (kortenes titler og resuméer, antal tegninger og eventuelle tekstnoter) til Anthropic for at lave et svar."
+          }
+        }
+      }
+    },
+    "Workspace ID (only if needed, wrkspc_...)": {
+      "localizations": {
+        "da": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Workspace-ID (kun hvis nødvendigt, wrkspc_...)"
+          }
+        }
+      }
+    },
+    "You are here": {
+      "localizations": {
+        "da": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Du er her"
+          }
+        }
+      }
+    },
+    "Your notebooks": {
+      "localizations": {
+        "da": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Dine notesbøger"
+          }
+        }
+      }
+    },
+    "createCards calls": {
+      "shouldTranslate": false
+    },
+    "or try": {
+      "localizations": {
+        "da": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "eller prøv"
+          }
+        }
+      }
+    },
+    "sk-ant-…": {
+      "localizations": {
+        "da": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "sk-ant-…"
+          }
+        }
+      }
+    }
+  },
+  "version": "1.0"
+}

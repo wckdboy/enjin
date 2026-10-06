@@ -29,14 +29,18 @@ public enum PromptComposer {
 
     public static func compose(session: NotebookSession, portalId: String, focusCardId: String?, request: Request,
                                changes: [NotebookSession.KidChange], tail: [TailEntry],
-                               budgetChars: Int = defaultBudgetChars, compact: Bool = false) -> String {
+                               budgetChars: Int = defaultBudgetChars, compact: Bool = false, language: AppLanguage = .en) -> String {
         // Tiers from the inside out; outer tiers are dropped first when over budget.
         let here = currentPortal(session, portalId, focusCardId, compact: compact)
         let around = compact ? "" : surroundings(session, portalId)
         let elsewhere = compact ? "" : distant(session, portalId)
         let changeText = changesText(session, changes, portalId)
         let tailText = compact ? "" : tailText(tail)
-        let ask = requestText(session, request)
+        var ask = requestText(session, request)
+        if language != .en {
+            // Per turn (not in the cached system prompt), so switching language takes effect at once.
+            ask += "\n\nLanguage: write your reply and every card's title, summary and body in \(language.promptName). Keep image phrases in English (they search English Wikipedia)."
+        }
 
         var parts = [here, around, elsewhere, changeText, tailText, ask]
         // Drop: elsewhere, then tail, then surroundings. "Here", changes and the ask always stay.

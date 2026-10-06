@@ -5,16 +5,18 @@ import Foundation
 /// available; everything works (with less polish) when it isn't.
 public protocol AssistHelper: Sendable {
     /// 2-3 short questions in the kid's voice, for tappable chips.
-    func nextQuestions(path: [String], cards: [(title: String, summary: String)], lastAsk: String?) async -> [String]
+    func nextQuestions(path: [String], cards: [(title: String, summary: String)], lastAsk: String?, language: AppLanguage) async -> [String]
     /// A short search phrase for a real picture of this card, or nil.
     func imagePhrase(title: String, summary: String, topic: String) async -> String?
 }
 
 #if canImport(FoundationModels)
 import FoundationModels
+import os
 
 @available(iOS 26.0, macOS 26.0, *)
 public struct AppleAssistHelper: AssistHelper {
+    static let log = Logger(subsystem: "ai.wckd.enjin", category: "assist")
     public init() {}
 
     public static var isAvailable: Bool {
@@ -34,15 +36,27 @@ public struct AppleAssistHelper: AssistHelper {
         var phrase: String
     }
 
-    public func nextQuestions(path: [String], cards: [(title: String, summary: String)], lastAsk: String?) async -> [String] {
+    public func nextQuestions(path: [String], cards: [(title: String, summary: String)], lastAsk: String?, language: AppLanguage) async -> [String] {
         let session = LanguageModelSession(instructions: """
             You suggest what a curious 13-year-old might want to ask next while exploring a topic. \
-            Questions are short, concrete, and in the kid's own voice. Don't repeat what the cards already say.
+            Questions are short, concrete, and in the kid's own voice. Don't repeat what the cards already say. \
+            Write the questions in \(language.promptName).
             """)
         let list = cards.prefix(8).map { "- \($0.title): \($0.summary)" }.joined(separator: "\n")
         let prompt = "Exploring: \(path.joined(separator: " › "))\n\(lastAsk.map { "They just asked: \($0)\n" } ?? "")Cards they can see:\n\(list)"
-        guard let r = try? await session.respond(to: prompt, generating: Questions.self) else { return [] }
-        return r.content.questions.map { $0.trimmingCharacters(in: .whitespacesAndNewlines) }.filter { !$0.isEmpty && $0.count <= 60 }
+        let clean = { (qs: [String]) in
+            qs.map { $0.trimmingCharacters(in: CharacterSet(charactersIn: " -•*0123456789.").union(.whitespacesAndNewlines)) }
+                .filter { !$0.isEmpty && $0.count <= 60 }
+        }
+        do {
+            return clean(try await session.respond(to: prompt, generating: Questions.self).content.questions)
+        } catch {
+            // Structured output can fail in some languages; plain lines work everywhere.
+            Self.log.notice("structured questions failed (\(String(describing: error), privacy: .public)); using plain text")
+            let plain = LanguageModelSession(instructions: "Write in \(language.promptName). Reply with exactly 3 questions, one per line, nothing else.")
+            guard let r = try? await plain.respond(to: prompt + "\n\nWhat might they ask next?") else { return [] }
+            return Array(clean(r.content.components(separatedBy: .newlines)).prefix(3))
+        }
     }
 
     public func imagePhrase(title: String, summary: String, topic: String) async -> String? {

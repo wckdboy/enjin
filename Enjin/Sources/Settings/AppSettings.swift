@@ -1,6 +1,7 @@
 import EnjinKit
 import Foundation
 import Observation
+import SwiftUI
 
 /// Parent-controlled settings. The API key lives in the Keychain; the rest in UserDefaults.
 @MainActor
@@ -12,7 +13,7 @@ final class AppSettings {
         case anthropic
         case onDevice
         var id: String { rawValue }
-        var label: String {
+        var label: LocalizedStringKey {
             switch self {
             case .auto: "Automatic"
             case .anthropic: "Claude (needs key)"
@@ -31,6 +32,11 @@ final class AppSettings {
     var consentGiven: Bool { didSet { defaults.set(consentGiven, forKey: "consentGiven") } }
     /// For organization keys that aren't scoped to a workspace (wrkspc_...).
     var workspaceId: String { didSet { defaults.set(workspaceId, forKey: "workspaceId") } }
+    /// nil = follow the device (Danish if the iPad is in Danish, else English).
+    var languageChoice: AppLanguage? { didSet { defaults.set(languageChoice?.rawValue, forKey: "language") } }
+    var language: AppLanguage { languageChoice ?? .system }
+    var locale: Locale { Locale(identifier: language == .da ? "da_DK" : "en_US") }
+
     /// Fill stubs in the background while the kid looks at them. Faster dives, more spend.
     var prepareAhead: Bool { didSet { defaults.set(prepareAhead, forKey: "prepareAhead") } }
     /// Real pictures from Wikipedia on Enjin's cards.
@@ -46,6 +52,7 @@ final class AppSettings {
         showPictures = defaults.object(forKey: "showPictures") as? Bool ?? true
         workspaceId = defaults.string(forKey: "workspaceId") ?? ""
         prepareAhead = defaults.bool(forKey: "prepareAhead")
+        languageChoice = defaults.string(forKey: "language").flatMap(AppLanguage.init(rawValue:))
         hasKey = Keychain.read(Self.keyAccount)?.isEmpty == false
     }
 
@@ -114,9 +121,10 @@ final class AppSettings {
     }
 
     /// One line for the parent: what Enjin will actually use right now.
-    var activeDescription: String {
+    var activeDescription: LocalizedStringKey {
         guard let b = makeBackend() else {
-            return provider == .onDevice ? (onDeviceUnavailableReason ?? "Unavailable") : "Not set up: add a key, or use an iPad with Apple Intelligence."
+            if provider == .onDevice, let reason = onDeviceUnavailableReason { return LocalizedStringKey(reason) }
+            return "Not set up: add a key, or use an iPad with Apple Intelligence."
         }
         return b.isReduced ? "Apple on-device model (no web search, simpler answers)" : "Claude \(model.label) with web search"
     }

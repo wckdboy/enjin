@@ -329,21 +329,48 @@ test("notes get Open but no Dive in", async ({ page }) => {
   await expect(pill.getByRole("button", { name: "Dive in" })).toBeHidden();
 });
 
-test("selecting a card doesn't open Excalidraw's style panel; selecting a drawing does", async ({ page }) => {
+test("Excalidraw's own UI never shows; ENJIN's tools drive it", async ({ page }) => {
   await ready(page);
-  const p = await cardCenter(page, "c-roads");
-  await page.touchscreen.tap(p.x, p.y);
-  await expect(page.locator("[data-enjin=card-actions]")).toBeVisible();
-  await expect(page.getByText("Sloppiness")).toBeHidden();
+  await expect(page.locator(".excalidraw .layer-ui__wrapper")).toBeHidden();
+  const state = () =>
+    page.evaluate(() => {
+      const s = (window as unknown as { __enjinDebug: { api: { getAppState(): { activeTool: { type: string }; currentItemStrokeColor: string; currentItemOpacity: number } } } }).__enjinDebug.api.getAppState();
+      return { tool: s.activeTool.type, color: s.currentItemStrokeColor, opacity: s.currentItemOpacity };
+    });
+  await call(page, "canvas.setTool", { tool: "highlighter", color: "#e8590c" });
+  expect(await state()).toEqual({ tool: "freedraw", color: "#e8590c", opacity: 35 });
+  await call(page, "canvas.setTool", { tool: "rectangle", color: "#1971c2" });
+  expect(await state()).toEqual({ tool: "rectangle", color: "#1971c2", opacity: 100 });
+});
 
-  await call(page, "ink.commit", { strokeId: "s", tool: "pen", color: "#000", width: 3, points: [[300, 1100], [420, 1150]], pressures: [] });
-  await page.evaluate(() => {
-    const { api } = (window as unknown as { __enjinDebug: { api: { getSceneElements(): { id: string; type: string }[]; updateScene(u: unknown): void } } }).__enjinDebug;
-    const ink = api.getSceneElements().find((e) => e.type === "freedraw")!;
-    api.updateScene({ appState: { selectedElementIds: { [ink.id]: true } } });
-  });
-  await expect(page.locator("[data-enjin=card-actions]")).toBeHidden();
-  await expect(page.getByText("Stroke").first()).toBeVisible();
+test("with a non-ink tool, Pencil acts on the canvas (select, erase, shapes)", async ({ page }) => {
+  await ready(page);
+  const penReaches = () =>
+    page.evaluate(() => {
+      let n = 0;
+      const canvas = document.querySelector("canvas.interactive")!;
+      const f = (e: Event) => { n++; e.stopPropagation(); };
+      canvas.addEventListener("pointerdown", f);
+      canvas.dispatchEvent(new PointerEvent("pointerdown", { pointerType: "pen", bubbles: true, clientX: 200, clientY: 200 }));
+      canvas.removeEventListener("pointerdown", f);
+      return n;
+    });
+  await call(page, "canvas.setTool", { tool: "freedraw", color: "#2a2a3c" });
+  expect(await penReaches()).toBe(0); // ink tools: Pencil belongs to PencilKit
+  await call(page, "canvas.setTool", { tool: "selection", color: "#2a2a3c" });
+  expect(await penReaches()).toBe(1);
+});
+
+test("undo and redo from the tool rail", async ({ page }) => {
+  await ready(page);
+  const inkCount = () =>
+    page.evaluate(() => (window as unknown as { __enjinDebug: Debug }).__enjinDebug.api.getSceneElements().filter((e) => e.type === "freedraw").length);
+  await call(page, "ink.commit", { strokeId: "u", tool: "pen", color: "#000", width: 3, points: [[300, 900], [400, 950]], pressures: [] });
+  expect(await inkCount()).toBe(1);
+  await call(page, "canvas.history", { action: "undo" });
+  await expect.poll(inkCount).toBe(0);
+  await call(page, "canvas.history", { action: "redo" });
+  await expect.poll(inkCount).toBe(1);
 });
 
 test("picture cards: placeholder reserves space, image arrives in place without distortion", async ({ page }) => {
@@ -434,4 +461,20 @@ test("card text is actually drawn (not transparent)", async ({ page }) => {
   );
   expect(label.length).toBeGreaterThan(0);
   expect(label.every((c) => c !== "transparent")).toBe(true);
+});
+
+test("the canvas speaks Danish when told to", async ({ page }) => {
+  await ready(page);
+  await call(page, "canvas.setLanguage", { language: "da" });
+  const texts = await page.evaluate(() =>
+    (window as unknown as { __enjinDebug: { api: { getSceneElements(): { text?: string; customData?: Record<string, string> }[] } } }).__enjinDebug.api
+      .getSceneElements()
+      .filter((e) => e.customData?.role === "cue" || e.customData?.role === "badge")
+      .map((e) => e.text),
+  );
+  expect(texts).toContain("dyk ind →");
+  expect(texts).toContain("3 indeni →");
+  const p = await cardCenter(page, "c-legions");
+  await page.touchscreen.tap(p.x, p.y);
+  await expect(page.locator("[data-enjin=card-actions]").getByRole("button", { name: "Dyk ind" })).toBeVisible();
 });

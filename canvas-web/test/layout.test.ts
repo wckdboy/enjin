@@ -39,7 +39,7 @@ describe("viewport math", () => {
   });
 });
 
-import { framedRect, mapRect, visibleRect, windowIn } from "../src/cards/layout";
+import { frame, framedRect, mapRect, visibleRect, windowIn } from "../src/cards/layout";
 
 describe("dive geometry", () => {
   const card = { x: 100, y: 200, width: 320, height: 180 };
@@ -52,6 +52,17 @@ describe("dive geometry", () => {
       expect(w.x + w.width).toBeLessThanOrEqual(card.x + card.width + 1e-9);
       expect(w.y + w.height).toBeLessThanOrEqual(card.y + card.height + 1e-9);
     }
+  });
+  it("framing with chrome insets centers content in the free area", () => {
+    const content = { x: 0, y: 0, width: 1000, height: 600 };
+    const ins = { top: 80, left: 100, bottom: 140, right: 20 };
+    const f = frame(content, 834, 1194, ins);
+    const vp = { scrollX: f.scrollX, scrollY: f.scrollY, zoom: f.zoom, width: 834, height: 1194 };
+    const v = toView(content, vp);
+    expect(v.x).toBeGreaterThanOrEqual(100 - 1e-6);
+    expect(v.x + v.width).toBeLessThanOrEqual(834 - 20 + 1e-6);
+    expect(v.x + v.width / 2).toBeCloseTo(100 + (834 - 120) / 2);
+    expect(visibleRect(vp)).toEqual(f.visible);
   });
   it("framedRect is exactly what centerOn+fitZoom shows", () => {
     const content = { x: 0, y: 0, width: 1100, height: 600 };

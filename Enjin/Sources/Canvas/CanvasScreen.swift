@@ -1,10 +1,12 @@
 import EnjinKit
 import SwiftUI
 
+/// The canvas, full-bleed, with ENJIN's chrome floating on it: where you are
+/// (top-left), what you can add (top-right), how you draw (left rail), and
+/// Enjin itself (bottom).
 struct CanvasScreen: View {
     let controller: CanvasController
     @Environment(\.dismiss) private var dismiss
-    @State private var tool: InkTool = .pen
     @State private var routing: InkRouting = .relocatedRecognizer
     @State private var showAgentSpike = false
     @State private var showMap = false
@@ -13,80 +15,52 @@ struct CanvasScreen: View {
     @AppStorage("tip.dive.seen") private var diveTipSeen = false
 
     var body: some View {
-        VStack(spacing: 0) {
-            HStack(spacing: 16) {
-                Button { dismiss() } label: { Image(systemName: "chevron.left") }
-                    .accessibilityLabel("Notebooks")
-                BreadcrumbBar(path: controller.path) { controller.jump(to: $0) }
-                Spacer()
-                Button { showNewCard = true } label: { Image(systemName: "plus.rectangle.on.rectangle") }
-                    .accessibilityLabel("New card")
-                    .disabled(controller.status != .ready)
-                Button { showMap = true } label: { Image(systemName: "map") }
-                    .accessibilityLabel("Map")
-                InkPalette(tool: $tool)
-                Menu {
-                    Picker("Pencil routing", selection: $routing) {
-                        ForEach(InkRouting.allCases) { Text($0.rawValue).tag($0) }
-                    }
-                    Button("Settings…") { showSettings = true }
-                    Button("Agent spike…") { showAgentSpike = true }
-                    if let ms = controller.lastInkHandoffMs {
-                        Text(String(format: "Last ink handoff: %.1f ms", ms))
-                    }
-                } label: {
-                    Image(systemName: "ladybug")
-                }
-            }
-            .padding(.horizontal, 20)
-            .padding(.vertical, 10)
-            .background(.bar)
+        ZStack {
+            CanvasRepresentable(controller: controller, routing: routing)
+                .ignoresSafeArea()
 
-            ZStack(alignment: .bottom) {
-                CanvasRepresentable(controller: controller, tool: tool, routing: routing)
-                    // The canvas runs under the home indicator; the keyboard must not resize it.
-                    .ignoresSafeArea(.all, edges: .bottom)
-                VStack(spacing: 10) {
-                    if !diveTipSeen && controller.status == .ready && controller.agent.nextSteps.contains(where: \.isDive) {
-                        HStack(spacing: 12) {
-                            Image(systemName: "hand.pinch").font(.title2)
-                            Text("Tip: pinch a card open (or tap it, then **Dive in**) to go inside it.")
-                            Button("Got it") { diveTipSeen = true }.buttonStyle(.borderedProminent)
-                        }
-                        .padding(14)
-                        .background(.thickMaterial, in: .rect(cornerRadius: 16))
-                        .transition(.move(edge: .bottom).combined(with: .opacity))
-                    }
-                    if controller.status == .ready {
-                        AgentDock(agent: controller.agent, onAsk: controller.ask, onGoToSuggestion: controller.goToSuggestion,
-                                  onNextStep: controller.takeNextStep)
-                    }
+            if case .failed(let reason) = controller.status {
+                ContentUnavailableView {
+                    Label("The canvas didn't start", systemImage: "exclamationmark.triangle")
+                } description: {
+                    Text(reason)
                 }
-                .padding(.bottom, 76)
-                .padding(.horizontal, 16)
-                switch controller.status {
-                case .loading: ProgressView()
-                case .ready: EmptyView()
-                case .failed(let reason):
-                    ContentUnavailableView("Canvas failed to start", systemImage: "exclamationmark.triangle", description: Text(reason))
-                        .background(.background)
-                }
+                .background(Theme.paper)
+            } else if controller.status == .loading {
+                ProgressView().tint(Theme.ember)
             }
         }
-        // Only the container area: the agent dock still rides above the keyboard.
-        .ignoresSafeArea(.container, edges: .bottom)
+        .overlay(alignment: .topLeading) { navigation.padding(.leading, 20).padding(.top, 12) }
+        .overlay(alignment: .topTrailing) { actions.padding(.trailing, 20).padding(.top, 12) }
+        .overlay(alignment: .leading) {
+            if controller.status == .ready { ToolRail(controller: controller).padding(.leading, 20) }
+        }
+        .overlay(alignment: .bottom) {
+            VStack(spacing: 12) {
+                if !diveTipSeen && controller.status == .ready && controller.agent.nextSteps.contains(where: \.isDive) {
+                    HStack(spacing: 14) {
+                        Image(systemName: "hand.pinch").font(.system(size: 24, weight: .semibold)).foregroundStyle(Theme.ember)
+                        Text("Tip: pinch a card open, or tap it and press **Dive in**, to go inside it.")
+                            .font(Theme.body(16)).foregroundStyle(Theme.ink)
+                        Button("Got it") { diveTipSeen = true }.buttonStyle(StickerButtonStyle(kind: .primary))
+                    }
+                    .padding(14)
+                    .sticker(Theme.paper)
+                    .transition(.move(edge: .bottom).combined(with: .opacity))
+                }
+                if controller.status == .ready {
+                    AgentDock(agent: controller.agent, onAsk: controller.ask, onGoToSuggestion: controller.goToSuggestion,
+                              onNextStep: controller.takeNextStep)
+                }
+            }
+            .padding(.bottom, 20)
+            .padding(.horizontal, 96)
+        }
+        .background(Theme.paper)
+        .animation(.snappy, value: diveTipSeen)
         .sheet(isPresented: $showAgentSpike) { AgentSpikeView() }
         .sheet(isPresented: $showSettings, onDismiss: controller.refreshAgent) {
             SettingsView(settings: controller.settings, telemetry: controller.telemetry)
-        }
-        .onChange(of: showMap) { _, open in
-            if open { Task { await controller.telemetry.record("map_opened") } }
-        }
-        .sheet(isPresented: $showMap) {
-            MapView(session: controller.session, current: controller.currentPortalId) { portalId in
-                showMap = false
-                controller.jump(to: portalId)
-            }
         }
         .sheet(item: Binding(get: { controller.openCardId.map(IdentifiedString.init) }, set: { controller.openCardId = $0?.id })) { item in
             if let card = controller.session.card(item.id) {
@@ -98,57 +72,143 @@ struct CanvasScreen: View {
                                 })
             }
         }
+        .onChange(of: showMap) { _, open in
+            if open { Task { await controller.telemetry.record("map_opened") } }
+        }
+        .sheet(isPresented: $showMap) {
+            MapView(session: controller.session, current: controller.currentPortalId) { portalId in
+                showMap = false
+                controller.jump(to: portalId)
+            }
+        }
         .sheet(isPresented: $showNewCard) {
             NewCardSheet { type, title, summary in
                 Task { await controller.createCard(type: type, title: title, summary: summary) }
             }
         }
     }
-}
 
-struct BreadcrumbBar: View {
-    let path: [Crumb]
-    let onTap: (String) -> Void
-
-    var body: some View {
-        ScrollView(.horizontal, showsIndicators: false) {
-            HStack(spacing: 6) {
-                ForEach(Array(path.enumerated()), id: \.element.portalId) { i, crumb in
-                    if i > 0 { Image(systemName: "chevron.right").font(.caption).foregroundStyle(.secondary) }
-                    Button(crumb.title) { onTap(crumb.portalId) }
-                        .buttonStyle(.plain)
-                        .font(i == path.count - 1 ? .headline : .body)
-                        .foregroundStyle(i == path.count - 1 ? .primary : .secondary)
-                        .disabled(i == path.count - 1)
+    /// Back to the notebooks, and the path of portals you dived through.
+    private var navigation: some View {
+        HStack(spacing: 4) {
+            Button { dismiss() } label: { Image(systemName: "chevron.left").font(.system(size: 18, weight: .bold)) }
+                .buttonStyle(IconButtonStyle(size: 40))
+                .accessibilityLabel(Text("Notebooks"))
+                .accessibilityIdentifier("notebooks")
+                .padding(.trailing, 8)
+            ForEach(Array(controller.path.enumerated()), id: \.element.portalId) { i, crumb in
+                if i > 0 { Image(systemName: "chevron.right").font(.system(size: 13, weight: .heavy)).foregroundStyle(Theme.ember) }
+                if i == controller.path.count - 1 {
+                    Text(crumb.title)
+                        .font(Theme.display(22))
+                        .foregroundStyle(Theme.ink)
+                        .lineLimit(1)
+                        .padding(.horizontal, 6)
+                        .accessibilityAddTraits(.isHeader)
+                } else {
+                    Button { controller.jump(to: crumb.portalId) } label: {
+                        Text(crumb.title)
+                            .font(Theme.body(16, weight: .semibold))
+                            .foregroundStyle(Theme.inkSoft)
+                            .lineLimit(1)
+                            .padding(.horizontal, 6)
+                    }
+                    .buttonStyle(.plain)
+                    .accessibilityIdentifier("crumb:\(crumb.title)")
                 }
             }
         }
-        .animation(.snappy, value: path)
+        .padding(.vertical, 6)
+        .padding(.leading, 6)
+        .padding(.trailing, 14)
+        .sticker(Theme.paper, radius: 26)
+        .animation(.snappy, value: controller.path)
+    }
+
+    private var actions: some View {
+        HStack(spacing: 12) {
+            Button { showNewCard = true } label: { Image(systemName: "plus") }
+                .buttonStyle(IconButtonStyle())
+                .accessibilityLabel(Text("New card"))
+                .accessibilityIdentifier("newCard")
+                .disabled(controller.status != .ready)
+            Button { showMap = true } label: { Image(systemName: "map") }
+                .buttonStyle(IconButtonStyle())
+                .accessibilityLabel(Text("Map"))
+                .accessibilityIdentifier("map")
+            Button { showSettings = true } label: { Image(systemName: "gearshape") }
+                .buttonStyle(IconButtonStyle())
+                .accessibilityLabel(Text("Settings"))
+                .accessibilityIdentifier("settings")
+            #if DEBUG
+            Menu {
+                Picker(selection: $routing) {
+                    ForEach(InkRouting.allCases) { Text(verbatim: $0.rawValue).tag($0) }
+                } label: { Text(verbatim: "Pencil routing") }
+                Button { showAgentSpike = true } label: { Text(verbatim: "Agent spike…") }
+                if let ms = controller.lastInkHandoffMs { Text(verbatim: String(format: "Last ink handoff: %.1f ms", ms)) }
+            } label: { Image(systemName: "ladybug") }
+                .buttonStyle(IconButtonStyle())
+            #endif
+        }
     }
 }
 
-struct InkPalette: View {
-    @Binding var tool: InkTool
+/// Drawing tools, colors, undo/redo: ENJIN's replacement for Excalidraw's toolbar.
+struct ToolRail: View {
+    let controller: CanvasController
 
     var body: some View {
-        HStack(spacing: 4) {
-            ForEach(InkTool.allCases) { t in
-                Button { tool = t } label: {
-                    Image(systemName: t == .highlighter ? "highlighter" : "pencil.tip")
-                        .foregroundStyle(t == .blue ? .blue : t == .highlighter ? .yellow : .primary)
-                        .frame(width: 36, height: 36)
-                        .background(tool == t ? Color.accentColor.opacity(0.18) : .clear, in: .rect(cornerRadius: 8))
+        VStack(spacing: 6) {
+            ForEach(EnjinTool.allCases) { t in
+                Button { controller.select(tool: t) } label: { Image(systemName: t.symbol) }
+                    .buttonStyle(RailButtonStyle(active: controller.tool == t))
+                    .accessibilityLabel(Text(t.label))
+                    .accessibilityAddTraits(controller.tool == t ? .isSelected : [])
+            }
+            Divider().frame(width: 30).overlay(Theme.ink.opacity(0.25)).padding(.vertical, 4)
+            ForEach(Theme.inkColors) { c in
+                Button { controller.select(color: c) } label: {
+                    Circle().fill(c.color).frame(width: 22, height: 22)
+                        .overlay(Circle().strokeBorder(Theme.ink, lineWidth: controller.inkColor == c ? 3 : 1.5))
+                        .padding(4)
+                        .overlay(Circle().strokeBorder(controller.inkColor == c ? Theme.ink : .clear, lineWidth: 1.5))
+                        .frame(width: 44, height: 40)
                 }
                 .buttonStyle(.plain)
-                .accessibilityLabel(t.rawValue)
+                .accessibilityLabel(Text(c.name))
+                .accessibilityAddTraits(controller.inkColor == c ? .isSelected : [])
             }
+            Divider().frame(width: 30).overlay(Theme.ink.opacity(0.25)).padding(.vertical, 4)
+            Button { controller.history(.undo) } label: { Image(systemName: "arrow.uturn.backward") }
+                .buttonStyle(RailButtonStyle()).accessibilityLabel(Text("Undo"))
+            Button { controller.history(.redo) } label: { Image(systemName: "arrow.uturn.forward") }
+                .buttonStyle(RailButtonStyle()).accessibilityLabel(Text("Redo"))
         }
+        .padding(.vertical, 10)
+        .padding(.horizontal, 6)
+        .sticker(Theme.paper, radius: 28)
+    }
+}
+
+struct RailButtonStyle: ButtonStyle {
+    var active = false
+
+    func makeBody(configuration: Configuration) -> some View {
+        configuration.label
+            .font(.system(size: 19, weight: .semibold))
+            .foregroundStyle(active ? Color.white : Theme.ink)
+            .frame(width: 44, height: 44)
+            .background(active ? Theme.ember : (configuration.isPressed ? Theme.card : .clear), in: .rect(cornerRadius: 12))
+            .overlay(RoundedRectangle(cornerRadius: 12).strokeBorder(active ? Theme.ink : .clear, lineWidth: Theme.line))
+            .scaleEffect(configuration.isPressed ? 0.92 : 1)
+            .animation(.spring(duration: 0.15), value: configuration.isPressed)
+            .contentShape(.rect)
     }
 }
 
 struct CanvasRepresentable: UIViewRepresentable {
     let controller: CanvasController
-    let tool: InkTool
     let routing: InkRouting
 
     func makeUIView(context: Context) -> CanvasContainerView {
@@ -156,7 +216,7 @@ struct CanvasRepresentable: UIViewRepresentable {
     }
 
     func updateUIView(_ view: CanvasContainerView, context: Context) {
-        view.setTool(tool)
+        view.setTool(controller.tool, color: controller.inkColor.color)
         view.setRouting(routing)
     }
 }

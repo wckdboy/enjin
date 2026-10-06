@@ -1,0 +1,136 @@
+{
+  "title": "Romerriget",
+  "rootPortalId": "p-root",
+  "portals": [
+    {
+      "portalId": "p-root",
+      "title": "Romerriget",
+      "ownerCardId": null,
+      "parentPortalId": null,
+      "cardIds": [
+        "c-legions",
+        "c-roads",
+        "c-emperors",
+        "c-fall"
+      ]
+    },
+    {
+      "portalId": "p-legions",
+      "title": "Legionerne",
+      "ownerCardId": "c-legions",
+      "parentPortalId": "p-root",
+      "cardIds": [
+        "c-why-won",
+        "c-equipment",
+        "c-life"
+      ]
+    },
+    {
+      "portalId": "p-why-won",
+      "title": "Hvorfor Rom vandt så tit",
+      "ownerCardId": "c-why-won",
+      "parentPortalId": "p-legions",
+      "cardIds": [
+        "c-discipline",
+        "c-logistics",
+        "c-allies"
+      ]
+    },
+    {
+      "portalId": "p-logistics",
+      "title": "Forsyninger",
+      "ownerCardId": "c-logistics",
+      "parentPortalId": "p-why-won",
+      "cardIds": [
+        "c-marching-camps",
+        "c-grain"
+      ]
+    }
+  ],
+  "cards": [
+    {
+      "id": "c-legions",
+      "type": "topic",
+      "title": "Legionerne",
+      "summary": "Roms professionelle tunge infanteri: cirka 5.000 borgersoldater pr. legion.",
+      "state": "filled"
+    },
+    {
+      "id": "c-roads",
+      "type": "topic",
+      "title": "Vejene",
+      "summary": "80.000 km brolagte veje, der flyttede hære, post og handel.",
+      "state": "filled"
+    },
+    {
+      "id": "c-emperors",
+      "type": "topic",
+      "title": "Kejserne",
+      "summary": "Fra Augustus i 27 f.Kr. til Romulus Augustulus i 476 e.Kr.",
+      "state": "stub"
+    },
+    {
+      "id": "c-fall",
+      "type": "topic",
+      "title": "Hvorfor faldt det?",
+      "summary": "Historikerne er stadig uenige: penge, pest, folkevandringer, borgerkrige.",
+      "state": "stub"
+    },
+    {
+      "id": "c-why-won",
+      "type": "topic",
+      "title": "Hvorfor Rom vandt så tit",
+      "summary": "Ikke bedre våben, men bedre organisering og en vilje til aldrig at give op.",
+      "state": "filled"
+    },
+    {
+      "id": "c-equipment",
+      "type": "topic",
+      "title": "Udstyr",
+      "summary": "Gladius, pilum, scutum og ledrustning.",
+      "state": "stub"
+    },
+    {
+      "id": "c-life",
+      "type": "topic",
+      "title": "En soldats liv",
+      "summary": "25 års tjeneste og 30 km march om dagen.",
+      "state": "stub"
+    },
+    {
+      "id": "c-discipline",
+      "type": "topic",
+      "title": "Disciplin",
+      "summary": "Træning hver dag, hårde straffe og enheder, der holdt formationen.",
+      "state": "filled"
+    },
+    {
+      "id": "c-logistics",
+      "type": "topic",
+      "title": "Forsyninger",
+      "summary": "Mad, veje og lejre gjorde, at hærene kunne blive i felten.",
+      "state": "filled"
+    },
+    {
+      "id": "c-allies",
+      "type": "topic",
+      "title": "Allierede",
+      "summary": "Erobrede folk stillede soldater og blev senere borgere.",
+      "state": "stub"
+    },
+    {
+      "id": "c-marching-camps",
+      "type": "topic",
+      "title": "Marchlejre",
+      "summary": "En befæstet lejr bygget hver aften, med samme indretning overalt.",
+      "state": "filled"
+    },
+    {
+      "id": "c-grain",
+      "type": "topic",
+      "title": "Kornforsyning",
+      "summary": "Hver soldat spiste cirka 1 kg korn om dagen.",
+      "state": "stub"
+    }
+  ]
+}

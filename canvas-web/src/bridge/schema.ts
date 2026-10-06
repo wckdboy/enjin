@@ -114,6 +114,27 @@ export const nativeToWeb = {
     params: z.object({ portalId: z.string(), message: z.string().optional() }),
     result: Null,
   },
+  "canvas.setInsets": {
+    /** Screen space (CSS px) covered by native chrome; content is framed clear of it. */
+    params: z.object({ top: z.number(), left: z.number(), bottom: z.number(), right: z.number() }),
+    result: Null,
+  },
+  "canvas.setTool": {
+    /** The native tool rail picked a tool. Pencil goes to native ink only for draw/highlight. */
+    params: z.object({
+      tool: z.enum(["selection", "freedraw", "highlighter", "text", "rectangle", "ellipse", "arrow", "eraser"]),
+      color: z.string(),
+    }),
+    result: Null,
+  },
+  "canvas.history": {
+    params: z.object({ action: z.enum(["undo", "redo"]) }),
+    result: Null,
+  },
+  "canvas.setLanguage": {
+    params: z.object({ language: z.enum(["en", "da"]) }),
+    result: Null,
+  },
   "canvas.addFiles": {
     params: z.object({ files: z.array(BridgeFile) }),
     result: Null,

@@ -71,6 +71,9 @@ public final class AgentSession {
     @ObservationIgnored public var assist: AssistHelper?
     /// Fill stubs in the background when the kid lingers on them (costs a turn each).
     @ObservationIgnored public var prefetchEnabled = false
+    /// What the kid reads and what Claude writes.
+    @ObservationIgnored public var language: AppLanguage = .en
+    var strings: KidStrings { KidStrings(language) }
     var picturesOn: Bool { imageFinder != nil || imageGenerator != nil }
     @ObservationIgnored private var claimedImages: Set<String> = []
     @ObservationIgnored public var dailyCapUSD: Double = 2
@@ -199,12 +202,12 @@ public final class AgentSession {
             if kind == .prefetch { prefetchingCardId = nil }
         }
         guard let backend else {
-            if kind != .prefetch { status = .failed("Enjin needs a key to think. Ask a parent to add one in Settings.") }
+            if kind != .prefetch { status = .failed(strings.needsKey) }
             return
         }
         let spent = await telemetry?.spentToday() ?? 0
         if spent >= dailyCapUSD {
-            if kind != .prefetch { status = .failed("Enjin is resting for today. Come back tomorrow!") }
+            if kind != .prefetch { status = .failed(strings.resting) }
             return
         }
 
@@ -225,13 +228,13 @@ public final class AgentSession {
         let showBusy = (kind == .fill || kind == .begin) && session.activeCards(in: portalId).isEmpty
         if showBusy {
             let what = kind == .begin ? session.title : (session.portal(portalId)?.title ?? "")
-            await canvas?.setBusy(portalId: portalId, message: "Enjin is exploring \(what)…")
+            await canvas?.setBusy(portalId: portalId, message: strings.exploring(what))
         }
 
         let changes = session.drainChangeLog()
         let userText = PromptComposer.compose(session: session, portalId: portalId, focusCardId: focusCardId, request: request,
                                               changes: changes, tail: tail.filter { $0.portalTitle != session.portal(portalId)?.title },
-                                              compact: backend.isReduced)
+                                              compact: backend.isReduced, language: language)
         var thread = threads[portalId] ?? []
         var owed = pendingResults[portalId] ?? []
         if Self.kidTurns(thread) >= Self.maxThreadTurns {
@@ -282,7 +285,7 @@ public final class AgentSession {
             if showBusy { await canvas?.setBusy(portalId: portalId, message: nil) }
             if foreground {
                 switch result.stop {
-                case .refused: status = .failed("Enjin can't help with that one. Try asking a different way.")
+                case .refused: status = .failed(strings.refused)
                 default: status = .idle
                 }
                 offerNextSteps(created: executor.created, portalId: portalId, kidSaid: kind == .ask ? kidSaid : nil)
@@ -308,7 +311,7 @@ public final class AgentSession {
                 lastTurn = record
             }
             let cancelled = error is CancellationError || Task.isCancelled
-            if foreground && !cancelled { status = .failed(Self.kidMessage(for: error)) }
+            if foreground && !cancelled { status = .failed(Self.kidMessage(for: error, strings)) }
             if cancelled && foreground { status = .idle }
             log.error("turn \(turnId) failed: \(error.localizedDescription)")
             await telemetry?.record("agent_turn", [
@@ -328,25 +331,22 @@ public final class AgentSession {
         }.count
     }
 
-    static func kidMessage(for error: Error) -> String {
+    static func kidMessage(for error: Error, _ s: KidStrings = KidStrings(.en)) -> String {
         if let e = error as? AnthropicError {
             switch e {
-            case .missingKey: return "Enjin needs a key to think. Ask a parent to add one in Settings."
-            case .http(let status, _, _) where status == 401 || status == 403:
-                return "Enjin's key isn't working. Ask a parent to check it in Settings."
-            case .http(let status, _, _) where status == 429 || status == 529 || status >= 500:
-                return "Enjin is busy right now. Try again in a moment."
-            case .http(let status, _, _) where status == 400 || status == 404:
-                // Almost always setup (key, workspace, model), not the kid's question.
-                return "Enjin needs setting up. Ask a parent to open Settings and tap Test connection."
-            case .stream: return "Enjin got interrupted. Try again."
-            default: return "Something went wrong. Try again."
+            case .missingKey: return s.needsKey
+            case .http(let status, _, _) where status == 401 || status == 403: return s.badKey
+            case .http(let status, _, _) where status == 429 || status == 529 || status >= 500: return s.busy
+            // Almost always setup (key, workspace, model), not the kid's question.
+            case .http(let status, _, _) where status == 400 || status == 404: return s.needsSetup
+            case .stream: return s.interrupted
+            default: return s.generic
             }
         }
         if let e = error as? URLError, [.notConnectedToInternet, .networkConnectionLost, .timedOut, .cannotFindHost].contains(e.code) {
-            return "Can't reach the internet. Try again when you're online."
+            return s.offline
         }
-        return "Something went wrong. Try again."
+        return s.generic
     }
 
     fileprivate func setState(_ cardId: String, _ state: CardState) async {
@@ -362,7 +362,7 @@ public final class AgentSession {
         let path = session.path(to: portalId).map(\.title)
         let cards = session.activeCards(in: portalId).suffix(8).map { (title: $0.title, summary: $0.summary) }
         Task {
-            let qs = await assist.nextQuestions(path: path, cards: Array(cards), lastAsk: kidSaid)
+            let qs = await assist.nextQuestions(path: path, cards: Array(cards), lastAsk: kidSaid, language: language)
             // Only if nothing newer happened meanwhile.
             guard status == .idle, nextSteps.allSatisfy({ if case .dive = $0 { true } else { false } }) else { return }
             nextSteps += qs.prefix(2).map { .ask($0) }

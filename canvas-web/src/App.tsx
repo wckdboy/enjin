@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import type { Bridge } from "./bridge/client";
 import { PROTOCOL_VERSION } from "./bridge/schema";
 import { ensureFonts } from "./fonts";
+import { setLang } from "./i18n";
 import { commitStroke } from "./ink/InkService";
 import { InputGate } from "./inputGate";
 import { PortalController } from "./portal/PortalController";
@@ -27,6 +28,35 @@ export function App({ bridge }: { bridge: Bridge }) {
     });
     bridge.on("canvas.setBusy", (p) => {
       portals.setBusy(p);
+      return null;
+    });
+    bridge.on("canvas.setInsets", (insets) => {
+      portals.setInsets(insets);
+      return null;
+    });
+    bridge.on("canvas.setTool", ({ tool, color }) => {
+      const highlight = tool === "highlighter";
+      gate.pencilToNative = tool === "freedraw" || highlight;
+      api.setActiveTool({ type: highlight ? "freedraw" : tool });
+      api.updateScene({
+        appState: {
+          currentItemStrokeColor: color,
+          currentItemOpacity: highlight ? 35 : 100,
+          currentItemStrokeWidth: highlight ? 4 : 2,
+          currentItemFontFamily: 5, // the kid's own text: Excalifont, hand-written
+          currentItemRoughness: 0,
+        },
+      });
+      return null;
+    });
+    bridge.on("canvas.history", ({ action }) => {
+      // Excalidraw has no public undo API; its (hidden) buttons are the stable way in.
+      (document.querySelector(`[data-testid=button-${action}]`) as HTMLButtonElement | null)?.click();
+      return null;
+    });
+    bridge.on("canvas.setLanguage", ({ language }) => {
+      setLang(language);
+      portals.relabel();
       return null;
     });
     bridge.on("canvas.addFiles", (p) => {

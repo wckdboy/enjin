@@ -1,0 +1,16 @@
+{
+  "direction": "nativeToWeb",
+  "request": {
+    "v": 1,
+    "id": "fx-1",
+    "method": "canvas.setLanguage",
+    "params": {
+      "language": "da"
+    }
+  },
+  "response": {
+    "v": 1,
+    "id": "fx-1",
+    "result": null
+  }
+}

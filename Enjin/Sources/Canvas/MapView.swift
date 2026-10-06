@@ -1,9 +1,8 @@
 import EnjinKit
 import SwiftUI
 
-/// "See the whole map": every portal in the notebook as a tree (plan §3.2).
+/// "See the whole map": every portal in the notebook, fully expanded.
 struct MapView: View {
-    @Environment(\.dismiss) private var dismiss
     let session: NotebookSession
     let current: String?
     let onSelect: (String) -> Void
@@ -25,61 +24,65 @@ struct MapView: View {
     }
 
     var body: some View {
-        NavigationStack {
-            List(session.portal(session.rootPortalId).map { rows($0) } ?? []) { row in
-                Button { onSelect(row.id) } label: {
-                    HStack {
-                        Text(row.title).fontWeight(row.id == current ? .bold : .regular)
-                        Spacer()
-                        Text("\(row.cardCount)").foregroundStyle(.secondary).monospacedDigit()
+        EnjinSheet(title: "Map") {
+            ScrollView {
+                VStack(alignment: .leading, spacing: 12) {
+                    ForEach(session.portal(session.rootPortalId).map { rows($0) } ?? []) { row in
+                        Button { onSelect(row.id) } label: {
+                            HStack(spacing: 12) {
+                                if row.depth > 0 {
+                                    Image(systemName: "arrow.turn.down.right").foregroundStyle(Theme.ember).font(.system(size: 15, weight: .bold))
+                                }
+                                Text(row.title)
+                                    .font(row.depth == 0 ? Theme.display(26) : Theme.body(18, weight: row.id == current ? .bold : .semibold))
+                                    .foregroundStyle(Theme.ink)
+                                Spacer()
+                                Text("\(row.cardCount) cards").font(Theme.body(15)).foregroundStyle(Theme.inkSoft)
+                                if row.id == current {
+                                    Text("You are here").font(Theme.body(13, weight: .bold)).foregroundStyle(.white)
+                                        .padding(.horizontal, 8).padding(.vertical, 3).background(Theme.ember, in: .capsule)
+                                }
+                            }
+                            .padding(.horizontal, 16)
+                            .padding(.vertical, 12)
+                            .frame(maxWidth: .infinity, alignment: .leading)
+                            .sticker(row.id == current ? Theme.emberSoft : (row.depth == 0 ? Theme.card : Theme.paper), radius: 14)
+                        }
+                        .buttonStyle(.plain)
+                        .padding(.leading, CGFloat(row.depth) * 28)
+                        .accessibilityElement(children: .ignore)
+                        .accessibilityLabel(Text(row.title))
+                        .accessibilityValue(Text("\(row.cardCount) cards"))
+                        .accessibilityAddTraits(.isButton)
+                        .accessibilityIdentifier("map:\(row.title)")
                     }
-                    .padding(.leading, CGFloat(row.depth) * 24)
                 }
-                .foregroundStyle(.primary)
-                .accessibilityElement(children: .ignore)
-                .accessibilityLabel(row.title)
-                .accessibilityValue("\(row.cardCount) cards")
-                .accessibilityAddTraits(.isButton)
-                .accessibilityIdentifier("map:\(row.title)")
+                .padding(24)
             }
-            .navigationTitle("Map")
-            .navigationBarTitleDisplayMode(.inline)
-            .toolbar { Button("Done") { dismiss() } }
         }
     }
 }
 
 struct NewCardSheet: View {
-    @Environment(\.dismiss) private var dismiss
     @State private var type: CardType = .topic
     @State private var title = ""
     @State private var summary = ""
     let onCreate: (CardType, String, String) -> Void
 
     var body: some View {
-        NavigationStack {
-            Form {
-                Picker("Kind", selection: $type) {
-                    Text("Topic").tag(CardType.topic)
-                    Text("Note").tag(CardType.note)
-                }
-                .pickerStyle(.segmented)
-                TextField("Title", text: $title)
-                TextField("What's it about?", text: $summary, axis: .vertical)
-                    .lineLimit(2...5)
+        EnjinSheet(title: "New card", cancel: "Cancel", confirm: "Add",
+                   confirmDisabled: title.trimmingCharacters(in: .whitespaces).isEmpty) {
+            onCreate(type, title.trimmingCharacters(in: .whitespaces), summary.trimmingCharacters(in: .whitespaces))
+        } content: {
+            VStack(alignment: .leading, spacing: 16) {
+                StickerChoice(selection: $type, options: [(.topic, "Topic", "square.stack"), (.note, "Note", "note.text")])
+                TextField(text: $title) { Text("Title") }.enjinField().accessibilityIdentifier("cardTitle")
+                TextField(text: $summary, axis: .vertical) { Text("What's it about?") }.lineLimit(2...5).enjinField()
+                Text(type == .topic ? "Topics can be dived into and explored." : "Notes are for your own thoughts.")
+                    .font(Theme.body(15)).foregroundStyle(Theme.inkSoft)
+                Spacer()
             }
-            .navigationTitle("New card")
-            .navigationBarTitleDisplayMode(.inline)
-            .toolbar {
-                ToolbarItem(placement: .cancellationAction) { Button("Cancel") { dismiss() } }
-                ToolbarItem(placement: .confirmationAction) {
-                    Button("Add") {
-                        onCreate(type, title.trimmingCharacters(in: .whitespaces), summary.trimmingCharacters(in: .whitespaces))
-                        dismiss()
-                    }
-                    .disabled(title.trimmingCharacters(in: .whitespaces).isEmpty)
-                }
-            }
+            .padding(24)
         }
         .presentationDetents([.medium])
     }
