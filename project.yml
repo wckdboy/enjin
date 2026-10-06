@@ -55,7 +55,7 @@ targets:
         PRODUCT_BUNDLE_IDENTIFIER: ai.wckd.enjin
         # App Store Connect needs both. Bump CURRENT_PROJECT_VERSION for every upload (make bump).
         MARKETING_VERSION: 0.1.0
-        CURRENT_PROJECT_VERSION: 5
+        CURRENT_PROJECT_VERSION: 6
         # Only HTTPS / standard OS encryption: no export-compliance paperwork.
         INFOPLIST_KEY_ITSAppUsesNonExemptEncryption: NO
         INFOPLIST_KEY_LSApplicationCategoryType: public.app-category.education
