@@ -10,6 +10,7 @@
 		0696D4E0361A329507CA4C93 /* SettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 335196AD4E7A4D9D71C15B4B /* SettingsView.swift */; };
 		08BC774921F4CFF20A110AA9 /* PrintStylizer.swift in Sources */ = {isa = PBXBuildFile; fileRef = 92C44BE426D1F9CF2D4EB670 /* PrintStylizer.swift */; };
 		0D00BC97A5472810A8DA69BB /* SmokeTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4363D056E6B217A1044E73A2 /* SmokeTests.swift */; };
+		0D8D5B7F96F8726EA902B982 /* LiveModelView.swift in Sources */ = {isa = PBXBuildFile; fileRef = B3742BC320BF0E4D11869F34 /* LiveModelView.swift */; };
 		227D9A501339CE348FF3535E /* sample-motors.da.json in Resources */ = {isa = PBXBuildFile; fileRef = C252B5AF6D5CC4735CF77D54 /* sample-motors.da.json */; };
 		232FAF527008A6E987F8DA8F /* EnjinKit in Frameworks */ = {isa = PBXBuildFile; productRef = C1762FD4209A455CE72031C3 /* EnjinKit */; };
 		24A7F12B9E99A6A388F0CAE1 /* Localize.swift in Sources */ = {isa = PBXBuildFile; fileRef = F3D11B19BB06058E2702F59B /* Localize.swift */; };
@@ -71,6 +72,7 @@
 		8E0EE3B6BA14C8CE319C4D8D /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		92C44BE426D1F9CF2D4EB670 /* PrintStylizer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PrintStylizer.swift; sourceTree = "<group>"; };
 		9CFB32F8C028DFF01D2B9FDF /* InkLayer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = InkLayer.swift; sourceTree = "<group>"; };
+		B3742BC320BF0E4D11869F34 /* LiveModelView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LiveModelView.swift; sourceTree = "<group>"; };
 		BDDBC61B0837254348615B9C /* EnjinApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EnjinApp.swift; sourceTree = "<group>"; };
 		C252B5AF6D5CC4735CF77D54 /* sample-motors.da.json */ = {isa = PBXFileReference; lastKnownFileType = text.json; path = "sample-motors.da.json"; sourceTree = "<group>"; };
 		CC0ED64F38A37E721C713BBE /* AppSettings.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppSettings.swift; sourceTree = "<group>"; };
@@ -190,6 +192,7 @@
 				81B6E6ACBD460AB9C6F00E8E /* CanvasScreen.swift */,
 				FD00177352742C83CFC89527 /* CardDetailSheet.swift */,
 				9CFB32F8C028DFF01D2B9FDF /* InkLayer.swift */,
+				B3742BC320BF0E4D11869F34 /* LiveModelView.swift */,
 				428BC768F710EFA3C2711881 /* MapView.swift */,
 				D2FAAC088EB2E07B7A6ABD39 /* SchemeHandler.swift */,
 			);
@@ -383,6 +386,7 @@
 				D52FDE1D1D8FEE92A5DF3667 /* InkLayer.swift in Sources */,
 				D87FE2319CFEAC9DDC1D254B /* Library.swift in Sources */,
 				EBD12EBB20C6F69B2FD34E53 /* LibraryView.swift in Sources */,
+				0D8D5B7F96F8726EA902B982 /* LiveModelView.swift in Sources */,
 				24A7F12B9E99A6A388F0CAE1 /* Localize.swift in Sources */,
 				AF6BAAFF249FE3106450116C /* MapView.swift in Sources */,
 				86F6F858054781CAE4715C6F /* PlaygroundIllustrator.swift in Sources */,

@@ -21,6 +21,7 @@
       "ownerCardId": "c-how",
       "parentPortalId": "p-root",
       "cardIds": [
+        "c-live",
         "c-steps",
         "c-force",
         "c-brushless",
@@ -68,6 +69,17 @@
       "title": "Sådan drejer en motor",
       "summary": "Magneter skubber og trækker. Skift hvilken spole der er magnet, så jagter rotoren hele tiden den næste.",
       "body": "Send strøm gennem en spole, og den bliver en elektromagnet med en nord- og en sydpol. Sæt permanente magneter på en del der kan dreje (rotoren), og den drejer, til modsatte poler står over for hinanden. Det får den aldrig lov til i en motor: lige før, skifter strømmen til den næste spole. Rotoren jagter et mål, der hele tiden flytter sig foran den, så den drejer rundt. Hurtigere skift giver højere fart; mere strøm giver et kraftigere træk (mere moment)."
+    },
+    {
+      "id": "c-live",
+      "type": "note",
+      "state": "filled",
+      "title": "Styr den selv",
+      "summary": "Den orange spole trækker i rotorens orange pol. Skift hurtigere, og den drejer hurtigere, indtil den ikke kan følge med.",
+      "visual": {
+        "kind": "live",
+        "html": "<canvas id=\"c\"></canvas>\n<div id=\"ui\"><button id=\"run\">Pause</button><button id=\"step\">Trin</button>\n<label>Skift <input id=\"speed\" type=\"range\" min=\"1\" max=\"40\" value=\"6\"></label><span id=\"ro\"></span></div>\n<style>\n#c{position:absolute;inset:0;width:100%;height:100%}\n#ui{position:absolute;left:12px;right:12px;bottom:10px;display:flex;gap:10px;align-items:center;font:600 13px -apple-system,sans-serif}\nbutton{font:inherit;border:1px solid #0b0b0c;background:#fff;border-radius:999px;padding:6px 14px}\nbutton:active{background:#0b0b0c;color:#fff}\nlabel{display:flex;gap:8px;align-items:center;color:#6a6a70}\ninput{width:140px;accent-color:#0b0b0c}\n#ro{margin-left:auto;font:600 12px ui-monospace,Menlo,monospace;letter-spacing:1px;color:#0b0b0c}\n</style>\n<script>\nconst c=document.getElementById('c'),x=c.getContext('2d');\nlet W,H,dpr=devicePixelRatio||1;\nfunction size(){W=innerWidth;H=innerHeight;c.width=W*dpr;c.height=H*dpr;x.setTransform(dpr,0,0,dpr,0,0)}\naddEventListener('resize',size);size();\n// Six stator coils; the ESC energises opposite pairs in six steps.\nlet step=0,angle=0,vel=0,running=true,acc=0,turns=0,last=performance.now(),rpmT=0,rpm=0,prevA=0;\nconst ro=document.getElementById('ro'),sp=document.getElementById('speed');\ndocument.getElementById('run').onclick=e=>{running=!running;e.target.textContent=running?'Pause':'Kør'};\ndocument.getElementById('step').onclick=()=>{running=false;document.getElementById('run').textContent='Kør';step=(step+1)%6};\nfunction target(){return step*Math.PI/3}\nfunction frame(t){\n  const dt=Math.min(0.05,(t-last)/1000);last=t;\n  if(running){acc+=dt*sp.value;while(acc>=1){acc-=1;step=(step+1)%6}}\n  // The rotor's north pole is pulled toward the energised coil (a spring with damping).\n  let d=target()-angle;d=Math.atan2(Math.sin(d),Math.cos(d));\n  vel+=(d*60-vel*9)*dt;angle+=vel*dt;\n  rpmT+=dt;if(rpmT>0.5){rpm=Math.abs((angle-prevA)/rpmT)/(2*Math.PI)*60;prevA=angle;rpmT=0}\n  draw();requestAnimationFrame(frame)}\nfunction draw(){\n  x.clearRect(0,0,W,H);\n  const cx=W/2,cy=(H-44)/2,R=Math.min(W,H-44)/2-14;if(R<20)return;\n  x.lineWidth=R*0.09;x.strokeStyle='#0b0b0c';x.beginPath();x.arc(cx,cy,R,0,7);x.stroke();\n  for(let i=0;i<6;i++){\n    const a=i*Math.PI/3,on=i===step||i===(step+3)%6,north=i===step;\n    x.save();x.translate(cx,cy);x.rotate(a);\n    x.fillStyle=on?(north?'#e8590c':'#0b0b0c'):'#e9e9e9';x.strokeStyle='#0b0b0c';x.lineWidth=1.5;\n    const r0=R*0.56,r1=R*0.86,w=R*0.26;\n    x.beginPath();x.roundRect(r0,-w/2,r1-r0,w,6);x.fill();x.stroke();\n    x.strokeStyle=on?'#fff':'#9a9aa0';x.lineWidth=1;\n    for(let k=1;k<5;k++){const xx=r0+(r1-r0)*k/5;x.beginPath();x.moveTo(xx,-w/2+4);x.lineTo(xx,w/2-4);x.stroke()}\n    x.fillStyle=on?'#fff':'#6a6a70';x.font='600 11px ui-monospace,Menlo,monospace';x.textAlign='center';x.textBaseline='middle';\n    x.translate((r0+r1)/2,0);x.rotate(-a);x.fillText(on?(north?'S':'N'):'ABC'[i%3],0,0);\n    x.restore()}\n  // Rotor: a disc with a north (orange) and south (ink) magnet.\n  x.save();x.translate(cx,cy);x.rotate(angle);\n  x.fillStyle='#fff';x.strokeStyle='#0b0b0c';x.lineWidth=2;x.beginPath();x.arc(0,0,R*0.46,0,7);x.fill();x.stroke();\n  x.fillStyle='#0b0b0c';x.beginPath();x.moveTo(0,0);x.arc(0,0,R*0.42,Math.PI*0.75,Math.PI*1.25);x.fill();\n  x.fillStyle='#e8590c';x.beginPath();x.moveTo(0,0);x.arc(0,0,R*0.42,-Math.PI*0.25,Math.PI*0.25);x.fill();\n  x.fillStyle='#fff';x.strokeStyle='#0b0b0c';x.beginPath();x.arc(0,0,R*0.12,0,7);x.fill();x.stroke();\n  x.restore();\n  ro.textContent='TRIN '+(step+1)+'/6 · '+Math.round(rpm)+' RPM';\n}\nrequestAnimationFrame(frame);\n</script>\n"
+      }
     },
     {
       "id": "c-steps",

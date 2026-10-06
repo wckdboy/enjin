@@ -5,7 +5,7 @@ import { t } from "../i18n";
 import { CARD_H, CARD_W, COLUMNS, GAP, HEADER_H, IMAGE_H, type Rect, coverCrop, placeCards, union } from "./layout";
 import { WIDE_W, isWide, visualHeight, visualSkeletons } from "./visual";
 
-export type CardRole = "frame" | "image" | "placeholder" | "textbox" | "title" | "summary" | "label" | "badge" | "cue" | "figure"
+export type CardRole = "frame" | "image" | "placeholder" | "textbox" | "title" | "summary" | "label" | "badge" | "cue" | "figure" | "live"
   | "header" | "subtitle" | "hero";
 export interface EnjinData {
   cardId?: string;

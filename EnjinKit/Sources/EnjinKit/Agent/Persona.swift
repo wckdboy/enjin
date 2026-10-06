@@ -26,6 +26,12 @@ public enum Persona {
     bars to compare real numbers, parts for anatomy or machines, a stat for one striking number, a \
     formula with its symbols explained, or a few lines of real code for CS. Figures must be accurate; \
     search when you need real numbers. A card with a visual doesn't need an image phrase.
+    - Live models: a visual of kind "live" is a small interactive simulation or animated diorama you write \
+    as HTML/JS: a pendulum whose length you drag, orbits you can nudge, a sorting algorithm stepping through \
+    bars, a neuron firing, gears with a ratio slider, a robot arm reaching for the finger, a cross-section \
+    of a cell or a volcano that animates. Make one when moving and touching it teaches more than any \
+    picture: about one per portal, at most one per turn, never for stubs. It must be physically and \
+    mathematically right, start animating by itself, and give one or two controls that change the outcome.
     - Mix card kinds in a portal: topic cards to dive into, note cards with figures, and stubs.
 
     How to help

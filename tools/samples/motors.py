@@ -1,0 +1,125 @@
+import json
+def T(en, da): return {"en": en, "da": da}
+portals = [
+  ("p-root", T("Electric motors","Elmotorer"), None, None, ["c-how","c-everywhere","c-history","c-share","c-homemade"]),
+  ("p-how", T("How a motor spins","Sådan drejer en motor"), "c-how", "p-root", ["c-live","c-steps","c-force","c-brushless","c-backemf"]),
+  ("p-brushless", T("Brushed vs brushless","Med og uden børster"), "c-brushless", "p-how", ["c-parts","c-esc","c-brushes"]),
+  ("p-esc", T("The ESC: the motor's conductor","ESC'en: motorens dirigent"), "c-esc", "p-brushless", ["c-sixstep","c-hall"]),
+  ("p-everywhere", T("Motors are everywhere","Motorer er overalt"), "c-everywhere", "p-root", ["c-efficiency","c-drones","c-joints"]),
+]
+cards = [
+  dict(id="c-how", type="topic", state="filled",
+    title=T("How a motor spins","Sådan drejer en motor"),
+    summary=T("Magnets push and pull. Switch which coil is a magnet, and the rotor keeps chasing the next one.",
+              "Magneter skubber og trækker. Skift hvilken spole der er magnet, så jagter rotoren hele tiden den næste."),
+    body=T("Run a current through a coil of wire and it becomes an electromagnet with a north and a south pole. Put permanent magnets on a part that can turn (the rotor), and it twists until opposite poles line up. A motor never lets that happen: just before they line up, it switches the current to the next coil. The rotor is always chasing a target that keeps moving ahead of it, so it spins. Faster switching means faster spinning; more current means a stronger pull (more torque).",
+           "Send strøm gennem en spole, og den bliver en elektromagnet med en nord- og en sydpol. Sæt permanente magneter på en del der kan dreje (rotoren), og den drejer, til modsatte poler står over for hinanden. Det får den aldrig lov til i en motor: lige før, skifter strømmen til den næste spole. Rotoren jagter et mål, der hele tiden flytter sig foran den, så den drejer rundt. Hurtigere skift giver højere fart; mere strøm giver et kraftigere træk (mere moment).")),
+  dict(id="c-live", type="note", state="filled",
+    title=T("Drive it yourself","Styr den selv"),
+    summary=T("The orange coil pulls the rotor's orange pole. Switch faster and it spins faster, until it can't keep up.",
+              "Den orange spole trækker i rotorens orange pol. Skift hurtigere, og den drejer hurtigere, indtil den ikke kan følge med."),
+    visual=dict(kind="live", html=T('<canvas id="c"></canvas>\n<div id="ui"><button id="run">Pause</button><button id="step">Step</button>\n<label>Switching <input id="speed" type="range" min="1" max="40" value="6"></label><span id="ro"></span></div>\n<style>\n#c{position:absolute;inset:0;width:100%;height:100%}\n#ui{position:absolute;left:12px;right:12px;bottom:10px;display:flex;gap:10px;align-items:center;font:600 13px -apple-system,sans-serif}\nbutton{font:inherit;border:1px solid #0b0b0c;background:#fff;border-radius:999px;padding:6px 14px}\nbutton:active{background:#0b0b0c;color:#fff}\nlabel{display:flex;gap:8px;align-items:center;color:#6a6a70}\ninput{width:140px;accent-color:#0b0b0c}\n#ro{margin-left:auto;font:600 12px ui-monospace,Menlo,monospace;letter-spacing:1px;color:#0b0b0c}\n</style>\n<script>\nconst c=document.getElementById(\'c\'),x=c.getContext(\'2d\');\nlet W,H,dpr=devicePixelRatio||1;\nfunction size(){W=innerWidth;H=innerHeight;c.width=W*dpr;c.height=H*dpr;x.setTransform(dpr,0,0,dpr,0,0)}\naddEventListener(\'resize\',size);size();\n// Six stator coils; the ESC energises opposite pairs in six steps.\nlet step=0,angle=0,vel=0,running=true,acc=0,turns=0,last=performance.now(),rpmT=0,rpm=0,prevA=0;\nconst ro=document.getElementById(\'ro\'),sp=document.getElementById(\'speed\');\ndocument.getElementById(\'run\').onclick=e=>{running=!running;e.target.textContent=running?\'Pause\':\'Run\'};\ndocument.getElementById(\'step\').onclick=()=>{running=false;document.getElementById(\'run\').textContent=\'Run\';step=(step+1)%6};\nfunction target(){return step*Math.PI/3}\nfunction frame(t){\n  const dt=Math.min(0.05,(t-last)/1000);last=t;\n  if(running){acc+=dt*sp.value;while(acc>=1){acc-=1;step=(step+1)%6}}\n  // The rotor\'s north pole is pulled toward the energised coil (a spring with damping).\n  let d=target()-angle;d=Math.atan2(Math.sin(d),Math.cos(d));\n  vel+=(d*60-vel*9)*dt;angle+=vel*dt;\n  rpmT+=dt;if(rpmT>0.5){rpm=Math.abs((angle-prevA)/rpmT)/(2*Math.PI)*60;prevA=angle;rpmT=0}\n  draw();requestAnimationFrame(frame)}\nfunction draw(){\n  x.clearRect(0,0,W,H);\n  const cx=W/2,cy=(H-44)/2,R=Math.min(W,H-44)/2-14;if(R<20)return;\n  x.lineWidth=R*0.09;x.strokeStyle=\'#0b0b0c\';x.beginPath();x.arc(cx,cy,R,0,7);x.stroke();\n  for(let i=0;i<6;i++){\n    const a=i*Math.PI/3,on=i===step||i===(step+3)%6,north=i===step;\n    x.save();x.translate(cx,cy);x.rotate(a);\n    x.fillStyle=on?(north?\'#e8590c\':\'#0b0b0c\'):\'#e9e9e9\';x.strokeStyle=\'#0b0b0c\';x.lineWidth=1.5;\n    const r0=R*0.56,r1=R*0.86,w=R*0.26;\n    x.beginPath();x.roundRect(r0,-w/2,r1-r0,w,6);x.fill();x.stroke();\n    x.strokeStyle=on?\'#fff\':\'#9a9aa0\';x.lineWidth=1;\n    for(let k=1;k<5;k++){const xx=r0+(r1-r0)*k/5;x.beginPath();x.moveTo(xx,-w/2+4);x.lineTo(xx,w/2-4);x.stroke()}\n    x.fillStyle=on?\'#fff\':\'#6a6a70\';x.font=\'600 11px ui-monospace,Menlo,monospace\';x.textAlign=\'center\';x.textBaseline=\'middle\';\n    x.translate((r0+r1)/2,0);x.rotate(-a);x.fillText(on?(north?\'S\':\'N\'):\'ABC\'[i%3],0,0);\n    x.restore()}\n  // Rotor: a disc with a north (orange) and south (ink) magnet.\n  x.save();x.translate(cx,cy);x.rotate(angle);\n  x.fillStyle=\'#fff\';x.strokeStyle=\'#0b0b0c\';x.lineWidth=2;x.beginPath();x.arc(0,0,R*0.46,0,7);x.fill();x.stroke();\n  x.fillStyle=\'#0b0b0c\';x.beginPath();x.moveTo(0,0);x.arc(0,0,R*0.42,Math.PI*0.75,Math.PI*1.25);x.fill();\n  x.fillStyle=\'#e8590c\';x.beginPath();x.moveTo(0,0);x.arc(0,0,R*0.42,-Math.PI*0.25,Math.PI*0.25);x.fill();\n  x.fillStyle=\'#fff\';x.strokeStyle=\'#0b0b0c\';x.beginPath();x.arc(0,0,R*0.12,0,7);x.fill();x.stroke();\n  x.restore();\n  ro.textContent=\'STEP \'+(step+1)+\'/6 · \'+Math.round(rpm)+\' RPM\';\n}\nrequestAnimationFrame(frame);\n</script>\n', '<canvas id="c"></canvas>\n<div id="ui"><button id="run">Pause</button><button id="step">Trin</button>\n<label>Skift <input id="speed" type="range" min="1" max="40" value="6"></label><span id="ro"></span></div>\n<style>\n#c{position:absolute;inset:0;width:100%;height:100%}\n#ui{position:absolute;left:12px;right:12px;bottom:10px;display:flex;gap:10px;align-items:center;font:600 13px -apple-system,sans-serif}\nbutton{font:inherit;border:1px solid #0b0b0c;background:#fff;border-radius:999px;padding:6px 14px}\nbutton:active{background:#0b0b0c;color:#fff}\nlabel{display:flex;gap:8px;align-items:center;color:#6a6a70}\ninput{width:140px;accent-color:#0b0b0c}\n#ro{margin-left:auto;font:600 12px ui-monospace,Menlo,monospace;letter-spacing:1px;color:#0b0b0c}\n</style>\n<script>\nconst c=document.getElementById(\'c\'),x=c.getContext(\'2d\');\nlet W,H,dpr=devicePixelRatio||1;\nfunction size(){W=innerWidth;H=innerHeight;c.width=W*dpr;c.height=H*dpr;x.setTransform(dpr,0,0,dpr,0,0)}\naddEventListener(\'resize\',size);size();\n// Six stator coils; the ESC energises opposite pairs in six steps.\nlet step=0,angle=0,vel=0,running=true,acc=0,turns=0,last=performance.now(),rpmT=0,rpm=0,prevA=0;\nconst ro=document.getElementById(\'ro\'),sp=document.getElementById(\'speed\');\ndocument.getElementById(\'run\').onclick=e=>{running=!running;e.target.textContent=running?\'Pause\':\'Kør\'};\ndocument.getElementById(\'step\').onclick=()=>{running=false;document.getElementById(\'run\').textContent=\'Kør\';step=(step+1)%6};\nfunction target(){return step*Math.PI/3}\nfunction frame(t){\n  const dt=Math.min(0.05,(t-last)/1000);last=t;\n  if(running){acc+=dt*sp.value;while(acc>=1){acc-=1;step=(step+1)%6}}\n  // The rotor\'s north pole is pulled toward the energised coil (a spring with damping).\n  let d=target()-angle;d=Math.atan2(Math.sin(d),Math.cos(d));\n  vel+=(d*60-vel*9)*dt;angle+=vel*dt;\n  rpmT+=dt;if(rpmT>0.5){rpm=Math.abs((angle-prevA)/rpmT)/(2*Math.PI)*60;prevA=angle;rpmT=0}\n  draw();requestAnimationFrame(frame)}\nfunction draw(){\n  x.clearRect(0,0,W,H);\n  const cx=W/2,cy=(H-44)/2,R=Math.min(W,H-44)/2-14;if(R<20)return;\n  x.lineWidth=R*0.09;x.strokeStyle=\'#0b0b0c\';x.beginPath();x.arc(cx,cy,R,0,7);x.stroke();\n  for(let i=0;i<6;i++){\n    const a=i*Math.PI/3,on=i===step||i===(step+3)%6,north=i===step;\n    x.save();x.translate(cx,cy);x.rotate(a);\n    x.fillStyle=on?(north?\'#e8590c\':\'#0b0b0c\'):\'#e9e9e9\';x.strokeStyle=\'#0b0b0c\';x.lineWidth=1.5;\n    const r0=R*0.56,r1=R*0.86,w=R*0.26;\n    x.beginPath();x.roundRect(r0,-w/2,r1-r0,w,6);x.fill();x.stroke();\n    x.strokeStyle=on?\'#fff\':\'#9a9aa0\';x.lineWidth=1;\n    for(let k=1;k<5;k++){const xx=r0+(r1-r0)*k/5;x.beginPath();x.moveTo(xx,-w/2+4);x.lineTo(xx,w/2-4);x.stroke()}\n    x.fillStyle=on?\'#fff\':\'#6a6a70\';x.font=\'600 11px ui-monospace,Menlo,monospace\';x.textAlign=\'center\';x.textBaseline=\'middle\';\n    x.translate((r0+r1)/2,0);x.rotate(-a);x.fillText(on?(north?\'S\':\'N\'):\'ABC\'[i%3],0,0);\n    x.restore()}\n  // Rotor: a disc with a north (orange) and south (ink) magnet.\n  x.save();x.translate(cx,cy);x.rotate(angle);\n  x.fillStyle=\'#fff\';x.strokeStyle=\'#0b0b0c\';x.lineWidth=2;x.beginPath();x.arc(0,0,R*0.46,0,7);x.fill();x.stroke();\n  x.fillStyle=\'#0b0b0c\';x.beginPath();x.moveTo(0,0);x.arc(0,0,R*0.42,Math.PI*0.75,Math.PI*1.25);x.fill();\n  x.fillStyle=\'#e8590c\';x.beginPath();x.moveTo(0,0);x.arc(0,0,R*0.42,-Math.PI*0.25,Math.PI*0.25);x.fill();\n  x.fillStyle=\'#fff\';x.strokeStyle=\'#0b0b0c\';x.beginPath();x.arc(0,0,R*0.12,0,7);x.fill();x.stroke();\n  x.restore();\n  ro.textContent=\'TRIN \'+(step+1)+\'/6 · \'+Math.round(rpm)+\' RPM\';\n}\nrequestAnimationFrame(frame);\n</script>\n'))),
+  dict(id="c-steps", type="note", state="filled",
+    title=T("One turn, step by step","Én omgang, trin for trin"),
+    summary=T("The same four steps, thousands of times a second in a drone motor.","De samme fire trin, tusindvis af gange i sekundet i en dronemotor."),
+    visual=dict(kind="flow", items=[
+      dict(label=T("Current on","Strøm på"), detail=T("into one set of coils","i ét sæt spoler")),
+      dict(label=T("Coil = magnet","Spole = magnet"), detail=T("north and south poles","nord- og sydpol")),
+      dict(label=T("Rotor pulled","Rotoren trækkes"), detail=T("opposites attract","modsatte tiltrækker")),
+      dict(label=T("Switch coils","Skift spoler"), detail=T("just before it lines up","lige før de flugter"))])),
+  dict(id="c-force", type="note", state="filled",
+    title=T("The force on a wire","Kraften på en ledning"),
+    summary=T("Double the current, double the push. That's why motors get hot when they work hard.",
+              "Dobbelt strøm, dobbelt skub. Derfor bliver motorer varme, når de arbejder hårdt."),
+    visual=dict(kind="formula", text="F = B · I · L", items=[
+      dict(label="F", detail=T("force, newtons","kraft, newton")),
+      dict(label="B", detail=T("magnetic field, tesla","magnetfelt, tesla")),
+      dict(label="I", detail=T("current, amperes","strøm, ampere")),
+      dict(label="L", detail=T("wire length in the field, m","ledning i feltet, m"))])),
+  dict(id="c-brushless", type="topic", state="filled",
+    title=T("Brushed vs brushless","Med og uden børster"),
+    summary=T("Old motors switch coils with rubbing brushes. Brushless ones use a tiny computer instead.",
+              "Gamle motorer skifter spoler med slæbende børster. Børsteløse bruger en lille computer i stedet."),
+    body=T("A brushed motor switches its coils mechanically: carbon brushes rub on a split ring (the commutator) on the shaft, so the current flips by itself as it turns. Simple and cheap, but the brushes spark, wear out and waste energy. A brushless motor flips it around: the coils sit still on the outside or inside, the magnets spin, and an electronic speed controller (ESC) switches the current. No rubbing parts, so it runs cooler, lasts longer and can spin much faster. Drones, electric cars and hard drives all use brushless motors.",
+           "En børstemotor skifter spoler mekanisk: kulbørster slæber på en delt ring (kommutatoren) på akslen, så strømmen vender af sig selv, mens den drejer. Enkelt og billigt, men børsterne gnister, slides op og spilder energi. En børsteløs motor vender det om: spolerne sidder stille, magneterne drejer, og en elektronisk fartregulator (ESC) skifter strømmen. Ingen dele der gnider, så den kører køligere, holder længere og kan dreje meget hurtigere. Droner, elbiler og harddiske bruger børsteløse motorer.")),
+  dict(id="c-parts", type="note", state="filled",
+    title=T("Inside a drone motor","Inde i en dronemotor"),
+    summary=T("This kind is an outrunner: the magnets are in the bell that spins around the coils.",
+              "Denne slags er en outrunner: magneterne sidder i klokken, der drejer uden om spolerne."),
+    visual=dict(kind="parts", center=T("Brushless motor","Børsteløs motor"), items=[
+      dict(label=T("Stator coils","Statorspoler")), dict(label=T("Magnets","Magneter")),
+      dict(label=T("Rotor bell","Rotorklokke")), dict(label=T("Bearings","Lejer")),
+      dict(label=T("Shaft","Aksel")), dict(label=T("Three wires","Tre ledninger"))])),
+  dict(id="c-esc", type="topic", state="filled",
+    title=T("The ESC: the motor's conductor","ESC'en: motorens dirigent"),
+    summary=T("A chip that flips the current between three wires, up to tens of thousands of times a second.",
+              "En chip der skifter strømmen mellem tre ledninger, op til titusinder af gange i sekundet."),
+    body=T("A brushless motor has three wires. The ESC (electronic speed controller) connects two of them to the battery at a time, one positive and one negative, in a six-step pattern. Each step pulls the rotor a little further round. To know when to switch, it either reads Hall sensors that feel where the magnets are, or listens to the voltage the spinning magnets induce in the coil that's switched off. Speed is set by switching the power on and off very fast (PWM) to control the average voltage.",
+           "En børsteløs motor har tre ledninger. ESC'en (elektronisk fartregulator) kobler to af dem til batteriet ad gangen, én plus og én minus, i et mønster med seks trin. Hvert trin trækker rotoren lidt længere rundt. For at vide hvornår den skal skifte, læser den enten Hall-sensorer, der mærker hvor magneterne er, eller lytter til den spænding, de drejende magneter skaber i den spole, der er slukket. Farten styres ved at tænde og slukke strømmen meget hurtigt (PWM).")),
+  dict(id="c-sixstep", type="note", state="filled",
+    title=T("Six-step switching, in code","Seks-trins skift i kode"),
+    summary=T("Each line: which wire goes to + and which to −. Six steps make one electrical turn.",
+              "Hver linje: hvilken ledning der får + og hvilken −. Seks trin giver én elektrisk omgang."),
+    visual=dict(kind="code", text="STEPS = [(\"A\",\"B\"), (\"A\",\"C\"), (\"B\",\"C\"),\n         (\"B\",\"A\"), (\"C\",\"A\"), (\"C\",\"B\")]\n\nstep = 0\nwhile running:\n    plus, minus = STEPS[step]\n    connect(plus, minus)\n    wait_for_next_magnet()\n    step = (step + 1) % 6")),
+  dict(id="c-hall", type="topic", state="stub",
+    title=T("How does it know where the magnets are?","Hvordan ved den, hvor magneterne er?"),
+    summary=T("Tiny sensors that feel a magnetic field, or a clever trick: listening to the motor itself.",
+              "Små sensorer der mærker et magnetfelt, eller et smart trick: at lytte til motoren selv.")),
+  dict(id="c-brushes", type="topic", state="stub",
+    title=T("Why do brushes spark?","Hvorfor gnister børsterne?"),
+    summary=T("Breaking a current in a coil fights back with a voltage spike.","At afbryde strømmen i en spole giver et spændingsstød tilbage.")),
+  dict(id="c-backemf", type="topic", state="stub",
+    title=T("Every motor is secretly a generator","Hver motor er i hemmelighed en generator"),
+    summary=T("Spin it by hand and electricity comes out. Electric cars use this to brake.",
+              "Drej den med hånden, og der kommer strøm ud. Elbiler bruger det til at bremse.")),
+  dict(id="c-everywhere", type="topic", state="filled",
+    title=T("Motors are everywhere","Motorer er overalt"),
+    summary=T("Your phone's vibration, a fridge, a lift, a Mars rover: all motors.","Mobilens vibration, et køleskab, en elevator, en Mars-rover: alt sammen motorer."),
+    body=T("A phone vibrates with a tiny motor spinning an off-centre weight. Hard drives spin a platter at 7,200 turns a minute. A modern car has dozens of small motors for windows, seats, mirrors, wipers and pumps, before you even count an electric car's drive motor. Robots are mostly motors with sensors and a computer: every joint in a robot arm is a motor with a gearbox and a sensor that measures its angle.",
+           "En mobil vibrerer med en lille motor, der drejer et skævt lod. Harddiske drejer en plade 7.200 gange i minuttet. En moderne bil har snesevis af små motorer til ruder, sæder, spejle, viskere og pumper, før man overhovedet tæller elbilens drivmotor. Robotter er mest motorer med sensorer og en computer: hvert led i en robotarm er en motor med et gear og en sensor, der måler vinklen.")),
+  dict(id="c-efficiency", type="note", state="filled",
+    title=T("Where does the energy go?","Hvor bliver energien af?"),
+    summary=T("How much of the energy becomes motion, roughly. The rest turns into heat.","Hvor meget af energien der bliver til bevægelse, cirka. Resten bliver til varme."),
+    visual=dict(kind="bars", unit="%", items=[
+      dict(label=T("Steam engine","Dampmaskine"), value=10), dict(label=T("Petrol engine","Benzinmotor"), value=30),
+      dict(label=T("Diesel engine","Dieselmotor"), value=40), dict(label=T("Electric motor","Elmotor"), value=95)])),
+  dict(id="c-drones", type="topic", state="stub",
+    title=T("How do drones stay level?","Hvordan holder droner sig vandret?"),
+    summary=T("Four motors, adjusted hundreds of times a second.","Fire motorer, justeret hundredvis af gange i sekundet.")),
+  dict(id="c-joints", type="topic", state="stub",
+    title=T("Robot joints","Robotled"),
+    summary=T("Why robot arms need gearboxes, and what a servo is.","Hvorfor robotarme har brug for gear, og hvad en servo er.")),
+  dict(id="c-history", type="note", state="filled",
+    title=T("From a spark to a Mars helicopter","Fra en gnist til en Mars-helikopter"),
+    summary=T("Two hundred years of making things spin.","To hundrede år med at få ting til at dreje."),
+    visual=dict(kind="timeline", items=[
+      dict(tag="1821", label="Faraday", detail=T("first electric motion","første elektriske bevægelse")),
+      dict(tag="1832", label="Sturgeon", detail=T("commutator motor","motor med kommutator")),
+      dict(tag="1888", label="Tesla", detail=T("AC induction motor","AC-induktionsmotor")),
+      dict(tag="1962", label=T("Brushless","Børsteløs"), detail=T("electronic switching","elektronisk skift")),
+      dict(tag="2021", label="Ingenuity", detail=T("motors fly on Mars","motorer flyver på Mars"))])),
+  dict(id="c-share", type="note", state="filled",
+    title=T("Motors drink electricity","Motorer drikker strøm"),
+    summary=T("Electric motor systems use roughly this share of all the world's electricity (IEA).",
+              "Elmotorsystemer bruger cirka så stor en del af al verdens strøm (IEA)."),
+    visual=dict(kind="stat", value="~45", unit="%")),
+  dict(id="c-homemade", type="topic", state="stub",
+    title=T("Build a motor in five minutes","Byg en motor på fem minutter"),
+    summary=T("A battery, a magnet, a screw and a wire: the homopolar motor.","Et batteri, en magnet, en skrue og en ledning: den homopolære motor.")),
+]
+def pick(v, lang):
+    if isinstance(v, dict) and set(v) == {"en","da"}: return v[lang]
+    if isinstance(v, dict): return {k: pick(x, lang) for k, x in v.items()}
+    if isinstance(v, list): return [pick(x, lang) for x in v]
+    return v
+for lang, path in (("en","shared/sample-motors.json"), ("da","shared/sample-motors.da.json")):
+    data = {
+      "title": portals[0][1][lang], "rootPortalId": "p-root",
+      "portals": [dict(portalId=p, title=t[lang], ownerCardId=o, parentPortalId=pp, cardIds=ids) for p,t,o,pp,ids in portals],
+      "cards": [pick(c, lang) for c in cards],
+    }
+    ids = {c["id"] for c in cards}
+    assert all(i in ids for p in portals for i in p[4])
+    json.dump(data, open(path, "w"), ensure_ascii=False, indent=2)
+    open(path, "a").write("\n")
+print("ok")

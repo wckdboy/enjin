@@ -42,6 +42,13 @@ struct CardDetailSheet: View {
         EnjinSheet(title: card.type == .note ? "Note" : "Card") {
             ScrollView {
                 VStack(alignment: .leading, spacing: 22) {
+                    if let html = card.visual?.html, card.visual?.kind == .live {
+                        LiveModelView(html: html)
+                            .frame(height: 520)
+                            .clipShape(.rect(cornerRadius: 18))
+                            .panel(Theme.card, radius: 18)
+                            .accessibilityLabel(Text("Live model for \(card.title)"))
+                    }
                     if let picture {
                         VStack(alignment: .leading, spacing: 8) {
                             Image(uiImage: picture)

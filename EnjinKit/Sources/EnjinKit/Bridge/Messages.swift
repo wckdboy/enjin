@@ -46,7 +46,7 @@ public struct VisualItem: Codable, Equatable, Sendable {
     }
 }
 
-public enum VisualKind: String, Codable, Sendable, CaseIterable { case flow, cycle, timeline, bars, parts, stat, formula, code }
+public enum VisualKind: String, Codable, Sendable, CaseIterable { case flow, cycle, timeline, bars, parts, stat, formula, code, live }
 
 /// A figure drawn on a card as canvas geometry (mirrors schema.ts `Visual`).
 public struct Visual: Codable, Equatable, Sendable {
@@ -56,12 +56,17 @@ public struct Visual: Codable, Equatable, Sendable {
     public var value: String?
     public var unit: String?
     public var text: String?
+    /// live: a self-contained HTML page (simulation or diorama), run sandboxed with no network.
+    public var html: String?
 
-    public init(kind: VisualKind, items: [VisualItem]? = nil, center: String? = nil, value: String? = nil, unit: String? = nil, text: String? = nil) {
-        self.kind = kind; self.items = items; self.center = center; self.value = value; self.unit = unit; self.text = text
+    public init(kind: VisualKind, items: [VisualItem]? = nil, center: String? = nil, value: String? = nil, unit: String? = nil,
+                text: String? = nil, html: String? = nil) {
+        self.kind = kind; self.items = items; self.center = center; self.value = value; self.unit = unit; self.text = text; self.html = html
     }
 
-    static let maxItems: [VisualKind: Int] = [.flow: 5, .cycle: 6, .timeline: 6, .bars: 6, .parts: 6, .stat: 0, .formula: 4, .code: 0]
+    static let maxItems: [VisualKind: Int] = [.flow: 5, .cycle: 6, .timeline: 6, .bars: 6, .parts: 6, .stat: 0, .formula: 4, .code: 0, .live: 0]
+    /// Live models are small on purpose: one idea, one screen.
+    public static let maxHTML = 24_000
 
     /// Within what the canvas can draw: item counts and text lengths clipped; nil if nothing is left to draw.
     public func sanitized() -> Visual? {
@@ -78,6 +83,7 @@ public struct Visual: Codable, Equatable, Sendable {
         v.center = clip(center, 30)
         v.value = clip(value, 12)
         v.unit = clip(unit, 16)
+        v.html = kind == .live ? html.flatMap { $0.count <= Self.maxHTML && !$0.isEmpty ? $0 : nil } : nil
         if kind == .code {
             v.text = text.map { $0.split(separator: "\n", omittingEmptySubsequences: false).prefix(10).map { String($0.prefix(64)) }.joined(separator: "\n") }
         } else {
@@ -86,6 +92,7 @@ public struct Visual: Codable, Equatable, Sendable {
         switch kind {
         case .stat: return v.value == nil ? nil : v
         case .formula, .code: return v.text == nil ? nil : v
+        case .live: return v.html == nil ? nil : v
         case .parts: return v.items == nil && v.center == nil ? nil : v
         case .bars: return (v.items?.count ?? 0) >= 2 ? v : nil
         default: return v.items == nil ? nil : v

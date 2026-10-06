@@ -304,6 +304,11 @@ final class CanvasController: NSObject {
 
 extension CanvasController: WKScriptMessageHandlerWithReply {
     func userContentController(_ userContentController: WKUserContentController, didReceive message: WKScriptMessage) async -> (Any?, String?) {
+        // Only the canvas page itself may talk to native. Live models run in
+        // sandboxed iframes (model-written code) and must never reach the bridge.
+        guard message.frameInfo.isMainFrame, message.frameInfo.securityOrigin.protocol == SchemeHandler.scheme else {
+            return (nil, "not allowed")
+        }
         do {
             let request = try JSONValue(foundation: message.body)
             return (await router.handle(request).foundationValue, nil)
@@ -315,7 +320,11 @@ extension CanvasController: WKScriptMessageHandlerWithReply {
 
 extension CanvasController: WKNavigationDelegate {
     func webView(_ webView: WKWebView, decidePolicyFor action: WKNavigationAction) async -> WKNavigationActionPolicy {
-        action.request.url?.scheme == SchemeHandler.scheme ? .allow : .cancel
+        let url = action.request.url
+        if url?.scheme == SchemeHandler.scheme { return .allow }
+        // Live models: sandboxed srcdoc iframes. Nothing else may load, in any frame.
+        if action.targetFrame?.isMainFrame == false, url?.absoluteString == "about:srcdoc" { return .allow }
+        return .cancel
     }
 
     /// iOS kills the web process under memory pressure. Native is the source of

@@ -21,7 +21,8 @@ public enum AgentTools {
         timeline (2-6 events: items[].tag = when, label, detail), bars (2-6 numbers to compare: items[].label + value, one unit), \
         parts (what something is made of: center + 3-6 items[].label), stat (one striking number: value + unit), \
         formula (text like "F = m × a" + items[] as symbol legend: label = symbol, detail = meaning with unit), \
-        code (text: up to 10 short lines of real code). Labels <= 30 characters, details <= 48.
+        code (text: up to 10 short lines of real code), live (html: an interactive model, see below). \
+        Labels <= 30 characters, details <= 48.
         """),
         "properties": .object([
             "kind": .object(["type": .string("string"), "enum": .array(VisualKind.allCases.map { .string($0.rawValue) })]),
@@ -42,6 +43,14 @@ public enum AgentTools {
             "value": .object(["type": .string("string"), "description": .string("stat: the number as written, e.g. \"299,792\"")]),
             "unit": .object(["type": .string("string")]),
             "text": .object(["type": .string("string"), "description": .string("formula expression or code")]),
+            "html": .object(["type": .string("string"), "description": .string("""
+            live only: one self-contained HTML snippet (markup, <style>, <script>; no <html>/<head>) under 20,000 characters. \
+            It runs in a sandboxed iframe, about 650 x 380 px (read innerWidth/innerHeight, handle resize), with NO network: \
+            no external scripts, fonts, images or fetch. Use canvas 2D or inline SVG and requestAnimationFrame. Touch input via \
+            pointer events. Look: white background, ink #0b0b0c lines, greys, one accent #e8590c; controls are pill buttons and \
+            sliders in a row at the bottom; a monospace readout of the live numbers. It must start moving on its own and show \
+            the idea with no instructions; controls let the explorer change one or two variables and see the effect.
+            """)]),
         ]),
         "required": .array([.string("kind")]),
     ])

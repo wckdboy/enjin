@@ -3,12 +3,13 @@ import type { ExcalidrawElement, NonDeletedExcalidrawElement } from "@excalidraw
 import type { ExcalidrawImperativeAPI } from "@excalidraw/excalidraw/types";
 import type { Bridge } from "../bridge/client";
 import type { BridgeFile, Card, Params, NativeToWeb, PortalScene, Result } from "../bridge/schema";
-import { buildPortalElements, cardRects, renderCards, withHeader } from "../cards/render";
+import { buildPortalElements, cardRects, enjinData, renderCards, withHeader } from "../cards/render";
 import { type Insets, NO_INSETS, type Rect, type Viewport, centerOn, containsPoint, fitZoom, frame, framedRect, mapRect, nearestToCenter, toView, union, visibleRect, windowIn } from "../cards/layout";
 import type { InputGate } from "../inputGate";
 import { cssTransition, nextPaint, setStyleNow, tween } from "./animate";
 import { CardActions } from "./CardActions";
 import { BusyHint } from "./BusyHint";
+import { LiveLayer } from "./LiveLayer";
 import { PreviewOverlay } from "./PreviewOverlay";
 
 /** A card this big on screen (fraction of view width or height) dives in. */
@@ -39,6 +40,7 @@ export class PortalController {
   private unsubs: (() => void)[] = [];
   private overlay = new PreviewOverlay();
   private busy = new BusyHint();
+  private live = new LiveLayer();
   private actions = new CardActions({
     open: (cardId) => this.bridge.notify("card.open", { cardId }),
     dive: (cardId) => void this.requestDive(cardId),
@@ -90,6 +92,7 @@ export class PortalController {
       else await this.loadingInto(scene.portalId, () => this.fadeTo(scene, focusCardId));
     } finally {
       this.transitioning = false;
+      this.positionActions(); // live models come back after a transition
       this.gate.unblock("transition");
       this.positionActions();
       this.updateBusy();
@@ -467,6 +470,7 @@ export class PortalController {
       this.bridge.notify("log.event", { level: "error", message: `dive failed: ${String(e)}` });
     } finally {
       this.transitioning = false;
+      this.positionActions(); // live models come back after a transition
       this.gate.unblock("transition");
       this.positionActions();
       this.updateBusy();
@@ -488,6 +492,7 @@ export class PortalController {
       this.bridge.notify("log.event", { level: "error", message: `exit failed: ${String(e)}` });
     } finally {
       this.transitioning = false;
+      this.positionActions(); // live models come back after a transition
       this.gate.unblock("transition");
       this.positionActions();
       this.updateBusy();
@@ -568,6 +573,18 @@ export class PortalController {
     const c = id && !busy ? cardRects(this.api.getSceneElements()).find((r) => r.cardId === id) : undefined;
     const card = c && this.scene?.cards.find((x) => x.id === c.cardId);
     this.actions.update(c ? c.cardId : null, c ? toView(c.rect, this.viewport()) : null, card?.type === "topic");
+    this.syncLive(busy);
+  }
+
+  /** Running live models over their slots; touchable while their card is selected. */
+  private syncLive(hidden: boolean): void {
+    const html = new Map(this.cards().flatMap((c) => (c.visual?.kind === "live" && c.visual.html ? [[c.id, c.visual.html] as const] : [])));
+    const slots = this.api.getSceneElements().flatMap((e) => {
+      const d = enjinData(e);
+      const h = d?.role === "live" && d.cardId ? html.get(d.cardId) : undefined;
+      return h ? [{ cardId: d!.cardId!, html: h, rect: { x: e.x, y: e.y, width: e.width, height: e.height } }] : [];
+    });
+    this.live.sync(slots, this.viewport(), this.selectedCardId, hidden || this.transitioning);
   }
 
   private onElementsChanged(elements: readonly ExcalidrawElement[]): void {

@@ -21,7 +21,9 @@ const MONO = FONT_FAMILY.Cascadia;
 export const WIDE_W = 2 * CARD_W + GAP;
 const FIG_LABEL_H = 22;
 
-const MAX_ITEMS: Record<Visual["kind"], number> = { flow: 5, cycle: 6, timeline: 6, bars: 6, parts: 6, stat: 0, formula: 4, code: 0 };
+const MAX_ITEMS: Record<Visual["kind"], number> = { flow: 5, cycle: 6, timeline: 6, bars: 6, parts: 6, stat: 0, formula: 4, code: 0, live: 0 };
+/** Live models run in an iframe laid over this slot (see LiveLayer). */
+export const LIVE_H = 380;
 const CODE_LINES = 10;
 const CODE_LINE_H = 20;
 
@@ -48,6 +50,7 @@ export function visualHeight(v: Visual): number {
     stat: 84,
     formula: 52 + 4 * 26,
     code: Math.max(1, codeLines(v).length) * CODE_LINE_H + 24,
+    live: LIVE_H,
   }[v.kind];
   return FIG_LABEL_H + body;
 }
@@ -199,6 +202,15 @@ export function visualSkeletons(v: Visual, box: Rect, cardId: string, base: Base
         const ry = y0 + 52 + i * 26;
         out.push(text(`s${i}`, x0, ry, it.label.slice(0, 6), 15, MONO, INK));
         if (it.detail) out.push(text(`d${i}`, x0 + 64, ry + 1, it.detail.slice(0, 34), 14, SANS, MUTED));
+      });
+      break;
+    }
+    case "live": {
+      // The slot: what exports, previews and the dive animation show; the running model sits on top of it.
+      out.push({
+        ...base, type: "rectangle", id: id("live"), x: x0, y: y0, width: W, height: LIVE_H, backgroundColor: SOFT, fillStyle: "solid",
+        strokeColor: HAIR, strokeWidth: 1, roundness: { type: 3 }, customData: { cardId, role: "live" },
+        label: { text: v.html ? "" : t.building(), fontSize: 14, fontFamily: MONO, strokeColor: MUTED, customData: { cardId, role: "label" } } as never,
       });
       break;
     }

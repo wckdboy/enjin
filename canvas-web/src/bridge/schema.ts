@@ -29,14 +29,16 @@ export const VisualItem = z.object({
 });
 export type VisualItem = z.infer<typeof VisualItem>;
 
-export const VisualKind = z.enum(["flow", "cycle", "timeline", "bars", "parts", "stat", "formula", "code"]);
+export const VisualKind = z.enum(["flow", "cycle", "timeline", "bars", "parts", "stat", "formula", "code", "live"]);
 export type VisualKind = z.infer<typeof VisualKind>;
 
 /**
  * A figure drawn on the card as canvas geometry (not a picture):
  * flow (steps →), cycle (steps in a loop), timeline (tag + label), bars
  * (label + value, `unit`), parts (`center` + labelled parts), stat (big
- * `value` + `unit`), formula (`text` + items as symbol legend), code (`text`).
+ * `value` + `unit`), formula (`text` + items as symbol legend), code (`text`),
+ * live (`html`: a small interactive simulation or animated diorama, run in a
+ * sandboxed iframe with no network; absent while it's still being written).
  */
 export const Visual = z.object({
   kind: VisualKind,
@@ -45,6 +47,7 @@ export const Visual = z.object({
   value: z.string().optional(),
   unit: z.string().optional(),
   text: z.string().optional(),
+  html: z.string().optional(),
 });
 export type Visual = z.infer<typeof Visual>;
 

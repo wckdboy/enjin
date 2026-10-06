@@ -34,6 +34,13 @@ struct VisualTests {
         #expect(code?.text?.split(separator: "\n").allSatisfy { $0.count <= 64 } == true)
     }
 
+    @Test func liveModelsNeedSmallCompleteHTML() {
+        #expect(Visual(kind: .live, html: "<canvas></canvas><script>1</script>").sanitized()?.html != nil)
+        #expect(Visual(kind: .live).sanitized() == nil)
+        #expect(Visual(kind: .live, html: String(repeating: "x", count: Visual.maxHTML + 1)).sanitized() == nil)
+        #expect(Visual(kind: .flow, items: [VisualItem(label: "a")], html: "<b>").sanitized()?.html == nil, "html only on live")
+    }
+
     @MainActor @Test func aCardWithAFigurePersistsAndSkipsThePictureSearch() async throws {
         let store = NotebookStore(root: tempRoot())
         let nb = try demoData()

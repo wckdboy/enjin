@@ -532,7 +532,9 @@ final class ToolExecutor {
             }
             let id = drafts[i].ids[n]
             // A figure streams in item by item; its card keeps one size (fixed height per kind).
-            let visual = (c["visual"].flatMap { try? $0.decode(as: Visual.self) })?.sanitized()
+            // A live model's HTML only runs once it's complete: until then the card shows "building the model…".
+            let raw = c["visual"].flatMap { try? $0.decode(as: Visual.self) }
+            let visual = raw?.kind == .live ? Visual(kind: .live) : raw?.sanitized()
             let card = Card(id: id, type: c["type"]?.stringValue == "note" ? .note : .topic,
                             title: AgentTools.clip(title, AgentTools.titleLimit),
                             summary: AgentTools.clip(c["summary"]?.stringValue ?? "", AgentTools.summaryLimit),
