@@ -7,7 +7,6 @@ centred on its optical middle with even padding for the icon mask. Writes
   AppIcon dark   - white motor on transparent
   AppIcon tinted - white motor on transparent (iPadOS applies the tint)
   MotorHero      - the logo as a template image, used everywhere in the app (@2x/@3x)
-  canvas-web/src/assets/enjin-logo.png - the logo in black, for the canvas (busy hint)
 
 It is ENJIN's only mark.
 Run from the repo root: python3 tools/icon/motor_bell.py   (needs Pillow)
@@ -57,5 +56,4 @@ if __name__ == "__main__":
     hero = "Enjin/Resources/Assets.xcassets/MotorHero.imageset"
     for s in (2, 3):
         colored(place(mask, 320 * s, 1.0), black, clear).save(f"{hero}/MotorHero@{s}x.png")
-    colored(place(mask, 256, 1.0), (11, 11, 12, 255), clear).save("canvas-web/src/assets/enjin-logo.png")
-    print("wrote app icon, MotorHero, enjin-logo.png")
+    print("wrote app icon, MotorHero")

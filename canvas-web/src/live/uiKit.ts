@@ -2,7 +2,9 @@
  * Generative UI: the agent describes an interactive learning widget as a spec
  * (state + blocks) and this kit builds it, in ENJIN's white/black/glass look.
  * Blocks: heading, text ({{expr}} interpolation), slider, toggle, choice,
- * readout, meter, plot, quiz, steps, flashcards, order, row.
+ * readout, meter, plot, quiz, answer (a number, checked with a tolerance),
+ * match (pair terms with meanings), play (animates a variable over time),
+ * table (rows of live values), callout, steps, flashcards, order, row.
  *
  * Self-contained (its source is injected into a sandboxed frame); `compile` is
  * compileExpr from expr.ts, passed in.
@@ -64,6 +66,16 @@ export function mountUI(root: HTMLElement, spec: any, compile: (src: string) => 
   .ord{display:flex;flex-direction:column;gap:8px}.ord .opt{display:flex;gap:10px;align-items:center}
   .ord .n{font:600 12px ui-monospace,Menlo,monospace;color:#66666b;width:22px}
   canvas.plot{width:100%;height:180px;display:block}
+  .ans{display:flex;gap:8px;align-items:center}
+  .ans input{flex:1;font:600 17px ui-monospace,Menlo,monospace;padding:10px 14px;border-radius:12px;border:0;background:#f4f4f3;box-shadow:inset 0 0 0 .75px rgba(0,0,0,.12);color:#0b0b0c;-webkit-user-select:text;user-select:text}
+  .ans input.right{box-shadow:inset 0 0 0 1.5px #0b0b0c}.ans input.wrong{box-shadow:inset 0 0 0 1.5px #d63b3b}
+  .match{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+  .match .opt.sel{box-shadow:0 0 0 1.5px #0b0b0c}.match .opt.done{background:#0b0b0c;color:#fff;opacity:.9}
+  table.tb{width:100%;border-collapse:collapse;font:14px Inter,-apple-system,sans-serif}
+  table.tb th{font:600 11px ui-monospace,Menlo,monospace;letter-spacing:1.2px;text-transform:uppercase;color:#66666b;text-align:left;padding:4px 6px;border-bottom:1.5px solid #0b0b0c}
+  table.tb td{padding:7px 6px;border-bottom:.75px solid #e0e0de}table.tb td.num{font:600 14px ui-monospace,Menlo,monospace;text-align:right}
+  .callout{border-left:3px solid #0b0b0c;padding:8px 12px;background:rgba(255,255,255,.6);border-radius:0 12px 12px 0;font-size:14.5px}
+  .play{display:flex;gap:10px;align-items:center}
   `;
   root.appendChild(css);
   const ui = el("div", "ui");
@@ -91,7 +103,10 @@ export function mountUI(root: HTMLElement, spec: any, compile: (src: string) => 
         if (!(b.var in state)) state[b.var] = Number(b.value ?? min);
         input.value = String(state[b.var]);
         input.oninput = () => { state[b.var] = Number(input.value); refresh(); };
-        const up = () => { val.textContent = `${fmt(state[b.var]!)}${b.unit ? ` ${b.unit}` : ""}`; };
+        const up = () => {
+          val.textContent = `${fmt(state[b.var]!)}${b.unit ? ` ${b.unit}` : ""}`;
+          if (document.activeElement !== input) input.value = String(state[b.var]); // follows a playing variable
+        };
         updaters.push(up); up();
         wrap.append(head, input);
         return wrap;
@@ -280,6 +295,110 @@ export function mountUI(root: HTMLElement, spec: any, compile: (src: string) => 
         }
         wrap.appendChild(list);
         return wrap;
+      }
+      case "answer": {
+        // "Work it out": the explorer types a number; checked against an expression with a tolerance.
+        const wrap = el("div", "glass");
+        wrap.appendChild(el("div", "lab", "Work it out"));
+        wrap.appendChild(el("p", "h", String(b.question ?? "")));
+        const line = el("div", "ans");
+        const input = document.createElement("input");
+        input.inputMode = "decimal";
+        input.placeholder = b.unit ? `answer in ${b.unit}` : "your answer";
+        const check = el("button", "pill primary", "Check") as HTMLButtonElement;
+        const note = el("div", "note");
+        line.append(input, check);
+        check.onclick = () => {
+          const want = evalExpr(String(b.answer));
+          const got = Number(String(input.value).replace(",", "."));
+          const tol = Math.abs(want) * Number(b.tolerance ?? 0.05) + 1e-9;
+          const right = Number.isFinite(got) && Math.abs(got - want) <= tol;
+          input.classList.toggle("right", right);
+          input.classList.toggle("wrong", !right);
+          note.textContent = right ? String(b.explain ?? "Right.") : `Not quite. ${b.hint ? String(b.hint) : "Try again."}`;
+        };
+        wrap.append(line, note);
+        return wrap;
+      }
+      case "match": {
+        // Tap a term, then its meaning.
+        const pairs: { a: string; b: string }[] = (b.pairs ?? []).slice(0, 6).map((p: any) => ({ a: String(p[0] ?? p.term ?? ""), b: String(p[1] ?? p.meaning ?? "") }));
+        const wrap = el("div", "glass");
+        wrap.appendChild(el("div", "lab", String(b.prompt ?? "Match them up")));
+        const grid = el("div", "match");
+        const right = pairs.map((p, i) => ({ ...p, i, k: Math.sin(i * 7.3 + pairs.length) })).sort((x, y) => x.k - y.k);
+        let pick: { i: number; btn: HTMLButtonElement } | null = null;
+        const leftBtns = pairs.map((p, i) => {
+          const btn = el("button", "opt", p.a) as HTMLButtonElement;
+          btn.onclick = () => { leftBtns.forEach((x) => x.classList.remove("sel")); if (!btn.classList.contains("done")) { btn.classList.add("sel"); pick = { i, btn }; } };
+          return btn;
+        });
+        const rightBtns = right.map((p) => {
+          const btn = el("button", "opt", p.b) as HTMLButtonElement;
+          btn.onclick = () => {
+            if (!pick || btn.classList.contains("done")) return;
+            if (pick.i === p.i) { pick.btn.classList.remove("sel"); pick.btn.classList.add("done"); btn.classList.add("done"); pick = null; }
+            else { btn.classList.add("wrong"); setTimeout(() => btn.classList.remove("wrong"), 450); }
+          };
+          return btn;
+        });
+        leftBtns.forEach((lb, i) => { grid.appendChild(lb); grid.appendChild(rightBtns[i]!); });
+        wrap.appendChild(grid);
+        return wrap;
+      }
+      case "play": {
+        // Animates a variable from min to max (and around again): time, angle, position.
+        const wrap = el("div", "play");
+        const btn = el("button", "pill primary", "▶ Play") as HTMLButtonElement;
+        const lab = el("span", "lab", String(b.label ?? b.var));
+        wrap.append(btn, lab);
+        const min = Number(b.min ?? 0), max = Number(b.max ?? 10), secs = Math.max(0.5, Number(b.seconds ?? 5));
+        if (!(b.var in state)) state[b.var] = min;
+        let on = false, last = 0;
+        const step = (t: number) => {
+          if (!on) return;
+          const dt = last ? (t - last) / 1000 : 0;
+          last = t;
+          let v = state[b.var]! + ((max - min) * dt) / secs;
+          if (v > max) v = b.loop === false ? max : min;
+          state[b.var] = v;
+          if (b.loop === false && v >= max) { on = false; btn.textContent = "▶ Play"; }
+          refresh();
+          requestAnimationFrame(step);
+        };
+        btn.onclick = () => { on = !on; btn.textContent = on ? "❚❚ Pause" : "▶ Play"; last = 0; if (on) requestAnimationFrame(step); };
+        if (b.autoplay) setTimeout(() => btn.click(), 300);
+        return wrap;
+      }
+      case "table": {
+        const wrap = el("div", "glass");
+        if (b.label) wrap.appendChild(el("div", "lab", String(b.label)));
+        const t = el("table", "tb");
+        const head = el("tr");
+        for (const c of (b.columns ?? []).slice(0, 5)) head.appendChild(el("th", undefined, String(c)));
+        t.appendChild(head);
+        for (const row of (b.rows ?? []).slice(0, 10)) {
+          const tr = el("tr");
+          (row as any[]).slice(0, 5).forEach((cell, ci) => {
+            const td = el("td");
+            // A cell is text, or {expr} computed live from the state.
+            if (cell && typeof cell === "object" && "expr" in cell) {
+              td.className = "num";
+              updaters.push(() => { td.textContent = `${fmt(evalExpr(String(cell.expr)), cell.digits)}${cell.unit ? ` ${cell.unit}` : ""}`; });
+            } else td.textContent = String(cell ?? "");
+            if (ci === 0) td.style.fontWeight = "600";
+            tr.appendChild(td);
+          });
+          t.appendChild(tr);
+        }
+        wrap.appendChild(t);
+        return wrap;
+      }
+      case "callout": {
+        const c = el("div", "callout");
+        const up = () => { c.textContent = interp(b.text); };
+        updaters.push(up); up();
+        return c;
       }
       case "row": {
         const r = el("div", "row");

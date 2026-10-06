@@ -68,6 +68,7 @@ struct CanvasScreen: View {
                 CardDetailSheet(card: card,
                                 onSave: { t, s, b in Task { await controller.updateCard(card.id, title: t, summary: s, body: b) } },
                                 onDive: card.type == .topic ? { controller.openCardId = nil; controller.dive(into: card.id) } : nil,
+                                loadLive: { await controller.liveDocument(for: card.id) },
                                 loadImage: { image in
                                     await controller.session.store.file(controller.session.id, fileId: image.fileId).flatMap(UIImage.init(data:))
                                 })

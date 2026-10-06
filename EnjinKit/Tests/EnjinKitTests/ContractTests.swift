@@ -41,7 +41,7 @@ struct ContractTests {
         let files = try FileManager.default.contentsOfDirectory(atPath: Self.fixtures.path).filter { $0.hasSuffix(".json") }
         let methods = Set(files.map { String($0.dropLast(5)) })
         #expect(methods == [
-            "portal.load", "ink.lock", "ink.commit", "canvas.flash", "canvas.applyOps", "canvas.frame", "canvas.addFiles", "canvas.setHeader", "canvas.setBusy", "canvas.setLanguage", "canvas.setTool", "canvas.history", "canvas.setInsets",
+            "portal.load", "ink.lock", "ink.commit", "canvas.flash", "canvas.applyOps", "canvas.frame", "canvas.addFiles", "canvas.setHeader", "canvas.setBusy", "canvas.setLanguage", "canvas.setTool", "canvas.history", "canvas.setInsets", "canvas.liveDocument",
             "canvas.ready", "canvas.changed", "focus.changed", "selection.changed", "card.open", "card.visualize", "media.stylize", "portal.enter", "portal.exit", "log.event",
         ])
     }
@@ -59,6 +59,7 @@ struct ContractTests {
         try roundTrip("canvas.history", NativeMethod.History.self, Empty?.self)
         try roundTrip("canvas.setInsets", NativeMethod.SetInsets.self, Empty?.self)
         try roundTrip("canvas.frame", NativeMethod.CanvasFrame.self, NativeMethod.CanvasFrameResult.self)
+        try roundTrip("canvas.liveDocument", NativeMethod.LiveDocument.self, NativeMethod.LiveDocumentResult.self)
         try roundTrip("canvas.applyOps", NativeMethod.ApplyOps.self, NativeMethod.ApplyOpsResult.self)
     }
 

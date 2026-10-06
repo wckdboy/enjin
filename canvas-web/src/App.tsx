@@ -65,6 +65,7 @@ export function App({ bridge }: { bridge: Bridge }) {
     });
     bridge.on("canvas.frame", (p) => portals.frame(p.cardId));
     bridge.on("canvas.flash", (p) => portals.flash(p.cardId).then(() => null));
+    bridge.on("canvas.liveDocument", (p) => ({ html: portals.liveDocument(p.cardId) }));
     bridge.on("ink.lock", ({ locked }) => {
       if (locked) gate.block("ink");
       else gate.unblock("ink");

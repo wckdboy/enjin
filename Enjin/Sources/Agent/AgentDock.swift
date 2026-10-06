@@ -48,7 +48,7 @@ struct AgentDock: View {
             if let line = statusLine {
                 HStack(alignment: .top, spacing: 10) {
                     if !isError {
-                        Rotor(size: 20, spinning: agent.isRunning && agent.prefetchingCardId == nil).padding(.top, 1)
+                        Activity(size: 18, working: agent.isRunning && agent.prefetchingCardId == nil).padding(.top, 2)
                     }
                     Text(line)
                         .font(Theme.body(17))

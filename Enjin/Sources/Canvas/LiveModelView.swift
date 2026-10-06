@@ -5,7 +5,8 @@ import WebKit
 /// Same isolation as on the canvas: its own web view with no bridge, an ephemeral
 /// data store, a CSP that blocks all network access, and no navigation away.
 struct LiveModelView: UIViewRepresentable {
-    let html: String
+    /// A complete page: from the canvas (`canvas.liveDocument`), or `document(_:)` around agent HTML.
+    let document: String
 
     static let csp = "default-src 'none'; script-src 'unsafe-inline'; style-src 'unsafe-inline'; img-src data: blob:; font-src data:; media-src data: blob:"
 
@@ -33,7 +34,7 @@ struct LiveModelView: UIViewRepresentable {
         view.navigationDelegate = context.coordinator
         view.scrollView.isScrollEnabled = false
         view.isOpaque = false
-        view.loadHTMLString(Self.document(html), baseURL: nil)
+        view.loadHTMLString(document, baseURL: nil)
         return view
     }
 

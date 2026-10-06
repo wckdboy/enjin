@@ -1,6 +1,6 @@
 import SwiftUI
 
-/// A sheet: the field, a header with the logo, the title and its keys, then content.
+/// A sheet: the field, a header with the title and its keys, then content.
 struct EnjinSheet<Content: View>: View {
     let title: LocalizedStringKey
     var cancel: LocalizedStringKey? = nil
@@ -28,7 +28,6 @@ struct EnjinSheet<Content: View>: View {
     var body: some View {
         VStack(spacing: 0) {
             HStack(spacing: 12) {
-                Logo(size: 26)
                 Text(title).font(Theme.display(24)).tracking(-0.4).foregroundStyle(Theme.fg).accessibilityAddTraits(.isHeader)
                 Spacer()
                 if let cancel {

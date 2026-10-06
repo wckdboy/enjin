@@ -1,0 +1,18 @@
+{
+  "direction": "nativeToWeb",
+  "request": {
+    "v": 1,
+    "id": "fx-1",
+    "method": "canvas.liveDocument",
+    "params": {
+      "cardId": "c-march"
+    }
+  },
+  "response": {
+    "v": 1,
+    "id": "fx-1",
+    "result": {
+      "html": "<!doctype html><html><body><p>model</p></body></html>"
+    }
+  }
+}

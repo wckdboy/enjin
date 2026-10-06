@@ -13,18 +13,22 @@ struct CardDetailSheet: View {
     let card: StoredCard
     let onSave: (String, String, String?) -> Void
     let onDive: (() -> Void)?
+    /// The full sandboxed page for a live figure (3D model, diorama, widget, live code).
+    var loadLive: (() async -> String?)?
     var loadImage: ((CardImage) async -> UIImage?)?
     @State private var picture: UIImage?
+    @State private var liveDocument: String?
 
     @State private var title: String
     @State private var summary: String
     @State private var bodyText: String
 
     init(card: StoredCard, onSave: @escaping (String, String, String?) -> Void, onDive: (() -> Void)?,
-         loadImage: ((CardImage) async -> UIImage?)? = nil) {
+         loadLive: (() async -> String?)? = nil, loadImage: ((CardImage) async -> UIImage?)? = nil) {
         self.card = card
         self.onSave = onSave
         self.onDive = onDive
+        self.loadLive = loadLive
         self.loadImage = loadImage
         _title = State(initialValue: card.title)
         _summary = State(initialValue: card.summary)
@@ -42,9 +46,9 @@ struct CardDetailSheet: View {
         EnjinSheet(title: card.type == .note ? "Note" : "Card") {
             ScrollView {
                 VStack(alignment: .leading, spacing: 22) {
-                    if let html = card.visual?.html, card.visual?.kind == .live {
-                        LiveModelView(html: html)
-                            .frame(height: 520)
+                    if let doc = liveDocument {
+                        LiveModelView(document: doc)
+                            .frame(height: 560)
                             .clipShape(.rect(cornerRadius: 18))
                             .panel(radius: 18)
                             .accessibilityLabel(Text("Live model for \(card.title)"))
@@ -100,7 +104,7 @@ struct CardDetailSheet: View {
                     }
 
                     HStack(spacing: 8) {
-                        if card.createdBy == .kid { Image(systemName: "person.fill") } else { Rotor(size: 16) }
+                        Image(systemName: card.createdBy == .kid ? "person.fill" : "sparkle")
                         Text(card.createdBy == .kid ? "Made by you" : "Made by Enjin")
                         Text(verbatim: "·")
                         Text(card.createdAt, format: .dateTime.day().month().hour().minute())
@@ -133,7 +137,8 @@ struct CardDetailSheet: View {
             }
         }
         .task {
-            if let image = card.image, let loadImage { picture = await loadImage(image) }
+            if let kind = card.visual?.kind, kind == .live || kind.isSkill, let loadLive { liveDocument = await loadLive() }
+            if card.visual == nil, let image = card.image, let loadImage { picture = await loadImage(image) }
         }
     }
 }

@@ -1,6 +1,7 @@
 import SwiftUI
 
-/// The logo: the three-quarter motor from the app icon. The only mark ENJIN uses.
+/// The logo: the three-quarter motor from the app icon. ENJIN's only mark, used
+/// sparingly: in the wordmark at the top of the library, and as the app icon.
 struct Logo: View {
     var size: CGFloat = 40
     var color: Color = Theme.fg
@@ -30,29 +31,32 @@ struct Wordmark: View {
     }
 }
 
-/// The logo as Enjin's activity light: still when idle, turning while it works.
-struct Rotor: View {
-    var size: CGFloat = 22
-    var spinning = false
-    var color: Color? = nil
-    @State private var angle = 0.0
+/// Enjin's activity light: a quiet arc sweeping round a faint ring while it works,
+/// a small still dot when it's idle. (The logo stays still; it's used sparingly.)
+struct Activity: View {
+    var size: CGFloat = 20
+    var working = false
+    @State private var turn = false
 
     var body: some View {
-        Logo(size: size, color: color ?? Theme.fg)
-            .rotationEffect(.degrees(angle))
-            .task(id: spinning) {
-                guard spinning else { return }
-                while !Task.isCancelled {
-                    withAnimation(.linear(duration: 1.2)) { angle += 360 }
-                    try? await Task.sleep(for: .seconds(1.2))
-                }
+        ZStack {
+            if working {
+                Circle().stroke(Theme.fg.opacity(0.12), lineWidth: max(2, size * 0.12))
+                Circle().trim(from: 0, to: 0.28)
+                    .stroke(Theme.fg, style: StrokeStyle(lineWidth: max(2, size * 0.12), lineCap: .round))
+                    .rotationEffect(.degrees(turn ? 360 : 0))
+                    .animation(.linear(duration: 0.9).repeatForever(autoreverses: false), value: turn)
+                    .onAppear { turn = true }
+                    .onDisappear { turn = false }
+            } else {
+                Circle().fill(Theme.fg).frame(width: size * 0.36, height: size * 0.36)
             }
-            .accessibilityHidden(true)
+        }
+        .frame(width: size, height: size)
+        .accessibilityHidden(true)
     }
 }
 
-/// Bigger logo, for heroes and empty states.
-typealias MotorArt = Logo
 
 /// HUD readout: SF Mono capitals, tracked out. For counts, status, labels.
 struct Readout: View {
@@ -77,7 +81,7 @@ struct Heading: View {
     }
 }
 
-/// A section title: the logo small, the title, a readout on the right.
+/// A section title, and a readout on the right.
 struct SectionHeader<Trailing: View>: View {
     let title: LocalizedStringKey
     var size: CGFloat = 26
@@ -85,7 +89,6 @@ struct SectionHeader<Trailing: View>: View {
 
     var body: some View {
         HStack(alignment: .center, spacing: 12) {
-            Logo(size: size * 0.95)
             Heading(text: title, size: size)
             Spacer()
             trailing

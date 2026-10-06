@@ -54,6 +54,7 @@ export const examples: Record<string, { direction: "nativeToWeb" | "webToNative"
   "canvas.addFiles": { direction: "nativeToWeb", params: { files: [{ id: "img-2", mimeType: "image/jpeg", dataURL: "data:image/jpeg;base64,/9j/" }] }, result: null },
   "canvas.frame": { direction: "nativeToWeb", params: { cardId: "c-why-won" }, result: { framed: true } },
   "canvas.flash": { direction: "nativeToWeb", params: { cardId: "c-why-won" }, result: null },
+  "canvas.liveDocument": { direction: "nativeToWeb", params: { cardId: "c-march" }, result: { html: "<!doctype html><html><body><p>model</p></body></html>" } },
   "canvas.ready": { direction: "webToNative", params: { protocolVersion: PROTOCOL_VERSION, excalidrawVersion: "0.18.1" }, result: { accepted: true } },
   "canvas.changed": { direction: "webToNative", params: { portalId: "p-legions", elements: scene.elements }, result: null },
   "focus.changed": { direction: "webToNative", params: { portalId: "p-legions", cardId: null, zoom: 1.25, visibleCardIds: ["c-why-won"] }, result: null },

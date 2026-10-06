@@ -13,7 +13,6 @@ struct DesignKitView: View {
                 HStack(alignment: .center) {
                     Wordmark(size: 44)
                     Spacer()
-                    Logo(size: 120)
                 }
                 SectionHeader(title: "Type") { Readout("Inter · SF Mono") }
                 VStack(alignment: .leading, spacing: 10) {
@@ -49,8 +48,8 @@ struct DesignKitView: View {
                     TextField(text: $text) { Text(verbatim: "A field in a well…") }.focused($focused).enjinField(focused: focused)
                     HStack(spacing: 28) {
                         SignalMeter(progress: 0.62)
-                        Rotor(size: 36, spinning: true)
-                        Rotor(size: 36)
+                        Activity(size: 28, working: true)
+                        Activity(size: 28)
                     }
                     SignalLine(lit: true)
                 }

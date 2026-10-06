@@ -208,6 +208,11 @@ export const nativeToWeb = {
     params: z.object({ cardId: z.string() }),
     result: Null,
   },
+  "canvas.liveDocument": {
+    /** The full sandboxed page for a card's live figure (live, model3d, diorama, ui), to open it full size natively. */
+    params: z.object({ cardId: z.string() }),
+    result: z.object({ html: z.string().nullable() }),
+  },
 } as const;
 
 export const webToNative = {

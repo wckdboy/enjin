@@ -107,7 +107,8 @@
                 0
               ],
               "color": "grey",
-              "label": "Stator"
+              "label": "Stator",
+              "detail": "The still core. Its coils become magnets when current flows."
             },
             {
               "shape": "box",
@@ -127,7 +128,13 @@
                 0
               ],
               "color": "dark",
-              "label": "Coil"
+              "explode": [
+                0.55,
+                0,
+                0.0
+              ],
+              "label": "Coil",
+              "detail": "Copper wire wound round an iron tooth. Switched on, it pulls the nearest magnet."
             },
             {
               "shape": "box",
@@ -146,7 +153,12 @@
                 -60,
                 0
               ],
-              "color": "dark"
+              "color": "dark",
+              "explode": [
+                0.28,
+                0,
+                0.48
+              ]
             },
             {
               "shape": "box",
@@ -165,7 +177,12 @@
                 -120,
                 0
               ],
-              "color": "dark"
+              "color": "dark",
+              "explode": [
+                -0.27,
+                0,
+                0.48
+              ]
             },
             {
               "shape": "box",
@@ -184,7 +201,12 @@
                 -180,
                 0
               ],
-              "color": "dark"
+              "color": "dark",
+              "explode": [
+                -0.55,
+                0,
+                0.0
+              ]
             },
             {
               "shape": "box",
@@ -203,7 +225,12 @@
                 -240,
                 0
               ],
-              "color": "dark"
+              "color": "dark",
+              "explode": [
+                -0.28,
+                0,
+                -0.48
+              ]
             },
             {
               "shape": "box",
@@ -222,7 +249,12 @@
                 -300,
                 0
               ],
-              "color": "dark"
+              "color": "dark",
+              "explode": [
+                0.28,
+                0,
+                -0.48
+              ]
             },
             {
               "shape": "ring",
@@ -235,10 +267,14 @@
                 0
               ],
               "color": "glass",
-              "spin": {
-                "axis": "y",
-                "rpm": 20
-              }
+              "group": "rotor",
+              "explode": [
+                0,
+                1.7,
+                0
+              ],
+              "label": "Bell",
+              "detail": "The outer shell that spins. Propellers bolt to it."
             },
             {
               "shape": "box",
@@ -258,14 +294,12 @@
                 0
               ],
               "color": "accent",
-              "orbit": {
-                "center": [
-                  0,
-                  0,
-                  0
-                ],
-                "rpm": 20
-              }
+              "group": "rotor",
+              "explode": [
+                0,
+                1.7,
+                0
+              ]
             },
             {
               "shape": "box",
@@ -285,15 +319,14 @@
                 0
               ],
               "color": "accent",
-              "orbit": {
-                "center": [
-                  0,
-                  0,
-                  0
-                ],
-                "rpm": 20
-              },
-              "label": "Magnet"
+              "group": "rotor",
+              "explode": [
+                0,
+                1.7,
+                0
+              ],
+              "label": "Magnet",
+              "detail": "Permanent magnets, alternating north and south, glued inside the bell."
             },
             {
               "shape": "box",
@@ -313,14 +346,12 @@
                 0
               ],
               "color": "accent",
-              "orbit": {
-                "center": [
-                  0,
-                  0,
-                  0
-                ],
-                "rpm": 20
-              }
+              "group": "rotor",
+              "explode": [
+                0,
+                1.7,
+                0
+              ]
             },
             {
               "shape": "box",
@@ -340,14 +371,12 @@
                 0
               ],
               "color": "accent",
-              "orbit": {
-                "center": [
-                  0,
-                  0,
-                  0
-                ],
-                "rpm": 20
-              }
+              "group": "rotor",
+              "explode": [
+                0,
+                1.7,
+                0
+              ]
             },
             {
               "shape": "box",
@@ -367,14 +396,12 @@
                 0
               ],
               "color": "accent",
-              "orbit": {
-                "center": [
-                  0,
-                  0,
-                  0
-                ],
-                "rpm": 20
-              }
+              "group": "rotor",
+              "explode": [
+                0,
+                1.7,
+                0
+              ]
             },
             {
               "shape": "box",
@@ -394,14 +421,12 @@
                 0
               ],
               "color": "accent",
-              "orbit": {
-                "center": [
-                  0,
-                  0,
-                  0
-                ],
-                "rpm": 20
-              }
+              "group": "rotor",
+              "explode": [
+                0,
+                1.7,
+                0
+              ]
             },
             {
               "shape": "box",
@@ -421,14 +446,12 @@
                 0
               ],
               "color": "accent",
-              "orbit": {
-                "center": [
-                  0,
-                  0,
-                  0
-                ],
-                "rpm": 20
-              }
+              "group": "rotor",
+              "explode": [
+                0,
+                1.7,
+                0
+              ]
             },
             {
               "shape": "box",
@@ -448,14 +471,12 @@
                 0
               ],
               "color": "accent",
-              "orbit": {
-                "center": [
-                  0,
-                  0,
-                  0
-                ],
-                "rpm": 20
-              }
+              "group": "rotor",
+              "explode": [
+                0,
+                1.7,
+                0
+              ]
             },
             {
               "shape": "cylinder",
@@ -467,11 +488,14 @@
                 0
               ],
               "color": "black",
-              "spin": {
-                "axis": "y",
-                "rpm": 20
-              },
-              "label": "Shaft"
+              "group": "rotor",
+              "explode": [
+                0,
+                2.6,
+                0
+              ],
+              "label": "Shaft",
+              "detail": "Carries the turning force out of the motor."
             },
             {
               "shape": "cylinder",
@@ -483,14 +507,33 @@
                 0
               ],
               "color": "light",
-              "label": "Mount"
+              "explode": [
+                0,
+                -0.7,
+                0
+              ],
+              "label": "Mount",
+              "detail": "Screws the stator to the drone arm. It never turns."
             }
           ],
+          "groups": {
+            "rotor": {
+              "pivot": [
+                0,
+                0,
+                0
+              ],
+              "spin": {
+                "axis": "y",
+                "rpm": 20
+              }
+            }
+          },
           "camera": {
             "azimuth": 30,
             "elevation": 28
           },
-          "caption": "Drag to turn · the bell of magnets spins round the coils"
+          "caption": "Drag to turn · tap a part · Explode to look inside"
         }
       }
     },
@@ -588,6 +631,14 @@
               ],
               "answer": 2,
               "explain": "F is proportional to I: twice the current, twice the push."
+            },
+            {
+              "type": "answer",
+              "question": "B = 0.8 T, I = 5 A, L = 0.2 m. What is F?",
+              "answer": "0.8*5*0.2",
+              "unit": "N",
+              "hint": "Multiply all three.",
+              "explain": "0.8 × 5 × 0.2 = 0.8 N."
             }
           ]
         }
@@ -861,13 +912,26 @@
                   "fill": "sky"
                 },
                 {
-                  "shape": "circle",
-                  "x": 82,
-                  "y": 14,
-                  "r": 5,
+                  "prop": "sun",
+                  "x": 84,
+                  "y": 18,
+                  "s": 1.1
+                },
+                {
+                  "prop": "cloud",
+                  "x": 20,
+                  "y": 12,
+                  "s": 1.3,
                   "fill": "white",
-                  "opacity": 0.9,
-                  "anim": "pulse"
+                  "anim": "drift"
+                },
+                {
+                  "prop": "cloud",
+                  "x": 58,
+                  "y": 8,
+                  "s": 0.9,
+                  "fill": "white",
+                  "anim": "drift"
                 }
               ]
             },
@@ -875,9 +939,36 @@
               "depth": 0.25,
               "items": [
                 {
-                  "shape": "path",
-                  "d": "M0 44 C 20 34, 40 40, 60 35 S 90 38, 100 33 L100 60 L0 60 Z",
-                  "fill": "light"
+                  "shape": "rect",
+                  "x": -10,
+                  "y": 43,
+                  "w": 120,
+                  "h": 20,
+                  "fill": "green"
+                },
+                {
+                  "prop": "hill",
+                  "x": 18,
+                  "y": 44,
+                  "s": 2.2
+                },
+                {
+                  "prop": "hill",
+                  "x": 72,
+                  "y": 42,
+                  "s": 2.6
+                },
+                {
+                  "prop": "pine",
+                  "x": 8,
+                  "y": 44,
+                  "s": 0.8
+                },
+                {
+                  "prop": "pine",
+                  "x": 12,
+                  "y": 45,
+                  "s": 0.6
                 }
               ]
             },
@@ -885,79 +976,33 @@
               "depth": 0.55,
               "items": [
                 {
-                  "shape": "rect",
-                  "x": 27.3,
-                  "y": 22,
-                  "w": 1.4,
-                  "h": 38,
-                  "fill": "white",
-                  "stroke": "grey",
-                  "strokeWidth": 0.25
+                  "prop": "turbine",
+                  "x": 30,
+                  "y": 48,
+                  "s": 1.6,
+                  "fill": "white"
                 },
                 {
-                  "shape": "path",
-                  "d": "M28.99 21.83 L28.00 13.00 L27.01 21.83 Z M27.65 22.94 L35.79 26.50 L28.64 21.23 Z M27.36 21.23 L20.21 26.50 L28.35 22.94 Z",
-                  "fill": "white",
-                  "stroke": "dark",
-                  "strokeWidth": 0.3,
-                  "anim": "spin"
+                  "prop": "turbine",
+                  "x": 56,
+                  "y": 46,
+                  "s": 1.25,
+                  "fill": "white"
                 },
                 {
-                  "shape": "circle",
-                  "x": 28,
-                  "y": 22,
-                  "r": 1.1,
-                  "fill": "dark"
-                },
-                {
-                  "shape": "rect",
-                  "x": 54.3,
-                  "y": 26,
-                  "w": 1.4,
-                  "h": 34,
-                  "fill": "white",
-                  "stroke": "grey",
-                  "strokeWidth": 0.25
-                },
-                {
-                  "shape": "path",
-                  "d": "M55.99 25.83 L55.00 19.00 L54.01 25.83 Z M54.65 26.94 L61.06 29.50 L55.64 25.23 Z M54.36 25.23 L48.94 29.50 L55.35 26.94 Z",
-                  "fill": "white",
-                  "stroke": "dark",
-                  "strokeWidth": 0.3,
-                  "anim": "spin"
-                },
-                {
-                  "shape": "circle",
-                  "x": 55,
-                  "y": 26,
-                  "r": 1.1,
-                  "fill": "dark"
-                },
-                {
-                  "shape": "rect",
-                  "x": 77.3,
-                  "y": 29,
-                  "w": 1.4,
-                  "h": 31,
-                  "fill": "white",
-                  "stroke": "grey",
-                  "strokeWidth": 0.25
-                },
-                {
-                  "shape": "path",
-                  "d": "M78.99 28.83 L78.00 23.50 L77.01 28.83 Z M77.65 29.94 L82.76 31.75 L78.64 28.23 Z M77.36 28.23 L73.24 31.75 L78.35 29.94 Z",
-                  "fill": "white",
-                  "stroke": "dark",
-                  "strokeWidth": 0.3,
-                  "anim": "spin"
-                },
-                {
-                  "shape": "circle",
+                  "prop": "turbine",
                   "x": 78,
-                  "y": 29,
-                  "r": 1.1,
-                  "fill": "dark"
+                  "y": 45,
+                  "s": 1.0,
+                  "fill": "white"
+                },
+                {
+                  "shape": "path",
+                  "d": "M30 48 L13 51 M56 46 L13 51 M78 45 L13 51",
+                  "fill": "none",
+                  "stroke": "accent",
+                  "strokeWidth": 0.4,
+                  "step": 3
                 }
               ]
             },
@@ -970,38 +1015,56 @@
                   "fill": "grey"
                 },
                 {
-                  "shape": "rect",
-                  "x": 8,
-                  "y": 50,
-                  "w": 6,
-                  "h": 4,
-                  "fill": "dark",
-                  "rx": 0.4
+                  "prop": "factory",
+                  "x": 12,
+                  "y": 54,
+                  "s": 0.8,
+                  "step": 3
+                },
+                {
+                  "prop": "house",
+                  "x": 88,
+                  "y": 52,
+                  "s": 0.8
                 }
               ]
+            }
+          ],
+          "steps": [
+            {
+              "label": "Wind pushes the blades"
+            },
+            {
+              "label": "The generator turns motion into current"
+            },
+            {
+              "label": "Power travels to the grid"
             }
           ],
           "hotspots": [
             {
               "x": 22,
-              "y": 15,
-              "label": "Rotor",
-              "detail": "Wind pushes the blades; they turn a shaft about 15 times a minute."
+              "y": 16,
+              "step": 1,
+              "label": "Blades",
+              "detail": "Shaped like wings: the wind makes lift that turns them about 15 times a minute."
             },
             {
-              "x": 32,
+              "x": 31,
               "y": 25,
+              "step": 2,
               "label": "Generator",
               "detail": "A motor run backwards: magnets sweep past coils and push current out."
             },
             {
-              "x": 11,
-              "y": 50,
+              "x": 12,
+              "y": 42,
+              "step": 3,
               "label": "Substation",
               "detail": "Raises the voltage so the power can travel far with little loss."
             }
           ],
-          "caption": "Drag to look around · tap the dots"
+          "caption": "Drag to look around · step through · tap the dots"
         }
       }
     },

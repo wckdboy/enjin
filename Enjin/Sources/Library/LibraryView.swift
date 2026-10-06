@@ -68,7 +68,7 @@ struct LibraryView: View {
                 .frame(maxWidth: 1100, alignment: .leading)
                 .frame(maxWidth: .infinity)
             }
-            .background(FieldBackground(logo: true).ignoresSafeArea())
+            .background(FieldBackground(depth: true).ignoresSafeArea())
             .toolbar(.hidden, for: .navigationBar)
             .navigationDestination(for: String.self) { id in
                 NotebookScreen(notebookId: id, store: library.store, settings: settings, telemetry: telemetry)
@@ -154,7 +154,6 @@ struct LibraryView: View {
     /// No notebooks yet.
     private var emptyShelf: some View {
         HStack(spacing: 18) {
-            Logo(size: 44, color: Theme.fgFaint)
             VStack(alignment: .leading, spacing: 6) {
                 Text("Nothing here yet").font(Theme.title(20)).foregroundStyle(Theme.fg)
                 Text("Pick a topic above. Enjin writes the first cards, and every card you dive into grows the notebook.")
@@ -195,7 +194,10 @@ struct NotebookCover: View {
                 if let cover {
                     Image(uiImage: cover).resizable().scaledToFill()
                 } else {
-                    Logo(size: 84, color: Theme.fgFaint)
+                    // No picture yet: the notebook's initial, large and quiet.
+                    Text(String(meta.title.prefix(1)).uppercased())
+                        .font(Theme.display(96))
+                        .foregroundStyle(Theme.fg.opacity(0.12))
                 }
             }
             .frame(height: 168)

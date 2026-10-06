@@ -9,7 +9,7 @@ import type { InputGate } from "../inputGate";
 import { cssTransition, nextPaint, setStyleNow, tween } from "./animate";
 import { CardActions } from "./CardActions";
 import { BusyHint } from "./BusyHint";
-import { LiveLayer } from "./LiveLayer";
+import { LiveLayer, liveDocument } from "./LiveLayer";
 import { FRAME_KINDS, frameBody } from "../live/documents";
 import { PreviewOverlay } from "./PreviewOverlay";
 
@@ -579,6 +579,16 @@ export class PortalController {
     const visualizable = !!card && !card.visual && card.state === "filled";
     this.actions.update(c ? c.cardId : null, c ? toView(c.rect, this.viewport()) : null, card?.type === "topic", visualizable);
     this.syncLive(busy);
+  }
+
+  /** The full sandboxed page for a card's frame figure, for the native full-size view. */
+  liveDocument(cardId: string): string | null {
+    const c = this.cards().find((x) => x.id === cardId);
+    if (!c?.visual || !FRAME_KINDS.has(c.visual.kind)) return null;
+    const files = this.api.getFiles();
+    const backdrop = c.visual.kind === "diorama" && c.image ? ((files[c.image.fileId as never]?.dataURL as string | undefined) ?? null) : null;
+    const body = frameBody(c.visual, backdrop);
+    return body ? liveDocument(body) : null;
   }
 
   /** Frame figures (live models, 3D models, dioramas, generative UI) over their slots; touchable while selected. */

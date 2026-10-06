@@ -48,19 +48,20 @@ extension View {
     func wellCapsule(focused: Bool = false) -> some View { modifier(Well(shape: Capsule(style: .continuous), focused: focused)) }
 }
 
-/// The field: soft white, a faint vertical light, and (optionally) the logo,
-/// huge and black, sitting behind the glass so the frosting has something to bend.
+/// The field: soft white, a faint vertical light and, with `depth`, two large soft
+/// shadows of light grey so the glass above has something to bend.
 struct FieldBackground: View {
-    var logo = false
+    var depth = false
 
     var body: some View {
         ZStack {
             LinearGradient(colors: [Color(hex: 0xF7F7F5), Theme.void, Color(hex: 0xEAEAE7)], startPoint: .top, endPoint: .bottom)
-            if logo {
+            if depth {
                 GeometryReader { g in
-                    Logo(size: max(g.size.width, 700) * 0.5, color: Theme.fg)
-                        .opacity(0.9)
-                        .position(x: g.size.width * 0.88, y: g.size.width * 0.34)
+                    Circle().fill(Color.black.opacity(0.07)).frame(width: g.size.width * 0.7).blur(radius: 60)
+                        .position(x: g.size.width * 0.92, y: g.size.width * 0.18)
+                    Circle().fill(Color.black.opacity(0.05)).frame(width: g.size.width * 0.5).blur(radius: 70)
+                        .position(x: g.size.width * 0.05, y: g.size.width * 0.62)
                 }
             }
         }

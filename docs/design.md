@@ -8,17 +8,18 @@ engineering. The look is **white, black and glass**:
 - black for the one thing to press, or for what's selected.
 
 The chrome has no colour; colour belongs to content (drawing inks, pictures). The
-logo, the hand-drawn three-quarter motor from the app icon, is the only mark.
-It is used everywhere a logo appears: the wordmark, section headers, the
-spinner, empty states, cover placeholders, and the canvas's busy hint. It also
-sits huge behind the library's glass.
+logo, the hand-drawn three-quarter motor from the app icon, is the only mark,
+and it's used sparingly: the app icon, and the ENJIN wordmark at the top of the
+library. It never spins. Activity is a quiet arc sweeping round a faint ring
+(`Activity`, natively and on the canvas). Notebooks without a picture show
+their initial, large and faint.
 
 - **Kit** (`Enjin/Sources/Design/`; open `-designKit` in debug builds to see every piece):
   - `Theme.swift`: tokens and type.
-  - `Surfaces.swift`: glass `panel()`/`chrome()`, `well()`, and `FieldBackground`.
+  - `Surfaces.swift`: glass `panel()`/`chrome()`, `well()`, and `FieldBackground` (soft light, with optional depth shapes for glass to bend).
   - `Keys.swift`: primary keys are solid black, secondary ones glass, round icon keys and rail tools; all with haptics.
   - `Controls.swift`: `GearSelector` and fields.
-  - `Marks.swift`: `Logo`, `Wordmark`, `Rotor` (the logo, turning while Enjin works), `Readout`, `Heading`, `SectionHeader`, `SignalLine`, `SignalMeter`.
+  - `Marks.swift`: `Logo`, `Wordmark`, `Activity`, `Readout`, `Heading`, `SectionHeader`, `SignalLine`, `SignalMeter`.
   - The canvas mirrors the tokens in `canvas-web/src/cards/palette.ts`.
 - **Type:** **Inter** (OFL, bundled): Inter Display Bold for display, Inter for reading, SF Mono capitals for readouts. Canvas cards are Inter too, via Excalidraw's "Helvetica" family, mapped with `@font-face`.
 - **Cards** on the canvas are white faces with a fine edge and a 20pt inner margin. A card being written gets a black edge; stubs are dashed.
@@ -35,7 +36,7 @@ sits huge behind the library's glass.
   - highlights melting into paper;
   - grain;
   - 55% of the original color: muted, so pictures sit calmly in the monochrome UI.
-- **Icon and logo:** `tools/icon/motor_bell.py` cleans up the hand-drawn motor (`tools/icon/motor-bell-source.png`). It renders the app icons, `MotorHero` (the logo as a template image), and `canvas-web/src/assets/enjin-logo.png`.
+- **Icon and logo:** `tools/icon/motor_bell.py` cleans up the hand-drawn motor (`tools/icon/motor-bell-source.png`). It renders the app icons and `MotorHero` (the logo as a template image, used by the wordmark).
 
 ## Figures and live models
 Cards can carry a **figure** (`visual`) instead of a picture. It is drawn as canvas geometry in the ENJIN look, with a `FIG · KIND` readout (`canvas-web/src/cards/visual.ts`).
@@ -61,9 +62,22 @@ Cards can carry a **figure** (`visual`) instead of a picture. It is drawn as can
 ## Skills: the media Enjin chooses
 The agent picks, for each idea, the medium that makes it clearest. The skills are defined in `AgentTools.visual` and `Persona.system`:
 - **Figures** (above): structure and real numbers.
-- **3D models** (`model3d`): models from primitives (box, sphere, cylinder, cone, torus, ring), with labels and motion (spin, orbit). They're drawn by ENJIN's own small engine (`canvas-web/src/live/engine3d.ts`): drag to turn, pinch to zoom.
-- **Dioramas** (`diorama`): 2.5D scenes in depth layers with parallax, animated props and hotspots. A backdrop painted on the device is optional (`live/diorama.ts`).
-- **Generative UI** (`ui`): interactive learning widgets the agent designs on the fly from a component kit. The components are sliders, toggles, choices, readouts, meters, plots, quizzes, steps, flashcards, ordering games and rows (`live/uiKit.ts`). Formulas run through a safe expression compiler (`live/expr.ts`, no `eval`).
+- **3D models** (`model3d`): drawn by ENJIN's own small engine (`canvas-web/src/live/engine3d.ts`).
+  - **Shapes:** box, sphere, cylinder, cone, torus, ring, capsule, lathe profiles, extruded outlines and tubes along paths.
+  - **Motion:** groups that spin or orbit together.
+  - **Molecules:** atoms and bonds, drawn ball-and-stick.
+  - **Inspecting:** labels with tap-to-read details, and an exploded view.
+  - **Touch:** drag to turn, pinch to zoom.
+- **Dioramas** (`diorama`, `live/diorama.ts`): 2.5D scenes in depth layers with parallax.
+  - **Props:** a library of about 30 on-style props (tree, mountain, volcano, cell, DNA, rocket, turbine and more), placed by name, plus raw shapes.
+  - **Hotspots** to tap for an explanation.
+  - **Time steps:** a scrubber that shows things stage by stage.
+  - **Backdrop:** an optional picture painted on the device.
+- **Generative UI** (`ui`, `live/uiKit.ts`): interactive learning widgets the agent designs on the fly from a component kit.
+  - **Interactive blocks:** sliders, toggles, choices, play (animates a variable), readouts, meters, plots, tables of live values and callouts.
+  - **Checks:** quizzes, "work it out" answers with a tolerance, matching, steps, flashcards and ordering games.
+  - **Formulas** run through a safe expression compiler (`live/expr.ts`, no `eval`).
+- **Full size:** opening a card shows any of these large in its detail sheet. The canvas builds the sandboxed page (`canvas.liveDocument`), and native shows it in an isolated web view.
 - **Illustrations**: pictures painted on the device (Image Playground).
 - **Live code**: the agent's own HTML/JS, for what no skill can show.
 

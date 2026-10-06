@@ -126,3 +126,39 @@ test("skills: generative UI recomputes from a slider, and a 3D model draws", asy
   });
   await expect.poll(darkPixels, { message: "the black box was drawn", timeout: 8000 }).toBeGreaterThan(500);
 });
+
+test("widgets: work-it-out answers are checked with a tolerance, and matches pair up", async ({ page }) => {
+  await ready(page);
+  await call(page, "canvas.applyOps", { portalId: "p-root", ops: [{ op: "upsert", card: { id: "c-w", type: "note", title: "Check", summary: "", state: "filled", childCount: 0, visual: { kind: "ui", spec: {
+    blocks: [
+      { type: "answer", question: "2 × 3?", answer: "2*3", tolerance: 0.05 },
+      { type: "match", pairs: [["A", "one"], ["B", "two"]] },
+    ] } } } }] });
+  // Like a person: tap the card (its title) to select it; then its widget takes touches.
+  await call(page, "canvas.frame", { cardId: "c-w" });
+  await page.waitForTimeout(700);
+  const t = await page.evaluate(() => {
+    const { api } = (window as unknown as { __enjinDebug: { api: { getSceneElements(): { x: number; y: number; width: number; customData?: Record<string, string> }[]; getAppState(): { scrollX: number; scrollY: number; zoom: { value: number } } } } }).__enjinDebug;
+    const f = api.getSceneElements().find((e) => e.customData?.cardId === "c-w" && e.customData?.role === "frame")!;
+    const s = api.getAppState();
+    return { x: (f.x + f.width / 2 + s.scrollX) * s.zoom.value, y: (f.y + 20 + s.scrollY) * s.zoom.value };
+  });
+  await page.touchscreen.tap(t.x, t.y);
+  const iframe = page.locator('[data-enjin="live"] iframe[data-card-id="c-w"]');
+  await expect(iframe).toHaveCSS("pointer-events", "auto");
+  const frame = (await (await iframe.elementHandle())!.contentFrame())!;
+  await frame.waitForSelector(".ans input");
+  await frame.fill(".ans input", "5");
+  await frame.click(".ans button");
+  await expect(frame.locator(".ans input")).toHaveClass(/wrong/);
+  await frame.fill(".ans input", "6.1");
+  await frame.click(".ans button");
+  await expect(frame.locator(".ans input")).toHaveClass(/right/);
+  // (Touches reach the frame, checked above; the pairing logic is driven from inside it.)
+  await frame.evaluate(() => {
+    const opt = (t: string) => [...document.querySelectorAll<HTMLButtonElement>(".match .opt")].find((b) => b.textContent === t)!;
+    opt("A").click();
+    opt("one").click();
+  });
+  await expect(frame.locator(".match .opt.done")).toHaveCount(2);
+});

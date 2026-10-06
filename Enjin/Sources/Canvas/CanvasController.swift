@@ -73,6 +73,11 @@ final class CanvasController: NSObject {
     // MARK: - Native -> web
 
     @discardableResult
+    /// The sandboxed page for a card's live figure (built by the canvas, which has the runtimes).
+    func liveDocument(for cardId: String) async -> String? {
+        try? await call("canvas.liveDocument", NativeMethod.LiveDocument(cardId: cardId), returning: NativeMethod.LiveDocumentResult.self).html
+    }
+
     func call<P: Encodable, R: Decodable>(_ method: String, _ params: P, returning: R.Type = Empty?.self) async throws -> R {
         seq += 1
         let request = try BridgeRouter.request(id: "n\(seq)", method: method, params: params)

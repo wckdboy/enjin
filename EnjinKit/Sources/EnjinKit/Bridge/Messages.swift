@@ -366,6 +366,16 @@ public enum NativeMethod {
         public var framed: Bool
     }
 
+    public struct LiveDocument: Codable, Sendable {
+        public var cardId: String
+        public init(cardId: String) { self.cardId = cardId }
+    }
+
+    public struct LiveDocumentResult: Codable, Sendable {
+        /// The complete sandboxed page (CSP, runtime and spec), or nil if the card has no live figure yet.
+        public var html: String?
+    }
+
     public struct CanvasFlash: Codable, Sendable {
         public var cardId: String
         public init(cardId: String) { self.cardId = cardId }

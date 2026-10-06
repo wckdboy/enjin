@@ -43,6 +43,21 @@ function figuresFixture(): DemoData {
       visual: { kind: "table", columns: ["Planet", "Diameter", "Day", "Moons"], rows: [["Mercury", "4,879 km", "176 d", "0"], ["Venus", "12,104 km", "243 d", "0"], ["Earth", "12,742 km", "1 d", "1"], ["Mars", "6,779 km", "1.03 d", "2"]] } },
     { id: "f-chart", type: "note", state: "filled", title: "Moore's law", summary: "Transistors per chip, roughly doubling every two years.",
       visual: { kind: "chart", plot: "line", logY: true, xLabel: "year", yLabel: "transistors", series: [{ label: "CPUs", points: [[1971, 2300], [1978, 29000], [1985, 275000], [1993, 3100000], [2000, 42000000], [2006, 291000000], [2012, 1400000000], [2021, 57000000000]] }] } },
+    { id: "f-water", type: "note", state: "filled", title: "A water molecule", summary: "Two hydrogens hang off one oxygen at 104.5°.",
+      visual: { kind: "model3d", spec: { atoms: [
+        { id: "O", element: "O", position: [0, 0, 0], label: "Oxygen", detail: "Pulls the shared electrons closer: slightly negative." },
+        { id: "H1", element: "H", position: [0.76, -0.59, 0], label: "Hydrogen", detail: "Slightly positive: this is why water sticks to itself." },
+        { id: "H2", element: "H", position: [-0.76, -0.59, 0] }], bonds: [["O", "H1"], ["O", "H2"]], caption: "Drag to turn · tap an atom" } } },
+    { id: "f-pendulum", type: "note", state: "filled", title: "Time a pendulum", summary: "Only the length changes the swing time, not the weight.",
+      visual: { kind: "ui", spec: { state: { L: 1, t: 0 }, blocks: [
+        { type: "row", blocks: [{ type: "slider", var: "L", min: 0.1, max: 3, step: 0.05, label: "Length", unit: "m" }, { type: "readout", label: "One swing (T)", expr: "2*pi*sqrt(L/g)", unit: "s", digits: 2 }] },
+        { type: "play", var: "t", min: 0, max: 6, seconds: 6, label: "time" },
+        { type: "plot", label: "Angle over time", expr: "cos(sqrt(g/L)*x)", xmin: 0, xmax: 6, ymin: -1, ymax: 1, xLabel: "seconds", marker: "t" },
+        { type: "table", label: "Same pendulum, other worlds", columns: ["World", "g", "One swing"], rows: [["Earth", "9.81", { expr: "2*pi*sqrt(L/9.81)", unit: "s", digits: 2 }], ["Moon", "1.62", { expr: "2*pi*sqrt(L/1.62)", unit: "s", digits: 2 }], ["Jupiter", "24.8", { expr: "2*pi*sqrt(L/24.8)", unit: "s", digits: 2 }]] },
+        { type: "callout", text: "Galileo timed swinging lamps with his pulse: the swing time stayed {{2*pi*sqrt(L/g)|2}} s however wide it swung." },
+        { type: "match", prompt: "Match them up", pairs: [["Period", "time for one swing"], ["g", "pull of gravity"], ["L", "string length"]] },
+        { type: "answer", question: "A 4 m pendulum on Earth: how long is one swing?", answer: "2*pi*sqrt(4/9.81)", unit: "s", tolerance: 0.03, hint: "T = 2π√(L/g)", explain: "About 4.0 s." },
+      ] } } },
     { id: "f-code", type: "note", state: "filled", title: "A loop in Python", summary: "Repeat until the job is done.",
       visual: { kind: "code", text: "for step in range(4):\n    sense()\n    think()\n    act()" } },
   ];
