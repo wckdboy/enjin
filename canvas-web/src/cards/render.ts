@@ -3,8 +3,9 @@ import type { ExcalidrawElement } from "@excalidraw/excalidraw/element/types";
 import type { Card, PortalScene } from "../bridge/schema";
 import { t } from "../i18n";
 import { CARD_H, CARD_W, COLUMNS, GAP, HEADER_H, IMAGE_H, type Rect, coverCrop, placeCards, union } from "./layout";
+import { WIDE_W, isWide, visualHeight, visualSkeletons } from "./visual";
 
-export type CardRole = "frame" | "image" | "placeholder" | "textbox" | "title" | "summary" | "label" | "badge" | "cue"
+export type CardRole = "frame" | "image" | "placeholder" | "textbox" | "title" | "summary" | "label" | "badge" | "cue" | "figure"
   | "header" | "subtitle" | "hero";
 export interface EnjinData {
   cardId?: string;
@@ -23,7 +24,7 @@ const STYLE: Record<Card["state"], { bg: string; edge: string; stroke: "solid" |
 const INK = "#0b0b0c";
 const MUTED = "#6a6a70";
 const ACCENT = INK;
-/** Clean, neutral type on cards (matches the native SF Pro): Helvetica for titles and text. */
+/** Inter on cards, like the native UI ("Helvetica" is mapped to Inter in style.css). */
 const DISPLAY = FONT_FAMILY.Helvetica;
 const READING = FONT_FAMILY.Helvetica;
 /** Machine readouts ("3 INSIDE", "DIVE IN"): monospace capitals, like the native Readout. */
@@ -49,12 +50,26 @@ export function cardRects(elements: readonly ExcalidrawElement[]): { cardId: str
     .map((e) => ({ cardId: enjinData(e)!.cardId!, rect: { x: e.x, y: e.y, width: e.width, height: e.height } }));
 }
 
+/** A card with a figure shows the figure instead of a picture. */
 export function hasPicture(card: Card): boolean {
-  return !!card.image || !!card.imagePending;
+  return !card.visual && (!!card.image || !!card.imagePending);
 }
 
-export function cardSize(card: Card, width = CARD_W): { width: number; height: number } {
-  return { width, height: hasPicture(card) ? IMAGE_H + CARD_H : CARD_H };
+/** Title block height for a card `width` wide (the title streams in before any figure, so this is stable). */
+function titleHeight(title: string, width: number): number {
+  return Math.min(3, estimateLines(title, TITLE_PX, width - 2 * INSET - 10, 0.5)) * TITLE_PX * 1.25 + 6;
+}
+const summaryLines = (wide: boolean) => (wide ? 2 : 3);
+
+export function cardSize(card: Card): { width: number; height: number } {
+  if (card.visual) {
+    const wide = isWide(card.visual);
+    const summaryH = card.summary ? summaryLines(wide) * SUMMARY_PX * 1.25 + 8 : 0;
+    const readouts = card.type === "topic" ? 40 : 16; // room for "dive in" / "3 inside"
+    const width = wide ? WIDE_W : CARD_W;
+    return { width, height: INSET + 6 + titleHeight(card.title, width) + 8 + visualHeight(card.visual) + 12 + summaryH + readouts };
+  }
+  return { width: CARD_W, height: hasPicture(card) ? IMAGE_H + CARD_H : CARD_H };
 }
 
 /** Rough line count for Excalifont at `px` in `width` (avg glyph ≈ 0.53em). */
@@ -127,8 +142,7 @@ function cardSkeletons(card: Card, at: Rect): Skeleton[] {
   }
 
   // Title, then summary under it: two sizes so the eye finds the title first.
-  const titleLines = Math.min(3, estimateLines(card.title, TITLE_PX, textW - 10, 0.56));
-  const titleH = titleLines * TITLE_PX * 1.25 + 6;
+  const titleH = titleHeight(card.title, at.width);
   out.push({
     ...common,
     ...clear,
@@ -141,8 +155,14 @@ function cardSkeletons(card: Card, at: Rect): Skeleton[] {
     customData: { cardId: card.id, role: "title" },
     label: { text: card.title, strokeColor: INK, fontSize: TITLE_PX, fontFamily: DISPLAY, textAlign: "left", verticalAlign: "top", customData: { cardId: card.id, role: "label" } } as never,
   });
+  let afterTitle = textTop + titleH + 2;
+  if (card.visual) {
+    const box = { x: at.x + INSET + 6, y: afterTitle + 6, width: at.width - 2 * INSET - 12, height: visualHeight(card.visual) };
+    out.push(...visualSkeletons(card.visual, box, card.id, common));
+    afterTitle = box.y + box.height + 12;
+  }
   if (card.summary) {
-    const top = textTop + titleH + 2;
+    const top = afterTitle;
     out.push({
       ...common,
       ...clear,
@@ -252,7 +272,9 @@ export function renderCards(current: readonly ExcalidrawElement[], upserts: Card
   const rects = new Map<string, Rect>();
   for (const c of upserts) {
     const old = existing.get(c.id);
-    if (old) rects.set(c.id, { x: old.x, y: old.y, width: old.width, height: cardSize(c, old.width).height });
+    const size = cardSize(c);
+    // Same width: regenerate in place. A card that gained (or lost) a wide figure is placed afresh.
+    if (old && old.width === size.width) rects.set(c.id, { x: old.x, y: old.y, width: old.width, height: size.height });
   }
   const kept = current.filter((e) => !(cardOf(e) && replaced.has(cardOf(e)!)));
   const fresh = upserts.filter((c) => !rects.has(c.id));

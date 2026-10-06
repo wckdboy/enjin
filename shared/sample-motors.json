@@ -1,0 +1,316 @@
+{
+  "title": "Electric motors",
+  "rootPortalId": "p-root",
+  "portals": [
+    {
+      "portalId": "p-root",
+      "title": "Electric motors",
+      "ownerCardId": null,
+      "parentPortalId": null,
+      "cardIds": [
+        "c-how",
+        "c-everywhere",
+        "c-history",
+        "c-share",
+        "c-homemade"
+      ]
+    },
+    {
+      "portalId": "p-how",
+      "title": "How a motor spins",
+      "ownerCardId": "c-how",
+      "parentPortalId": "p-root",
+      "cardIds": [
+        "c-steps",
+        "c-force",
+        "c-brushless",
+        "c-backemf"
+      ]
+    },
+    {
+      "portalId": "p-brushless",
+      "title": "Brushed vs brushless",
+      "ownerCardId": "c-brushless",
+      "parentPortalId": "p-how",
+      "cardIds": [
+        "c-parts",
+        "c-esc",
+        "c-brushes"
+      ]
+    },
+    {
+      "portalId": "p-esc",
+      "title": "The ESC: the motor's conductor",
+      "ownerCardId": "c-esc",
+      "parentPortalId": "p-brushless",
+      "cardIds": [
+        "c-sixstep",
+        "c-hall"
+      ]
+    },
+    {
+      "portalId": "p-everywhere",
+      "title": "Motors are everywhere",
+      "ownerCardId": "c-everywhere",
+      "parentPortalId": "p-root",
+      "cardIds": [
+        "c-efficiency",
+        "c-drones",
+        "c-joints"
+      ]
+    }
+  ],
+  "cards": [
+    {
+      "id": "c-how",
+      "type": "topic",
+      "state": "filled",
+      "title": "How a motor spins",
+      "summary": "Magnets push and pull. Switch which coil is a magnet, and the rotor keeps chasing the next one.",
+      "body": "Run a current through a coil of wire and it becomes an electromagnet with a north and a south pole. Put permanent magnets on a part that can turn (the rotor), and it twists until opposite poles line up. A motor never lets that happen: just before they line up, it switches the current to the next coil. The rotor is always chasing a target that keeps moving ahead of it, so it spins. Faster switching means faster spinning; more current means a stronger pull (more torque)."
+    },
+    {
+      "id": "c-steps",
+      "type": "note",
+      "state": "filled",
+      "title": "One turn, step by step",
+      "summary": "The same four steps, thousands of times a second in a drone motor.",
+      "visual": {
+        "kind": "flow",
+        "items": [
+          {
+            "label": "Current on",
+            "detail": "into one set of coils"
+          },
+          {
+            "label": "Coil = magnet",
+            "detail": "north and south poles"
+          },
+          {
+            "label": "Rotor pulled",
+            "detail": "opposites attract"
+          },
+          {
+            "label": "Switch coils",
+            "detail": "just before it lines up"
+          }
+        ]
+      }
+    },
+    {
+      "id": "c-force",
+      "type": "note",
+      "state": "filled",
+      "title": "The force on a wire",
+      "summary": "Double the current, double the push. That's why motors get hot when they work hard.",
+      "visual": {
+        "kind": "formula",
+        "text": "F = B · I · L",
+        "items": [
+          {
+            "label": "F",
+            "detail": "force, newtons"
+          },
+          {
+            "label": "B",
+            "detail": "magnetic field, tesla"
+          },
+          {
+            "label": "I",
+            "detail": "current, amperes"
+          },
+          {
+            "label": "L",
+            "detail": "wire length in the field, m"
+          }
+        ]
+      }
+    },
+    {
+      "id": "c-brushless",
+      "type": "topic",
+      "state": "filled",
+      "title": "Brushed vs brushless",
+      "summary": "Old motors switch coils with rubbing brushes. Brushless ones use a tiny computer instead.",
+      "body": "A brushed motor switches its coils mechanically: carbon brushes rub on a split ring (the commutator) on the shaft, so the current flips by itself as it turns. Simple and cheap, but the brushes spark, wear out and waste energy. A brushless motor flips it around: the coils sit still on the outside or inside, the magnets spin, and an electronic speed controller (ESC) switches the current. No rubbing parts, so it runs cooler, lasts longer and can spin much faster. Drones, electric cars and hard drives all use brushless motors."
+    },
+    {
+      "id": "c-parts",
+      "type": "note",
+      "state": "filled",
+      "title": "Inside a drone motor",
+      "summary": "This kind is an outrunner: the magnets are in the bell that spins around the coils.",
+      "visual": {
+        "kind": "parts",
+        "center": "Brushless motor",
+        "items": [
+          {
+            "label": "Stator coils"
+          },
+          {
+            "label": "Magnets"
+          },
+          {
+            "label": "Rotor bell"
+          },
+          {
+            "label": "Bearings"
+          },
+          {
+            "label": "Shaft"
+          },
+          {
+            "label": "Three wires"
+          }
+        ]
+      }
+    },
+    {
+      "id": "c-esc",
+      "type": "topic",
+      "state": "filled",
+      "title": "The ESC: the motor's conductor",
+      "summary": "A chip that flips the current between three wires, up to tens of thousands of times a second.",
+      "body": "A brushless motor has three wires. The ESC (electronic speed controller) connects two of them to the battery at a time, one positive and one negative, in a six-step pattern. Each step pulls the rotor a little further round. To know when to switch, it either reads Hall sensors that feel where the magnets are, or listens to the voltage the spinning magnets induce in the coil that's switched off. Speed is set by switching the power on and off very fast (PWM) to control the average voltage."
+    },
+    {
+      "id": "c-sixstep",
+      "type": "note",
+      "state": "filled",
+      "title": "Six-step switching, in code",
+      "summary": "Each line: which wire goes to + and which to −. Six steps make one electrical turn.",
+      "visual": {
+        "kind": "code",
+        "text": "STEPS = [(\"A\",\"B\"), (\"A\",\"C\"), (\"B\",\"C\"),\n         (\"B\",\"A\"), (\"C\",\"A\"), (\"C\",\"B\")]\n\nstep = 0\nwhile running:\n    plus, minus = STEPS[step]\n    connect(plus, minus)\n    wait_for_next_magnet()\n    step = (step + 1) % 6"
+      }
+    },
+    {
+      "id": "c-hall",
+      "type": "topic",
+      "state": "stub",
+      "title": "How does it know where the magnets are?",
+      "summary": "Tiny sensors that feel a magnetic field, or a clever trick: listening to the motor itself."
+    },
+    {
+      "id": "c-brushes",
+      "type": "topic",
+      "state": "stub",
+      "title": "Why do brushes spark?",
+      "summary": "Breaking a current in a coil fights back with a voltage spike."
+    },
+    {
+      "id": "c-backemf",
+      "type": "topic",
+      "state": "stub",
+      "title": "Every motor is secretly a generator",
+      "summary": "Spin it by hand and electricity comes out. Electric cars use this to brake."
+    },
+    {
+      "id": "c-everywhere",
+      "type": "topic",
+      "state": "filled",
+      "title": "Motors are everywhere",
+      "summary": "Your phone's vibration, a fridge, a lift, a Mars rover: all motors.",
+      "body": "A phone vibrates with a tiny motor spinning an off-centre weight. Hard drives spin a platter at 7,200 turns a minute. A modern car has dozens of small motors for windows, seats, mirrors, wipers and pumps, before you even count an electric car's drive motor. Robots are mostly motors with sensors and a computer: every joint in a robot arm is a motor with a gearbox and a sensor that measures its angle."
+    },
+    {
+      "id": "c-efficiency",
+      "type": "note",
+      "state": "filled",
+      "title": "Where does the energy go?",
+      "summary": "How much of the energy becomes motion, roughly. The rest turns into heat.",
+      "visual": {
+        "kind": "bars",
+        "unit": "%",
+        "items": [
+          {
+            "label": "Steam engine",
+            "value": 10
+          },
+          {
+            "label": "Petrol engine",
+            "value": 30
+          },
+          {
+            "label": "Diesel engine",
+            "value": 40
+          },
+          {
+            "label": "Electric motor",
+            "value": 95
+          }
+        ]
+      }
+    },
+    {
+      "id": "c-drones",
+      "type": "topic",
+      "state": "stub",
+      "title": "How do drones stay level?",
+      "summary": "Four motors, adjusted hundreds of times a second."
+    },
+    {
+      "id": "c-joints",
+      "type": "topic",
+      "state": "stub",
+      "title": "Robot joints",
+      "summary": "Why robot arms need gearboxes, and what a servo is."
+    },
+    {
+      "id": "c-history",
+      "type": "note",
+      "state": "filled",
+      "title": "From a spark to a Mars helicopter",
+      "summary": "Two hundred years of making things spin.",
+      "visual": {
+        "kind": "timeline",
+        "items": [
+          {
+            "tag": "1821",
+            "label": "Faraday",
+            "detail": "first electric motion"
+          },
+          {
+            "tag": "1832",
+            "label": "Sturgeon",
+            "detail": "commutator motor"
+          },
+          {
+            "tag": "1888",
+            "label": "Tesla",
+            "detail": "AC induction motor"
+          },
+          {
+            "tag": "1962",
+            "label": "Brushless",
+            "detail": "electronic switching"
+          },
+          {
+            "tag": "2021",
+            "label": "Ingenuity",
+            "detail": "motors fly on Mars"
+          }
+        ]
+      }
+    },
+    {
+      "id": "c-share",
+      "type": "note",
+      "state": "filled",
+      "title": "Motors drink electricity",
+      "summary": "Electric motor systems use roughly this share of all the world's electricity (IEA).",
+      "visual": {
+        "kind": "stat",
+        "value": "~45",
+        "unit": "%"
+      }
+    },
+    {
+      "id": "c-homemade",
+      "type": "topic",
+      "state": "stub",
+      "title": "Build a motor in five minutes",
+      "summary": "A battery, a magnet, a screw and a wire: the homopolar motor."
+    }
+  ]
+}

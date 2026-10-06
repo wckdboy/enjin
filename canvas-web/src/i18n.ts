@@ -7,6 +7,10 @@ const words = {
   inside: { en: (n: number) => `${n} inside →`, da: (n: number) => `${n} indeni →` },
   actionDive: { en: "Dive in", da: "Dyk ind" },
   actionOpen: { en: "Open", da: "Åbn" },
+  fig: {
+    en: { flow: "Process", cycle: "Cycle", timeline: "Timeline", bars: "Compare", parts: "Parts", stat: "Number", formula: "Formula", code: "Code" },
+    da: { flow: "Proces", cycle: "Kredsløb", timeline: "Tidslinje", bars: "Sammenlign", parts: "Dele", stat: "Tal", formula: "Formel", code: "Kode" },
+  },
 } as const;
 
 let current: Lang = "en";
@@ -33,4 +37,5 @@ export const t = {
   inside: (n: number) => words.inside[current](n),
   actionDive: () => words.actionDive[current],
   actionOpen: () => words.actionOpen[current],
+  fig: (kind: keyof (typeof words.fig)["en"]) => words.fig[current][kind],
 };

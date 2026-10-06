@@ -2,9 +2,9 @@
 
 /// ENJIN's look, taken from the mark (a motor seen end-on): near-white paper, true
 /// black ink, greys for state, black as the only accent. Shapes are the mark's:
-/// circles, capsules, concentric rings. Display type is SF Pro Expanded Black,
-/// reading type is SF Pro, and small machine "readouts" (counts, status) are
-/// SF Mono in capitals. Content sits on machined white panels with hairline
+/// circles, capsules, concentric rings. Type is Inter: Inter Display Black,
+/// tight, for display; Inter for reading; small machine "readouts" (counts,
+/// status) are SF Mono in capitals. Content sits on machined white panels with hairline
 /// edges; chrome that floats over the canvas is Liquid Glass.
 enum Theme {
     static let paper = Color(hex: 0xFAFAF9)
@@ -35,8 +35,16 @@ enum Theme {
     /// The machined edge on panels and fields.
     static let hairline = Color(hex: 0x0B0B0C).opacity(0.14)
 
-    static func display(_ size: CGFloat) -> Font { .system(size: size, weight: .black).width(.expanded) }
-    static func body(_ size: CGFloat = 17, weight: Font.Weight = .regular) -> Font { .system(size: size, weight: weight) }
+    static func display(_ size: CGFloat) -> Font { .custom("InterDisplay-Black", fixedSize: size) }
+    static func body(_ size: CGFloat = 17, weight: Font.Weight = .regular) -> Font {
+        let face = switch weight {
+        case .medium: "Inter-Medium"
+        case .semibold: "Inter-SemiBold"
+        case .bold, .heavy, .black: "Inter-Bold"
+        default: "Inter-Regular"
+        }
+        return .custom(face, fixedSize: size)
+    }
     static func mono(_ size: CGFloat = 13, weight: Font.Weight = .semibold) -> Font { .system(size: size, weight: weight, design: .monospaced) }
 }
 
@@ -136,7 +144,7 @@ struct Wordmark: View {
             Rotor(size: size * 1.05)
             Text(verbatim: "ENJIN")
                 .font(Theme.display(size))
-                .tracking(size * 0.06)
+                .tracking(size * 0.03)
                 .foregroundStyle(Theme.ink)
         }
         .accessibilityElement(children: .ignore)
@@ -185,7 +193,7 @@ struct Heading: View {
     var size: CGFloat = 28
 
     var body: some View {
-        Text(text).font(Theme.display(size)).foregroundStyle(Theme.ink)
+        Text(text).font(Theme.display(size)).tracking(-size * 0.02).foregroundStyle(Theme.ink)
     }
 }
 

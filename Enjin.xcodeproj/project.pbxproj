@@ -10,6 +10,7 @@
 		0696D4E0361A329507CA4C93 /* SettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 335196AD4E7A4D9D71C15B4B /* SettingsView.swift */; };
 		08BC774921F4CFF20A110AA9 /* PrintStylizer.swift in Sources */ = {isa = PBXBuildFile; fileRef = 92C44BE426D1F9CF2D4EB670 /* PrintStylizer.swift */; };
 		0D00BC97A5472810A8DA69BB /* SmokeTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4363D056E6B217A1044E73A2 /* SmokeTests.swift */; };
+		227D9A501339CE348FF3535E /* sample-motors.da.json in Resources */ = {isa = PBXBuildFile; fileRef = C252B5AF6D5CC4735CF77D54 /* sample-motors.da.json */; };
 		232FAF527008A6E987F8DA8F /* EnjinKit in Frameworks */ = {isa = PBXBuildFile; productRef = C1762FD4209A455CE72031C3 /* EnjinKit */; };
 		24A7F12B9E99A6A388F0CAE1 /* Localize.swift in Sources */ = {isa = PBXBuildFile; fileRef = F3D11B19BB06058E2702F59B /* Localize.swift */; };
 		332EB97F9CD29974D0D78986 /* Localizable.xcstrings in Resources */ = {isa = PBXBuildFile; fileRef = 092D5C6B564F75AB0E301777 /* Localizable.xcstrings */; };
@@ -26,15 +27,15 @@
 		AA127ED7D7C764B33BF06D23 /* CanvasController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 28A725197BCD991374E0C890 /* CanvasController.swift */; };
 		AF6BAAFF249FE3106450116C /* MapView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 428BC768F710EFA3C2711881 /* MapView.swift */; };
 		B3D839D222FFF7811F741D12 /* canvas-web in Resources */ = {isa = PBXBuildFile; fileRef = D8409464C6112C14BEF87BB6 /* canvas-web */; };
-		B53DF79BDB30941D0A242DEB /* demo-notebook.da.json in Resources */ = {isa = PBXBuildFile; fileRef = D219548AE604B08F080C9998 /* demo-notebook.da.json */; };
 		B7891786098A15327A3C4DAB /* PrivacyInfo.xcprivacy in Resources */ = {isa = PBXBuildFile; fileRef = 371F03DB5F3106C281550DF4 /* PrivacyInfo.xcprivacy */; };
+		BAE2D1C870F80623D4DD2518 /* Fonts in Resources */ = {isa = PBXBuildFile; fileRef = FE7854AB7BE2A0AF9A87E386 /* Fonts */; };
 		C9E142AF337191BA756EC991 /* Sheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = 82C5F9FC7820158314BF8CC5 /* Sheet.swift */; };
 		D4E2890696F816AE152F23F6 /* CardDetailSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = FD00177352742C83CFC89527 /* CardDetailSheet.swift */; };
 		D52FDE1D1D8FEE92A5DF3667 /* InkLayer.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9CFB32F8C028DFF01D2B9FDF /* InkLayer.swift */; };
 		D87FE2319CFEAC9DDC1D254B /* Library.swift in Sources */ = {isa = PBXBuildFile; fileRef = 726F3F8884AAEF9EF61EE556 /* Library.swift */; };
 		DD3878CE82956AD446A6C27D /* AgentDock.swift in Sources */ = {isa = PBXBuildFile; fileRef = 683FD121AE4F9EAC09F2FC70 /* AgentDock.swift */; };
 		EBD12EBB20C6F69B2FD34E53 /* LibraryView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2650FB14BB5A4E2514208B79 /* LibraryView.swift */; };
-		EE1743781CAF0FBD59ABBB11 /* demo-notebook.json in Resources */ = {isa = PBXBuildFile; fileRef = F568033F43CC69352E8396FA /* demo-notebook.json */; };
+		FE73A20E5581024F1C2A52CD /* sample-motors.json in Resources */ = {isa = PBXBuildFile; fileRef = 28C216755406DB14E52F5A67 /* sample-motors.json */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -53,6 +54,7 @@
 		09A9754A8A157ADFA4338A7B /* UITestBackend.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UITestBackend.swift; sourceTree = "<group>"; };
 		2650FB14BB5A4E2514208B79 /* LibraryView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LibraryView.swift; sourceTree = "<group>"; };
 		28A725197BCD991374E0C890 /* CanvasController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CanvasController.swift; sourceTree = "<group>"; };
+		28C216755406DB14E52F5A67 /* sample-motors.json */ = {isa = PBXFileReference; lastKnownFileType = text.json; path = "sample-motors.json"; sourceTree = "<group>"; };
 		335196AD4E7A4D9D71C15B4B /* SettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsView.swift; sourceTree = "<group>"; };
 		371F03DB5F3106C281550DF4 /* PrivacyInfo.xcprivacy */ = {isa = PBXFileReference; path = PrivacyInfo.xcprivacy; sourceTree = "<group>"; };
 		428BC768F710EFA3C2711881 /* MapView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MapView.swift; sourceTree = "<group>"; };
@@ -70,15 +72,15 @@
 		92C44BE426D1F9CF2D4EB670 /* PrintStylizer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PrintStylizer.swift; sourceTree = "<group>"; };
 		9CFB32F8C028DFF01D2B9FDF /* InkLayer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = InkLayer.swift; sourceTree = "<group>"; };
 		BDDBC61B0837254348615B9C /* EnjinApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EnjinApp.swift; sourceTree = "<group>"; };
+		C252B5AF6D5CC4735CF77D54 /* sample-motors.da.json */ = {isa = PBXFileReference; lastKnownFileType = text.json; path = "sample-motors.da.json"; sourceTree = "<group>"; };
 		CC0ED64F38A37E721C713BBE /* AppSettings.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppSettings.swift; sourceTree = "<group>"; };
-		D219548AE604B08F080C9998 /* demo-notebook.da.json */ = {isa = PBXFileReference; lastKnownFileType = text.json; path = "demo-notebook.da.json"; sourceTree = "<group>"; };
 		D2FAAC088EB2E07B7A6ABD39 /* SchemeHandler.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SchemeHandler.swift; sourceTree = "<group>"; };
 		D8409464C6112C14BEF87BB6 /* canvas-web */ = {isa = PBXFileReference; lastKnownFileType = folder; name = "canvas-web"; path = "Enjin/Resources/canvas-web"; sourceTree = SOURCE_ROOT; };
 		DA6117F0186B6135D735DCA7 /* EnjinUITests.xctest */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.cfbundle; path = EnjinUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		E5D9D8E170A4841732046796 /* Base.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = Base.xcconfig; sourceTree = "<group>"; };
 		F3D11B19BB06058E2702F59B /* Localize.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Localize.swift; sourceTree = "<group>"; };
-		F568033F43CC69352E8396FA /* demo-notebook.json */ = {isa = PBXFileReference; lastKnownFileType = text.json; path = "demo-notebook.json"; sourceTree = "<group>"; };
 		FD00177352742C83CFC89527 /* CardDetailSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CardDetailSheet.swift; sourceTree = "<group>"; };
+		FE7854AB7BE2A0AF9A87E386 /* Fonts */ = {isa = PBXFileReference; lastKnownFileType = folder; name = Fonts; path = Enjin/Resources/Fonts; sourceTree = SOURCE_ROOT; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -96,8 +98,8 @@
 		17ED4E219844194B8982C65D /* shared */ = {
 			isa = PBXGroup;
 			children = (
-				D219548AE604B08F080C9998 /* demo-notebook.da.json */,
-				F568033F43CC69352E8396FA /* demo-notebook.json */,
+				C252B5AF6D5CC4735CF77D54 /* sample-motors.da.json */,
+				28C216755406DB14E52F5A67 /* sample-motors.json */,
 			);
 			path = shared;
 			sourceTree = "<group>";
@@ -115,6 +117,7 @@
 			children = (
 				8E0EE3B6BA14C8CE319C4D8D /* Assets.xcassets */,
 				D8409464C6112C14BEF87BB6 /* canvas-web */,
+				FE7854AB7BE2A0AF9A87E386 /* Fonts */,
 				092D5C6B564F75AB0E301777 /* Localizable.xcstrings */,
 				371F03DB5F3106C281550DF4 /* PrivacyInfo.xcprivacy */,
 			);
@@ -331,11 +334,12 @@
 			buildActionMask = 2147483647;
 			files = (
 				3CD2A8ECA8A46E8AB0C32935 /* Assets.xcassets in Resources */,
+				BAE2D1C870F80623D4DD2518 /* Fonts in Resources */,
 				332EB97F9CD29974D0D78986 /* Localizable.xcstrings in Resources */,
 				B7891786098A15327A3C4DAB /* PrivacyInfo.xcprivacy in Resources */,
 				B3D839D222FFF7811F741D12 /* canvas-web in Resources */,
-				B53DF79BDB30941D0A242DEB /* demo-notebook.da.json in Resources */,
-				EE1743781CAF0FBD59ABBB11 /* demo-notebook.json in Resources */,
+				227D9A501339CE348FF3535E /* sample-motors.da.json in Resources */,
+				FE73A20E5581024F1C2A52CD /* sample-motors.json in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

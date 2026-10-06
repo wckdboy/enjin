@@ -1,7 +1,7 @@
 import Foundation
 
-/// Builds the Roman Empire sample notebook from shared/demo-notebook.json.
-/// Seeded into the store on first launch so there is something to explore.
+/// Builds a sample notebook from JSON (shared/sample-motors*.json is seeded on
+/// first launch; shared/demo-notebook.json, Roman Empire, is the test fixture).
 public enum DemoNotebook {
     struct File: Decodable {
         struct Portal: Decodable {
@@ -17,6 +17,8 @@ public enum DemoNotebook {
             var title: String
             var summary: String
             var state: CardState
+            var body: String?
+            var visual: Visual?
         }
         var title: String
         var rootPortalId: String
@@ -29,8 +31,10 @@ public enum DemoNotebook {
         let portalOf = Dictionary(file.portals.flatMap { p in p.cardIds.map { ($0, p.portalId) } }, uniquingKeysWith: { a, _ in a })
         let cards = file.cards.compactMap { c -> StoredCard? in
             guard let portalId = portalOf[c.id] else { return nil }
-            return StoredCard(id: c.id, portalId: portalId, type: c.type, title: c.title, summary: c.summary,
-                              state: c.state, createdBy: .agent, now: now)
+            var card = StoredCard(id: c.id, portalId: portalId, type: c.type, title: c.title, summary: c.summary,
+                                  body: c.body, state: c.state, createdBy: .agent, now: now)
+            card.visual = c.visual
+            return card
         }
         let portals = file.portals.map { Portal(portalId: $0.portalId, title: $0.title, ownerCardId: $0.ownerCardId, parentPortalId: $0.parentPortalId) }
         let meta = NotebookMeta(id: "nb-\(UUID().uuidString.lowercased())", title: file.title, rootPortalId: file.rootPortalId, createdAt: now, updatedAt: now)

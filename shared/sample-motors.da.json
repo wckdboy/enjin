@@ -1,0 +1,316 @@
+{
+  "title": "Elmotorer",
+  "rootPortalId": "p-root",
+  "portals": [
+    {
+      "portalId": "p-root",
+      "title": "Elmotorer",
+      "ownerCardId": null,
+      "parentPortalId": null,
+      "cardIds": [
+        "c-how",
+        "c-everywhere",
+        "c-history",
+        "c-share",
+        "c-homemade"
+      ]
+    },
+    {
+      "portalId": "p-how",
+      "title": "Sådan drejer en motor",
+      "ownerCardId": "c-how",
+      "parentPortalId": "p-root",
+      "cardIds": [
+        "c-steps",
+        "c-force",
+        "c-brushless",
+        "c-backemf"
+      ]
+    },
+    {
+      "portalId": "p-brushless",
+      "title": "Med og uden børster",
+      "ownerCardId": "c-brushless",
+      "parentPortalId": "p-how",
+      "cardIds": [
+        "c-parts",
+        "c-esc",
+        "c-brushes"
+      ]
+    },
+    {
+      "portalId": "p-esc",
+      "title": "ESC'en: motorens dirigent",
+      "ownerCardId": "c-esc",
+      "parentPortalId": "p-brushless",
+      "cardIds": [
+        "c-sixstep",
+        "c-hall"
+      ]
+    },
+    {
+      "portalId": "p-everywhere",
+      "title": "Motorer er overalt",
+      "ownerCardId": "c-everywhere",
+      "parentPortalId": "p-root",
+      "cardIds": [
+        "c-efficiency",
+        "c-drones",
+        "c-joints"
+      ]
+    }
+  ],
+  "cards": [
+    {
+      "id": "c-how",
+      "type": "topic",
+      "state": "filled",
+      "title": "Sådan drejer en motor",
+      "summary": "Magneter skubber og trækker. Skift hvilken spole der er magnet, så jagter rotoren hele tiden den næste.",
+      "body": "Send strøm gennem en spole, og den bliver en elektromagnet med en nord- og en sydpol. Sæt permanente magneter på en del der kan dreje (rotoren), og den drejer, til modsatte poler står over for hinanden. Det får den aldrig lov til i en motor: lige før, skifter strømmen til den næste spole. Rotoren jagter et mål, der hele tiden flytter sig foran den, så den drejer rundt. Hurtigere skift giver højere fart; mere strøm giver et kraftigere træk (mere moment)."
+    },
+    {
+      "id": "c-steps",
+      "type": "note",
+      "state": "filled",
+      "title": "Én omgang, trin for trin",
+      "summary": "De samme fire trin, tusindvis af gange i sekundet i en dronemotor.",
+      "visual": {
+        "kind": "flow",
+        "items": [
+          {
+            "label": "Strøm på",
+            "detail": "i ét sæt spoler"
+          },
+          {
+            "label": "Spole = magnet",
+            "detail": "nord- og sydpol"
+          },
+          {
+            "label": "Rotoren trækkes",
+            "detail": "modsatte tiltrækker"
+          },
+          {
+            "label": "Skift spoler",
+            "detail": "lige før de flugter"
+          }
+        ]
+      }
+    },
+    {
+      "id": "c-force",
+      "type": "note",
+      "state": "filled",
+      "title": "Kraften på en ledning",
+      "summary": "Dobbelt strøm, dobbelt skub. Derfor bliver motorer varme, når de arbejder hårdt.",
+      "visual": {
+        "kind": "formula",
+        "text": "F = B · I · L",
+        "items": [
+          {
+            "label": "F",
+            "detail": "kraft, newton"
+          },
+          {
+            "label": "B",
+            "detail": "magnetfelt, tesla"
+          },
+          {
+            "label": "I",
+            "detail": "strøm, ampere"
+          },
+          {
+            "label": "L",
+            "detail": "ledning i feltet, m"
+          }
+        ]
+      }
+    },
+    {
+      "id": "c-brushless",
+      "type": "topic",
+      "state": "filled",
+      "title": "Med og uden børster",
+      "summary": "Gamle motorer skifter spoler med slæbende børster. Børsteløse bruger en lille computer i stedet.",
+      "body": "En børstemotor skifter spoler mekanisk: kulbørster slæber på en delt ring (kommutatoren) på akslen, så strømmen vender af sig selv, mens den drejer. Enkelt og billigt, men børsterne gnister, slides op og spilder energi. En børsteløs motor vender det om: spolerne sidder stille, magneterne drejer, og en elektronisk fartregulator (ESC) skifter strømmen. Ingen dele der gnider, så den kører køligere, holder længere og kan dreje meget hurtigere. Droner, elbiler og harddiske bruger børsteløse motorer."
+    },
+    {
+      "id": "c-parts",
+      "type": "note",
+      "state": "filled",
+      "title": "Inde i en dronemotor",
+      "summary": "Denne slags er en outrunner: magneterne sidder i klokken, der drejer uden om spolerne.",
+      "visual": {
+        "kind": "parts",
+        "center": "Børsteløs motor",
+        "items": [
+          {
+            "label": "Statorspoler"
+          },
+          {
+            "label": "Magneter"
+          },
+          {
+            "label": "Rotorklokke"
+          },
+          {
+            "label": "Lejer"
+          },
+          {
+            "label": "Aksel"
+          },
+          {
+            "label": "Tre ledninger"
+          }
+        ]
+      }
+    },
+    {
+      "id": "c-esc",
+      "type": "topic",
+      "state": "filled",
+      "title": "ESC'en: motorens dirigent",
+      "summary": "En chip der skifter strømmen mellem tre ledninger, op til titusinder af gange i sekundet.",
+      "body": "En børsteløs motor har tre ledninger. ESC'en (elektronisk fartregulator) kobler to af dem til batteriet ad gangen, én plus og én minus, i et mønster med seks trin. Hvert trin trækker rotoren lidt længere rundt. For at vide hvornår den skal skifte, læser den enten Hall-sensorer, der mærker hvor magneterne er, eller lytter til den spænding, de drejende magneter skaber i den spole, der er slukket. Farten styres ved at tænde og slukke strømmen meget hurtigt (PWM)."
+    },
+    {
+      "id": "c-sixstep",
+      "type": "note",
+      "state": "filled",
+      "title": "Seks-trins skift i kode",
+      "summary": "Hver linje: hvilken ledning der får + og hvilken −. Seks trin giver én elektrisk omgang.",
+      "visual": {
+        "kind": "code",
+        "text": "STEPS = [(\"A\",\"B\"), (\"A\",\"C\"), (\"B\",\"C\"),\n         (\"B\",\"A\"), (\"C\",\"A\"), (\"C\",\"B\")]\n\nstep = 0\nwhile running:\n    plus, minus = STEPS[step]\n    connect(plus, minus)\n    wait_for_next_magnet()\n    step = (step + 1) % 6"
+      }
+    },
+    {
+      "id": "c-hall",
+      "type": "topic",
+      "state": "stub",
+      "title": "Hvordan ved den, hvor magneterne er?",
+      "summary": "Små sensorer der mærker et magnetfelt, eller et smart trick: at lytte til motoren selv."
+    },
+    {
+      "id": "c-brushes",
+      "type": "topic",
+      "state": "stub",
+      "title": "Hvorfor gnister børsterne?",
+      "summary": "At afbryde strømmen i en spole giver et spændingsstød tilbage."
+    },
+    {
+      "id": "c-backemf",
+      "type": "topic",
+      "state": "stub",
+      "title": "Hver motor er i hemmelighed en generator",
+      "summary": "Drej den med hånden, og der kommer strøm ud. Elbiler bruger det til at bremse."
+    },
+    {
+      "id": "c-everywhere",
+      "type": "topic",
+      "state": "filled",
+      "title": "Motorer er overalt",
+      "summary": "Mobilens vibration, et køleskab, en elevator, en Mars-rover: alt sammen motorer.",
+      "body": "En mobil vibrerer med en lille motor, der drejer et skævt lod. Harddiske drejer en plade 7.200 gange i minuttet. En moderne bil har snesevis af små motorer til ruder, sæder, spejle, viskere og pumper, før man overhovedet tæller elbilens drivmotor. Robotter er mest motorer med sensorer og en computer: hvert led i en robotarm er en motor med et gear og en sensor, der måler vinklen."
+    },
+    {
+      "id": "c-efficiency",
+      "type": "note",
+      "state": "filled",
+      "title": "Hvor bliver energien af?",
+      "summary": "Hvor meget af energien der bliver til bevægelse, cirka. Resten bliver til varme.",
+      "visual": {
+        "kind": "bars",
+        "unit": "%",
+        "items": [
+          {
+            "label": "Dampmaskine",
+            "value": 10
+          },
+          {
+            "label": "Benzinmotor",
+            "value": 30
+          },
+          {
+            "label": "Dieselmotor",
+            "value": 40
+          },
+          {
+            "label": "Elmotor",
+            "value": 95
+          }
+        ]
+      }
+    },
+    {
+      "id": "c-drones",
+      "type": "topic",
+      "state": "stub",
+      "title": "Hvordan holder droner sig vandret?",
+      "summary": "Fire motorer, justeret hundredvis af gange i sekundet."
+    },
+    {
+      "id": "c-joints",
+      "type": "topic",
+      "state": "stub",
+      "title": "Robotled",
+      "summary": "Hvorfor robotarme har brug for gear, og hvad en servo er."
+    },
+    {
+      "id": "c-history",
+      "type": "note",
+      "state": "filled",
+      "title": "Fra en gnist til en Mars-helikopter",
+      "summary": "To hundrede år med at få ting til at dreje.",
+      "visual": {
+        "kind": "timeline",
+        "items": [
+          {
+            "tag": "1821",
+            "label": "Faraday",
+            "detail": "første elektriske bevægelse"
+          },
+          {
+            "tag": "1832",
+            "label": "Sturgeon",
+            "detail": "motor med kommutator"
+          },
+          {
+            "tag": "1888",
+            "label": "Tesla",
+            "detail": "AC-induktionsmotor"
+          },
+          {
+            "tag": "1962",
+            "label": "Børsteløs",
+            "detail": "elektronisk skift"
+          },
+          {
+            "tag": "2021",
+            "label": "Ingenuity",
+            "detail": "motorer flyver på Mars"
+          }
+        ]
+      }
+    },
+    {
+      "id": "c-share",
+      "type": "note",
+      "state": "filled",
+      "title": "Motorer drikker strøm",
+      "summary": "Elmotorsystemer bruger cirka så stor en del af al verdens strøm (IEA).",
+      "visual": {
+        "kind": "stat",
+        "value": "~45",
+        "unit": "%"
+      }
+    },
+    {
+      "id": "c-homemade",
+      "type": "topic",
+      "state": "stub",
+      "title": "Byg en motor på fem minutter",
+      "summary": "Et batteri, en magnet, en skrue og en ledning: den homopolære motor."
+    }
+  ]
+}

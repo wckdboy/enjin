@@ -13,7 +13,7 @@ final class SmokeTests: XCTestCase {
     }
 
     func testOpenNotebookAddCardAndUseMap() {
-        let demo = app.staticTexts["Roman Empire"].firstMatch
+        let demo = app.staticTexts["Electric motors"].firstMatch
         XCTAssertTrue(demo.waitForExistence(timeout: 10), "demo notebook is seeded")
         demo.tap()
 
@@ -27,28 +27,28 @@ final class SmokeTests: XCTestCase {
         let title = app.textFields["cardTitle"]
         XCTAssertTrue(title.waitForExistence(timeout: 5))
         title.tap()
-        title.typeText("Aqueducts")
+        title.typeText("Stepper motors")
         app.buttons["Add"].tap()
 
         // The map lists every portal; the root has the new card counted.
         app.buttons["Map"].tap()
-        let rootRow = app.buttons["map:Roman Empire"]
+        let rootRow = app.buttons["map:Electric motors"]
         XCTAssertTrue(rootRow.waitForExistence(timeout: 5))
-        XCTAssertEqual(rootRow.value as? String, "5 cards", "root portal now has 5 cards")
-        XCTAssertTrue(app.buttons["map:Logistics"].exists, "map is fully expanded down to depth 3")
-        app.buttons["map:Legions"].tap()
-        XCTAssertTrue(app.buttons["crumb:Roman Empire"].waitForExistence(timeout: 5), "breadcrumb shows the path")
-        XCTAssertTrue(app.staticTexts["Legions"].exists, "current portal is named")
-        XCTAssertFalse(app.buttons["crumb:Legions"].exists, "current crumb is not a button")
+        XCTAssertEqual(rootRow.value as? String, "6 cards", "root portal now has 6 cards")
+        XCTAssertTrue(app.buttons["map:The ESC: the motor's conductor"].exists, "map is fully expanded down to depth 3")
+        app.buttons["map:How a motor spins"].tap()
+        XCTAssertTrue(app.buttons["crumb:Electric motors"].waitForExistence(timeout: 5), "breadcrumb shows the path")
+        XCTAssertTrue(app.staticTexts["How a motor spins"].exists, "current portal is named")
+        XCTAssertFalse(app.buttons["crumb:How a motor spins"].exists, "current crumb is not a button")
 
         // Back to the library and in again: the card survived (persisted).
         app.buttons["Notebooks"].tap()
-        app.staticTexts["Roman Empire"].firstMatch.tap()
+        app.staticTexts["Electric motors"].firstMatch.tap()
         XCTAssertTrue(app.buttons["Map"].waitForExistence(timeout: 10))
         app.buttons["Map"].tap()
-        let again = app.buttons["map:Roman Empire"]
+        let again = app.buttons["map:Electric motors"]
         XCTAssertTrue(again.waitForExistence(timeout: 5))
-        XCTAssertEqual(again.value as? String, "5 cards", "new card persisted across reopen")
+        XCTAssertEqual(again.value as? String, "6 cards", "new card persisted across reopen")
     }
 
     private func snap(_ name: String) {
@@ -59,7 +59,7 @@ final class SmokeTests: XCTestCase {
     }
 
     func testAskTheAgentThenUndo() {
-        app.staticTexts["Roman Empire"].firstMatch.tap()
+        app.staticTexts["Electric motors"].firstMatch.tap()
         let ask = app.textFields["askField"]
         XCTAssertTrue(ask.waitForExistence(timeout: 15), "agent dock appears once the canvas is ready")
         ask.tap()
@@ -69,9 +69,9 @@ final class SmokeTests: XCTestCase {
         sleep(1) // let the picture land
         snap("after-agent-turn")
         app.buttons["Map"].tap()
-        let root = app.buttons["map:Roman Empire"]
+        let root = app.buttons["map:Electric motors"]
         XCTAssertTrue(root.waitForExistence(timeout: 5))
-        XCTAssertEqual(root.value as? String, "6 cards", "agent added two cards")
+        XCTAssertEqual(root.value as? String, "7 cards", "agent added two cards")
         app.buttons["Done"].tap()
 
         let undo = app.buttons["Undo Enjin's last change"]
@@ -82,6 +82,6 @@ final class SmokeTests: XCTestCase {
         app.buttons["Map"].tap()
         snap("map-after-undo")
         XCTAssertTrue(root.waitForExistence(timeout: 5))
-        XCTAssertEqual(root.value as? String, "4 cards", "undo removed them")
+        XCTAssertEqual(root.value as? String, "5 cards", "undo removed them")
     }
 }

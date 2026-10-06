@@ -19,7 +19,10 @@ struct LibraryView: View {
         self.telemetry = telemetry
     }
 
-    private let starters: [LocalizedStringKey] = ["Volcanoes", "Ancient Egypt", "Black holes", "Dinosaurs", "The Vikings", "The human brain"]
+    /// Starter topics (English keys; shown and started in the current language).
+    private static let starterKeys = ["How AI learns", "Robots", "Black holes", "CRISPR", "How a CPU works", "Electric motors",
+                                      "The human brain", "Quantum computers"]
+    private var starters: [LocalizedStringKey] { Self.starterKeys.map { LocalizedStringKey($0) } }
 
     var body: some View {
         NavigationStack(path: $open) {
@@ -89,7 +92,20 @@ struct LibraryView: View {
 
     private var explorePrompt: some View {
         VStack(alignment: .leading, spacing: 18) {
-            Heading(text: "What do you want to explore?", size: 40)
+            HStack(alignment: .center, spacing: 24) {
+                VStack(alignment: .leading, spacing: 10) {
+                    Readout("Science · Engineering · Code")
+                    Heading(text: "What do you want to explore?", size: 44)
+                }
+                Spacer(minLength: 0)
+                Image("MotorHero")
+                    .renderingMode(.template)
+                    .resizable()
+                    .scaledToFit()
+                    .frame(width: 150, height: 150)
+                    .foregroundStyle(Theme.ink)
+                    .accessibilityHidden(true)
+            }
             HStack(spacing: 12) {
                 TextField(text: $topic) { Text("A topic, a question, anything…") }
                     .font(Theme.body(22))
@@ -128,8 +144,7 @@ struct LibraryView: View {
 
     /// The starter's text in the current language (the key itself is English).
     private func starterText(_ i: Int) -> String {
-        let keys = ["Volcanoes", "Ancient Egypt", "Black holes", "Dinosaurs", "The Vikings", "The human brain"]
-        return keys[i].localizedIn(settings.language)
+        Self.starterKeys[i].localizedIn(settings.language)
     }
 
     private func start(_ text: String) {

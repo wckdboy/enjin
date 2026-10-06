@@ -59,6 +59,8 @@ public struct StoredCard: Codable, Equatable, Sendable, Identifiable {
     public var image: CardImage?
     /// A picture is being looked for with this phrase; cleared when found or given up.
     public var imageQuery: String?
+    /// A figure drawn on the card instead of a picture.
+    public var visual: Visual?
 
     public var isActive: Bool { deletedAt == nil }
 

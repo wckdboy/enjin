@@ -60,7 +60,7 @@ struct CreateCardsTool: Tool {
         var title: String
         @Guide(description: "One or two short sentences, under 140 characters")
         var summary: String
-        @Guide(description: "true for a follow-up idea the kid can explore later")
+        @Guide(description: "true for a follow-up idea the explorer can explore later")
         var isStub: Bool
         @Guide(description: "Short search phrase for a real picture of this, or empty")
         var imageSearch: String

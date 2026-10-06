@@ -30,12 +30,15 @@ targets:
         buildPhase: resources
       - path: Enjin/Resources/PrivacyInfo.xcprivacy
         buildPhase: resources
+      - path: Enjin/Resources/Fonts
+        type: folder
+        buildPhase: resources
       - path: Enjin/Resources/canvas-web
         type: folder
         buildPhase: resources
-      - path: shared/demo-notebook.json
+      - path: shared/sample-motors.json
         buildPhase: resources
-      - path: shared/demo-notebook.da.json
+      - path: shared/sample-motors.da.json
         buildPhase: resources
     dependencies:
       - package: EnjinKit

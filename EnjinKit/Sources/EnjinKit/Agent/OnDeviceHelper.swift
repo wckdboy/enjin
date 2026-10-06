@@ -39,7 +39,7 @@ public struct AppleAssistHelper: AssistHelper {
     public func nextQuestions(path: [String], cards: [(title: String, summary: String)], lastAsk: String?, language: AppLanguage) async -> [String] {
         let session = LanguageModelSession(instructions: """
             You suggest what a curious 13-year-old might want to ask next while exploring a topic. \
-            Questions are short, concrete, and in the kid's own voice. Don't repeat what the cards already say. \
+            Questions are short, concrete, and in the explorer's own voice. Don't repeat what the cards already say. \
             Write the questions in \(language.promptName).
             """)
         let list = cards.prefix(8).map { "- \($0.title): \($0.summary)" }.joined(separator: "\n")
@@ -60,7 +60,7 @@ public struct AppleAssistHelper: AssistHelper {
     }
 
     public func imagePhrase(title: String, summary: String, topic: String) async -> String? {
-        let session = LanguageModelSession(instructions: "You pick search phrases for pictures that help a kid imagine something.")
+        let session = LanguageModelSession(instructions: "You pick search phrases for pictures that help a curious teen or student imagine something.")
         let prompt = "Topic: \(topic)\nCard: \(title) — \(summary)\nGive a short search phrase for a real picture of this."
         guard let r = try? await session.respond(to: prompt, generating: Phrase.self) else { return nil }
         let p = r.content.phrase.trimmingCharacters(in: .whitespacesAndNewlines)

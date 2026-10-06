@@ -73,6 +73,6 @@ struct ComposerTests {
         let text = PromptComposer.compose(session: s, portalId: "p-3", focusCardId: nil, request: .ask("more"), changes: [], tail: [], budgetChars: budget)
         #expect(text.count <= budget)
         #expect(text.contains("c-3-14"), "every card in the current portal is listed")
-        #expect(text.contains("The kid says: more"))
+        #expect(text.contains("The explorer says: more"))
     }
 }

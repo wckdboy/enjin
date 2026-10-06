@@ -1,17 +1,19 @@
 import Foundation
 
-/// Builds the per-turn user message: what's on the canvas, where the kid is,
+/// Builds the per-turn user message: what's on the canvas, where the explorer is,
 /// what they changed, and what they asked (plan §5.2). Pure apart from reading
 /// the session, so it's golden-testable.
 @MainActor
 public enum PromptComposer {
     public enum Request: Equatable, Sendable {
-        /// The kid typed something.
+        /// The explorer typed something.
         case ask(String)
-        /// The kid dived into a stub (or we're prefetching it): fill it.
+        /// The explorer dived into a stub (or we're prefetching it): fill it.
         case fill(cardId: String)
         /// A brand-new notebook: open it up with a first set of cards.
         case begin
+        /// The explorer dived into a filled topic that is empty inside: build the next level down.
+        case expand(cardId: String)
     }
 
     /// A finished turn elsewhere, carried into other portals' prompts as text.
@@ -51,7 +53,7 @@ public enum PromptComposer {
     // MARK: - Tiers
 
     static func cardLine(_ session: NotebookSession, _ c: StoredCard, detail: Bool) -> String {
-        var line = "- \(c.id) · \(c.type.rawValue) · \(c.state.rawValue)\(c.createdBy == .kid ? " · made by kid" : "") · \"\(c.title)\""
+        var line = "- \(c.id) · \(c.type.rawValue) · \(c.state.rawValue)\(c.createdBy == .kid ? " · made by the explorer" : "") · \"\(c.title)\""
         if detail, !c.summary.isEmpty, c.state != .stub { line += ": \(c.summary)" }
         if let inside = session.childPortal(of: c.id) {
             let n = session.activeCards(in: inside.portalId).count
@@ -62,7 +64,7 @@ public enum PromptComposer {
 
     static func currentPortal(_ session: NotebookSession, _ portalId: String, _ focusCardId: String?, compact: Bool) -> String {
         let path = session.path(to: portalId).map(\.title).joined(separator: " › ")
-        var lines = ["<canvas notebook=\"\(session.title)\">", "The kid is looking at: \(path)"]
+        var lines = ["<canvas notebook=\"\(session.title)\">", "The explorer is looking at: \(path)"]
         if let owner = session.ownerCardId(of: portalId).flatMap(session.card) {
             lines.append("This portal is inside the card \(owner.id) \"\(owner.title)\"\(owner.summary.isEmpty ? "" : ": \(owner.summary)")")
         }
@@ -77,7 +79,7 @@ public enum PromptComposer {
         if marks.inkStrokes > 0 { made.append("\(marks.inkStrokes) pencil stroke\(marks.inkStrokes == 1 ? "" : "s")") }
         if marks.shapes > 0 { made.append("\(marks.shapes) shape\(marks.shapes == 1 ? "" : "s")") }
         if !marks.notes.isEmpty { made.append("notes: " + marks.notes.prefix(5).map { "\"\(String($0.prefix(80)))\"" }.joined(separator: ", ")) }
-        if !made.isEmpty { lines.append("The kid's own marks here: " + made.joined(separator: "; ")) }
+        if !made.isEmpty { lines.append("The explorer's own marks here: " + made.joined(separator: "; ")) }
         lines.append("</canvas>")
         return lines.joined(separator: "\n")
     }
@@ -116,7 +118,7 @@ public enum PromptComposer {
     static func tailText(_ tail: [TailEntry]) -> String {
         guard !tail.isEmpty else { return "" }
         let lines = tail.map { t in
-            "- In \"\(t.portalTitle)\" the kid said \"\(String(t.kidSaid.prefix(120)))\"" + (t.cardsMade.isEmpty ? "" : "; you made: \(t.cardsMade.joined(separator: ", "))")
+            "- In \"\(t.portalTitle)\" the explorer said \"\(String(t.kidSaid.prefix(120)))\"" + (t.cardsMade.isEmpty ? "" : "; you made: \(t.cardsMade.joined(separator: ", "))")
         }
         return "<earlier_elsewhere>\n" + lines.joined(separator: "\n") + "\n</earlier_elsewhere>"
     }
@@ -124,19 +126,28 @@ public enum PromptComposer {
     static func requestText(_ session: NotebookSession, _ request: Request) -> String {
         switch request {
         case .ask(let text):
-            return "The kid says: \(text)"
+            return "The explorer says: \(text)"
         case .begin:
             return """
-            The kid just started a new notebook about "\(session.title)". Open it up: one short, excited sentence, \
-            then createCards with 3-4 filled cards that make this topic exciting (each with an image phrase) and 2 stubs \
-            (also with image phrases) as doors to explore. Keep it concrete and surprising.
+            The explorer just started a new notebook about "\(session.title)". Open it up: one short, excited sentence, \
+            then createCards with 3-4 filled topic cards that show how this really works (each with a body and an image \
+            phrase), one note card with a visual (the key process, parts, numbers or formula), and 2 stubs (with image \
+            phrases) as doors to explore. Concrete, accurate, surprising.
+            """
+        case .expand(let cardId):
+            let c = session.card(cardId)
+            return """
+            The explorer dived into \(cardId) "\(c?.title ?? "")"\(c.map { $0.summary.isEmpty ? "" : " (\($0.summary))" } ?? ""), \
+            and it's empty inside. Build the next level down: createCards with parentCardId \(cardId) (4-5 cards that go deeper \
+            than the card itself: the mechanism, the parts, real numbers, an example; filled cards with bodies, at least one with \
+            a visual, and 2 stubs). Don't change the card itself. Keep your reply to one short sentence.
             """
         case .fill(let cardId):
             let c = session.card(cardId)
             return """
-            The kid dived into the stub card \(cardId) "\(c?.title ?? "")"\(c.map { $0.summary.isEmpty ? "" : " (\($0.summary))" } ?? ""). \
-            Fill it: updateCard \(cardId) with a real summary and state "filled", then createCards with parentCardId \(cardId) \
-            (2-4 cards, including 2-3 stubs). Keep your reply to one short sentence.
+            The explorer dived into the stub card \(cardId) "\(c?.title ?? "")"\(c.map { $0.summary.isEmpty ? "" : " (\($0.summary))" } ?? ""). \
+            Fill it: updateCard \(cardId) with a real summary, a body and state "filled", then createCards with parentCardId \(cardId) \
+            (3-5 cards: filled cards with bodies, at least one with a visual, and 2 stubs). Keep your reply to one short sentence.
             """
         }
     }

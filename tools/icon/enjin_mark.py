@@ -1,10 +1,7 @@
-"""ENJIN mark: a motor seen end-on. Housing ring, six coils between six spokes, rotor, bore.
+"""ENJIN flat mark (wordmark + spinner; the app icon is tools/icon/motor_bell.py): a motor seen end-on. Housing ring, six coils between six spokes, rotor, bore.
 
 Redrawn from the hand-made mark as exact geometry: true circles, parallel-sided
 spokes, one corner radius everywhere. Writes
-  AppIcon light  - black mark on white (opaque, as the App Store requires)
-  AppIcon dark   - white mark on transparent
-  AppIcon tinted - white mark on transparent (iPadOS applies the tint)
   MotorMark      - template image for the wordmark (@1x/@2x/@3x)
   docs/enjin-mark.svg and canvas-web/src/assets/enjin-mark.svg
 
@@ -80,16 +77,10 @@ def svg():
 
 if __name__ == "__main__":
     black, white, clear = (0, 0, 0, 255), (255, 255, 255, 255), (0, 0, 0, 0)
-    out = "Enjin/Resources/Assets.xcassets/AppIcon.appiconset"
-    r = 1024 * 0.355
-    render(1024, r, black, white).convert("RGB").save(f"{out}/AppIcon-light.png")
-    dark = render(1024, r, white, clear)
-    dark.save(f"{out}/AppIcon-dark.png")
-    dark.save(f"{out}/AppIcon-tinted.png")
     mark = "Enjin/Resources/Assets.xcassets/MotorMark.imageset"
     for s in (1, 2, 3):
         render(40 * s, 20 * s - 0.5, black, clear).save(f"{mark}/MotorMark@{s}x.png")
     for path in ("docs/enjin-mark.svg", "canvas-web/src/assets/enjin-mark.svg"):
         with open(path, "w") as fh:
             fh.write(svg())
-    print("wrote app icon, MotorMark, enjin-mark.svg")
+    print("wrote MotorMark, enjin-mark.svg")

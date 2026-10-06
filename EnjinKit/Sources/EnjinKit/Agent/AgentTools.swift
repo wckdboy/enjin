@@ -2,19 +2,53 @@ import Foundation
 
 /// Client tool definitions and their validated inputs (plan §5.3).
 public enum AgentTools {
-    public static let maxCardsPerCall = 4
-    public static let maxCardsPerTurn = 6
+    public static let maxCardsPerCall = 5
+    public static let maxCardsPerTurn = 8
     public static let titleLimit = 60
     public static let summaryLimit = 140
-    public static let bodyLimit = 600
+    public static let bodyLimit = 900
 
     private static func string(_ description: String) -> JSONValue {
         .object(["type": .string("string"), "description": .string(description)])
     }
 
+    /// A figure drawn on the card from structured data (no picture search needed).
+    static let visual: JSONValue = .object([
+        "type": .string("object"),
+        "description": .string("""
+        Optional figure drawn on the card, instead of a picture. Use one when structure explains better than words. \
+        kind: flow (2-5 steps in order: items[].label + short detail), cycle (3-6 stages in a loop: items[].label, center), \
+        timeline (2-6 events: items[].tag = when, label, detail), bars (2-6 numbers to compare: items[].label + value, one unit), \
+        parts (what something is made of: center + 3-6 items[].label), stat (one striking number: value + unit), \
+        formula (text like "F = m × a" + items[] as symbol legend: label = symbol, detail = meaning with unit), \
+        code (text: up to 10 short lines of real code). Labels <= 30 characters, details <= 48.
+        """),
+        "properties": .object([
+            "kind": .object(["type": .string("string"), "enum": .array(VisualKind.allCases.map { .string($0.rawValue) })]),
+            "items": .object([
+                "type": .string("array"),
+                "items": .object([
+                    "type": .string("object"),
+                    "properties": .object([
+                        "label": .object(["type": .string("string")]),
+                        "detail": .object(["type": .string("string")]),
+                        "value": .object(["type": .string("number")]),
+                        "tag": .object(["type": .string("string")]),
+                    ]),
+                    "required": .array([.string("label")]),
+                ]),
+            ]),
+            "center": .object(["type": .string("string")]),
+            "value": .object(["type": .string("string"), "description": .string("stat: the number as written, e.g. \"299,792\"")]),
+            "unit": .object(["type": .string("string")]),
+            "text": .object(["type": .string("string"), "description": .string("formula expression or code")]),
+        ]),
+        "required": .array([.string("kind")]),
+    ])
+
     public static let createCards: JSONValue = .object([
         "name": .string("createCards"),
-        "description": .string("Add up to 4 cards to the canvas. They go into the portal the kid is looking at, or inside parentCardId's portal."),
+        "description": .string("Add up to 5 cards to the canvas. They go into the portal the kid is looking at, or inside parentCardId's portal."),
         "input_schema": .object([
             "type": .string("object"),
             "properties": .object([
@@ -27,10 +61,11 @@ public enum AgentTools {
                         "properties": .object([
                             "title": string("<= 60 characters"),
                             "summary": string("<= 140 characters, one or two short sentences"),
-                            "body": string("Optional, <= 600 characters of extra detail shown when the card is opened"),
+                            "body": string("<= 900 characters of real depth shown when the card is opened: how it works, why, numbers, a surprising detail. Give one to every filled card."),
                             "type": .object(["type": .string("string"), "enum": .array([.string("topic"), .string("note")])]),
                             "isStub": .object(["type": .string("boolean"), "description": .string("true for an unexplored follow-up door")]),
-                            "image": string("Optional short search phrase for a real picture that helps a kid picture this, e.g. 'Roman legionary armour' or 'Colosseum aerial'. Give one to every card."),
+                            "image": string("Short search phrase for a real picture that helps a kid picture this, e.g. 'Mars Curiosity rover selfie' or 'neuron microscope'. Give one to every card without a visual."),
+                            "visual": visual,
                             "sources": .object(["type": .string("array"), "items": .object(["type": .string("string")]),
                                                 "description": .string("URLs from this turn's web search that back this card")]),
                         ]),
@@ -51,9 +86,10 @@ public enum AgentTools {
                 "cardId": string("Card id from the canvas summary"),
                 "title": string("New title, <= 60 characters"),
                 "summary": string("New summary, <= 140 characters"),
-                "body": string("New detail, <= 600 characters"),
+                "body": string("New detail, <= 900 characters"),
                 "state": .object(["type": .string("string"), "enum": .array([.string("filled"), .string("stub")])]),
                 "image": string("Optional short search phrase for a picture for this card"),
+                "visual": visual,
                 "sources": .object(["type": .string("array"), "items": .object(["type": .string("string")])]),
             ]),
             "required": .array([.string("cardId")]),
@@ -87,6 +123,22 @@ public enum AgentTools {
         public var isStub: Bool
         public var image: String?
         public var sources: [String]?
+        public var visual: Visual?
+
+        private enum CodingKeys: String, CodingKey { case title, summary, body, type, isStub, image, sources, visual }
+
+        public init(from decoder: Decoder) throws {
+            let c = try decoder.container(keyedBy: CodingKeys.self)
+            title = try c.decode(String.self, forKey: .title)
+            summary = try c.decodeIfPresent(String.self, forKey: .summary) ?? ""
+            body = try c.decodeIfPresent(String.self, forKey: .body)
+            type = try? c.decodeIfPresent(CardType.self, forKey: .type)
+            isStub = (try? c.decodeIfPresent(Bool.self, forKey: .isStub)) ?? false
+            image = try c.decodeIfPresent(String.self, forKey: .image)
+            sources = try? c.decodeIfPresent([String].self, forKey: .sources)
+            // A figure the canvas can't draw is dropped, never the whole card.
+            visual = (try? c.decodeIfPresent(Visual.self, forKey: .visual))?.sanitized()
+        }
     }
 
     public struct CreateCards: Decodable, Equatable, Sendable {
@@ -102,6 +154,21 @@ public enum AgentTools {
         public var state: CardState?
         public var image: String?
         public var sources: [String]?
+        public var visual: Visual?
+
+        private enum CodingKeys: String, CodingKey { case cardId, title, summary, body, state, image, sources, visual }
+
+        public init(from decoder: Decoder) throws {
+            let c = try decoder.container(keyedBy: CodingKeys.self)
+            cardId = try c.decode(String.self, forKey: .cardId)
+            title = try c.decodeIfPresent(String.self, forKey: .title)
+            summary = try c.decodeIfPresent(String.self, forKey: .summary)
+            body = try c.decodeIfPresent(String.self, forKey: .body)
+            state = try? c.decodeIfPresent(CardState.self, forKey: .state)
+            image = try c.decodeIfPresent(String.self, forKey: .image)
+            sources = try? c.decodeIfPresent([String].self, forKey: .sources)
+            visual = (try? c.decodeIfPresent(Visual.self, forKey: .visual))?.sanitized()
+        }
     }
 
     public struct SuggestFocus: Decodable, Equatable, Sendable {

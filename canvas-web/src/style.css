@@ -1,7 +1,13 @@
+/* Inter (OFL, src/assets). Excalidraw's "Helvetica" is a system font it never
+   loads itself, so cards (FONT_FAMILY.Helvetica) render and measure in Inter. */
+@font-face { font-family: "Helvetica"; src: url("./assets/Inter-Medium.woff2") format("woff2"); font-weight: 100 900; font-display: block; }
+@font-face { font-family: "Inter"; src: url("./assets/Inter-Medium.woff2") format("woff2"); font-weight: 500; font-display: block; }
+@font-face { font-family: "Inter"; src: url("./assets/Inter-SemiBold.woff2") format("woff2"); font-weight: 600 900; font-display: block; }
+
 html, body, #root { margin: 0; height: 100%; overflow: hidden; overscroll-behavior: none; touch-action: none; }
 body { background: #fafaf9; -webkit-user-select: none; user-select: none; -webkit-touch-callout: none; }
 .stage { position: fixed; inset: 0; transform-origin: 50% 50%; will-change: transform, opacity; }
-.fatal { padding: 48px; font: 18px -apple-system, system-ui, sans-serif; color: #c92a2a; }
+.fatal { padding: 48px; font: 18px Inter, -apple-system, system-ui, sans-serif; color: #c92a2a; }
 
 /* Cards are styled by Enjin, not by hand: no style panel when only cards are selected. */
 [data-card-selection] .excalidraw .selected-shape-actions { display: none !important; }
@@ -23,7 +29,7 @@ body { background: #fafaf9; -webkit-user-select: none; user-select: none; -webki
 [data-enjin="busy"] {
   position: absolute; left: 50%; top: 42%; transform: translate(-50%, -50%); z-index: 3; pointer-events: none;
   display: flex; align-items: center; gap: 12px; padding: 12px 22px 12px 14px;
-  font: 600 17px -apple-system, system-ui, sans-serif; color: #0b0b0c; transition: opacity 200ms ease;
+  font: 600 17px Inter, -apple-system, system-ui, sans-serif; color: #0b0b0c; transition: opacity 200ms ease;
 }
 /* The mark has six-fold symmetry, so one 60 degree step on a loop reads as a stepper motor turning. */
 [data-enjin="busy"] svg { width: 26px; height: 26px; animation: enjin-step 0.45s cubic-bezier(0.3, 1.5, 0.5, 1) infinite; }

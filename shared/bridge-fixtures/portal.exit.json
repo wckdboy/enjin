@@ -47,6 +47,44 @@
             "state": "filling",
             "childCount": 0,
             "imagePending": true
+          },
+          {
+            "id": "c-march",
+            "type": "note",
+            "title": "A day's march",
+            "summary": "Up before dawn, camp built by dusk.",
+            "state": "filled",
+            "childCount": 0,
+            "visual": {
+              "kind": "flow",
+              "items": [
+                {
+                  "label": "Break camp",
+                  "detail": "at dawn"
+                },
+                {
+                  "label": "March",
+                  "detail": "about 30 km"
+                },
+                {
+                  "label": "Build camp",
+                  "detail": "ditch and wall"
+                }
+              ]
+            }
+          },
+          {
+            "id": "c-pace",
+            "type": "note",
+            "title": "Marching pace",
+            "summary": "With 30 kg on their backs.",
+            "state": "filled",
+            "childCount": 0,
+            "visual": {
+              "kind": "stat",
+              "value": "30",
+              "unit": "km/day"
+            }
           }
         ],
         "files": [

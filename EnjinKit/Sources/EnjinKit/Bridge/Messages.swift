@@ -17,6 +17,82 @@ public struct CardImageRef: Codable, Equatable, Sendable {
     public init(fileId: String, width: Int, height: Int) { self.fileId = fileId; self.width = width; self.height = height }
 }
 
+/// One row of a figure: a step, an event, a bar, a part, a symbol.
+public struct VisualItem: Codable, Equatable, Sendable {
+    public var label: String
+    public var detail: String?
+    /// Bars: the number.
+    public var value: Double?
+    /// Timeline: when.
+    public var tag: String?
+
+    public init(label: String, detail: String? = nil, value: Double? = nil, tag: String? = nil) {
+        self.label = label; self.detail = detail; self.value = value; self.tag = tag
+    }
+
+    private enum CodingKeys: String, CodingKey { case label, detail, value, tag }
+
+    /// Lenient: models sometimes send numbers as strings ("2,000").
+    public init(from decoder: Decoder) throws {
+        let c = try decoder.container(keyedBy: CodingKeys.self)
+        label = try c.decode(String.self, forKey: .label)
+        detail = try c.decodeIfPresent(String.self, forKey: .detail)
+        tag = try c.decodeIfPresent(String.self, forKey: .tag)
+        if let d = try? c.decodeIfPresent(Double.self, forKey: .value) {
+            value = d
+        } else if let s = try? c.decodeIfPresent(String.self, forKey: .value) {
+            value = Double(s.replacingOccurrences(of: ",", with: "").trimmingCharacters(in: .whitespaces))
+        }
+    }
+}
+
+public enum VisualKind: String, Codable, Sendable, CaseIterable { case flow, cycle, timeline, bars, parts, stat, formula, code }
+
+/// A figure drawn on a card as canvas geometry (mirrors schema.ts `Visual`).
+public struct Visual: Codable, Equatable, Sendable {
+    public var kind: VisualKind
+    public var items: [VisualItem]?
+    public var center: String?
+    public var value: String?
+    public var unit: String?
+    public var text: String?
+
+    public init(kind: VisualKind, items: [VisualItem]? = nil, center: String? = nil, value: String? = nil, unit: String? = nil, text: String? = nil) {
+        self.kind = kind; self.items = items; self.center = center; self.value = value; self.unit = unit; self.text = text
+    }
+
+    static let maxItems: [VisualKind: Int] = [.flow: 5, .cycle: 6, .timeline: 6, .bars: 6, .parts: 6, .stat: 0, .formula: 4, .code: 0]
+
+    /// Within what the canvas can draw: item counts and text lengths clipped; nil if nothing is left to draw.
+    public func sanitized() -> Visual? {
+        func clip(_ s: String?, _ n: Int) -> String? {
+            guard let t = s?.trimmingCharacters(in: .whitespacesAndNewlines), !t.isEmpty else { return nil }
+            return t.count > n ? String(t.prefix(n - 1)) + "…" : t
+        }
+        var v = self
+        let cap = Self.maxItems[kind] ?? 0
+        v.items = (items ?? []).compactMap { it in
+            clip(it.label, 30).map { VisualItem(label: $0, detail: clip(it.detail, 48), value: it.value, tag: clip(it.tag, 16)) }
+        }.prefix(cap).map { $0 }
+        if v.items?.isEmpty == true { v.items = nil }
+        v.center = clip(center, 30)
+        v.value = clip(value, 12)
+        v.unit = clip(unit, 16)
+        if kind == .code {
+            v.text = text.map { $0.split(separator: "\n", omittingEmptySubsequences: false).prefix(10).map { String($0.prefix(64)) }.joined(separator: "\n") }
+        } else {
+            v.text = clip(text, 40)
+        }
+        switch kind {
+        case .stat: return v.value == nil ? nil : v
+        case .formula, .code: return v.text == nil ? nil : v
+        case .parts: return v.items == nil && v.center == nil ? nil : v
+        case .bars: return (v.items?.count ?? 0) >= 2 ? v : nil
+        default: return v.items == nil ? nil : v
+        }
+    }
+}
+
 public struct Card: Codable, Equatable, Sendable, Identifiable {
     public var id: String
     public var type: CardType
@@ -27,11 +103,13 @@ public struct Card: Codable, Equatable, Sendable, Identifiable {
     public var image: CardImageRef?
     /// Reserve room for a picture that's still being found.
     public var imagePending: Bool?
+    /// A figure drawn on the card (cards with a figure have no picture).
+    public var visual: Visual?
 
     public init(id: String, type: CardType, title: String, summary: String, state: CardState, childCount: Int,
-                image: CardImageRef? = nil, imagePending: Bool? = nil) {
+                image: CardImageRef? = nil, imagePending: Bool? = nil, visual: Visual? = nil) {
         self.id = id; self.type = type; self.title = title; self.summary = summary; self.state = state; self.childCount = childCount
-        self.image = image; self.imagePending = imagePending
+        self.image = image; self.imagePending = imagePending; self.visual = visual
     }
 }
 

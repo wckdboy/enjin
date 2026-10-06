@@ -18,11 +18,11 @@ final class Library {
         self.store = store
     }
 
-    /// First launch: seed the Roman Empire sample so there is something to explore.
+    /// First launch: seed the Electric motors sample so there is something to explore.
     func load(language: AppLanguage) async {
         do {
             notebooks = await store.list()
-            let name = language == .da ? "demo-notebook.da" : "demo-notebook"
+            let name = language == .da ? "sample-motors.da" : "sample-motors"
             if notebooks.isEmpty, let url = Bundle.main.url(forResource: name, withExtension: "json") {
                 try await store.save(DemoNotebook.make(from: Data(contentsOf: url)))
                 notebooks = await store.list()

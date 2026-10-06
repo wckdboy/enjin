@@ -147,18 +147,17 @@ final class CanvasController: NSObject {
         Task { _ = try? await call("canvas.frame", NativeMethod.CanvasFrame(cardId: s.cardId), returning: NativeMethod.CanvasFrameResult.self) }
     }
 
-    /// Diving into a stub asks the agent to fill it; cards stream into the new portal.
+    /// Diving into a stub (or a topic that's empty inside) asks the agent to build
+    /// it; cards stream into the new portal. Portals with cards are left alone.
     private func didEnter(_ scene: PortalScene, via cardId: String) {
         prefetchTimer?.cancel()
         Task { await telemetry.record("portal_enter", ["depth": .number(Double(scene.path.count - 1))]) }
-        if let card = session.card(cardId), card.state == .stub || card.state == .error {
-            agent.fill(cardId: cardId)
-        }
+        agent.fill(cardId: cardId)
     }
 
     private func focusChanged(to cardId: String?) {
         prefetchTimer?.cancel()
-        guard let cardId, let card = session.card(cardId), card.type == .topic, card.state == .stub else { return }
+        guard let cardId, let card = session.card(cardId), card.type == .topic, card.state != .filling else { return }
         prefetchTimer = Task { [weak self] in
             try? await Task.sleep(for: Self.prefetchDelay)
             guard !Task.isCancelled, let self, self.focusedCardId == cardId else { return }

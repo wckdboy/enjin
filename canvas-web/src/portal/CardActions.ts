@@ -22,7 +22,7 @@ export class CardActions {
     this.host.className = "enjin-glass";
     Object.assign(this.host.style, {
       position: "absolute", left: "0", top: "0", zIndex: "3", display: "none", gap: "4px", padding: "5px",
-      font: "600 16px -apple-system, system-ui, sans-serif", transformOrigin: "50% 100%", transition: "opacity 120ms ease",
+      font: "600 16px Inter, -apple-system, system-ui, sans-serif", transformOrigin: "50% 100%", transition: "opacity 120ms ease",
     });
     this.open = this.button("Open", "M4 4h7v2H6v12h12v-5h2v7H4V4zm10 0h6v6h-2V7.4l-7.3 7.3-1.4-1.4L16.6 6H14V4z", () => this.cardId && this.handlers.open(this.cardId));
     this.dive = this.button("Dive in", "M10 4a6 6 0 0 1 4.7 9.7l5 5-1.4 1.4-5-5A6 6 0 1 1 10 4zm0 2a4 4 0 1 0 0 8 4 4 0 0 0 0-8zm-1 1.5h2V9h1.5v2H11v1.5H9V11H7.5V9H9V7.5z", () => this.cardId && this.handlers.dive(this.cardId));

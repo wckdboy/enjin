@@ -112,7 +112,7 @@ public final class NotebookSession {
         let childCount = data.portals.first { $0.ownerCardId == c.id }.map { activeCards(in: $0.portalId).count } ?? 0
         return Card(id: c.id, type: c.type, title: c.title, summary: c.summary, state: c.state, childCount: childCount,
                     image: c.image.map { CardImageRef(fileId: $0.fileId, width: $0.width, height: $0.height) },
-                    imagePending: c.image == nil && c.imageQuery != nil ? true : nil)
+                    imagePending: c.visual == nil && c.image == nil && c.imageQuery != nil ? true : nil, visual: c.visual)
     }
 
     /// Header for the portal inside `cardId` (if it has one).
@@ -239,12 +239,13 @@ public final class NotebookSession {
 
     public func createCard(id cardId: String? = nil, in portalId: String, type: CardType, title: String, summary: String, body: String? = nil,
                            state: CardState = .filled, author: Author, turnId: String? = nil, sources: [Source]? = nil,
-                           imageQuery: String? = nil) async throws -> StoredCard {
+                           imageQuery: String? = nil, visual: Visual? = nil) async throws -> StoredCard {
         var card = StoredCard(portalId: portalId, type: type, title: title, summary: summary, body: body, state: state,
                               createdBy: author, createdByTurnId: turnId, now: clock())
         if let cardId { card.id = cardId }
         card.sources = sources
-        card.imageQuery = imageQuery
+        card.imageQuery = visual == nil ? imageQuery : nil
+        card.visual = visual
         data.cards.append(card)
         if author == .kid { logChange(.init(portalId: portalId, kind: .createdCard(title: title))) }
         try await store.saveCards(id, data.cards)

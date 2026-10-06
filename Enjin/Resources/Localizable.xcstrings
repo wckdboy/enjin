@@ -74,16 +74,6 @@
         }
       }
     },
-    "Ancient Egypt": {
-      "localizations": {
-        "da": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Det gamle Egypten"
-          }
-        }
-      }
-    },
     "Anything else…": {
       "localizations": {
         "da": {
@@ -182,6 +172,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Kasse"
+          }
+        }
+      }
+    },
+    "CRISPR": {
+      "localizations": {
+        "da": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "CRISPR"
           }
         }
       }
@@ -290,16 +290,6 @@
         }
       }
     },
-    "Dinosaurs": {
-      "localizations": {
-        "da": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Dinosaurer"
-          }
-        }
-      }
-    },
     "Dive in": {
       "localizations": {
         "da": {
@@ -316,6 +306,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Færdig"
+          }
+        }
+      }
+    },
+    "Electric motors": {
+      "localizations": {
+        "da": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Elmotorer"
           }
         }
       }
@@ -442,6 +442,26 @@
           "stringUnit": {
             "state": "translated",
             "value": "Overstregningstusch"
+          }
+        }
+      }
+    },
+    "How AI learns": {
+      "localizations": {
+        "da": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sådan lærer AI"
+          }
+        }
+      }
+    },
+    "How a CPU works": {
+      "localizations": {
+        "da": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sådan virker en CPU"
           }
         }
       }
@@ -739,6 +759,16 @@
     "Prompt": {
       "shouldTranslate": false
     },
+    "Quantum computers": {
+      "localizations": {
+        "da": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Kvantecomputere"
+          }
+        }
+      }
+    },
     "Redo": {
       "localizations": {
         "da": {
@@ -755,6 +785,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Fjern nøgle"
+          }
+        }
+      }
+    },
+    "Robots": {
+      "localizations": {
+        "da": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Robotter"
           }
         }
       }
@@ -791,6 +831,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Gem nøgle"
+          }
+        }
+      }
+    },
+    "Science · Engineering · Code": {
+      "localizations": {
+        "da": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Videnskab · Teknik · Kode"
           }
         }
       }
@@ -924,16 +974,6 @@
           "stringUnit": {
             "state": "translated",
             "value": "Tekst"
-          }
-        }
-      }
-    },
-    "The Vikings": {
-      "localizations": {
-        "da": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Vikingerne"
           }
         }
       }
@@ -1096,16 +1136,6 @@
           "stringUnit": {
             "state": "translated",
             "value": "Det koster penge på din Anthropic-konto at bruge nøglen. Du sætter en daglig grænse, og når den er nået, stopper Enjin til i morgen."
-          }
-        }
-      }
-    },
-    "Volcanoes": {
-      "localizations": {
-        "da": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Vulkaner"
           }
         }
       }

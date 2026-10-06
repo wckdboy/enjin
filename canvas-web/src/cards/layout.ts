@@ -27,7 +27,9 @@ export function placeCards(sizes: { width: number; height: number }[], occupied:
   for (const size of sizes) {
     let spot: Rect | null = null;
     for (let y = top; !spot; y += STEP) {
-      for (let col = 0; col < COLUMNS && !spot; col++) {
+      // A wide card (a figure) spans columns; it may only start where it fits.
+      const span = Math.max(1, Math.round((size.width + GAP) / (CARD_W + GAP)));
+      for (let col = 0; col <= COLUMNS - span && !spot; col++) {
         const r = { x: col * (CARD_W + GAP), y, width: size.width, height: size.height };
         if (![...occupied, ...placed].some((o) => intersects(o, r, GAP / 2))) spot = r;
       }

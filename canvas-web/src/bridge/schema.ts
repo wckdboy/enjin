@@ -17,6 +17,37 @@ export const CardImageRef = z.object({
   height: z.number().int().positive(),
 });
 
+/** One row of a figure: a step, an event, a bar, a part, a symbol. */
+export const VisualItem = z.object({
+  label: z.string(),
+  /** A few words under the label (step detail, what a symbol means). */
+  detail: z.string().optional(),
+  /** Bars: the number. */
+  value: z.number().optional(),
+  /** Timeline: when ("1969", "4.6 bn years ago"). */
+  tag: z.string().optional(),
+});
+export type VisualItem = z.infer<typeof VisualItem>;
+
+export const VisualKind = z.enum(["flow", "cycle", "timeline", "bars", "parts", "stat", "formula", "code"]);
+export type VisualKind = z.infer<typeof VisualKind>;
+
+/**
+ * A figure drawn on the card as canvas geometry (not a picture):
+ * flow (steps →), cycle (steps in a loop), timeline (tag + label), bars
+ * (label + value, `unit`), parts (`center` + labelled parts), stat (big
+ * `value` + `unit`), formula (`text` + items as symbol legend), code (`text`).
+ */
+export const Visual = z.object({
+  kind: VisualKind,
+  items: z.array(VisualItem).optional(),
+  center: z.string().optional(),
+  value: z.string().optional(),
+  unit: z.string().optional(),
+  text: z.string().optional(),
+});
+export type Visual = z.infer<typeof Visual>;
+
 export const Card = z.object({
   id: z.string(),
   type: CardType,
@@ -28,6 +59,8 @@ export const Card = z.object({
   image: CardImageRef.optional(),
   /** A picture is being looked for: reserve its space with a placeholder. */
   imagePending: z.boolean().optional(),
+  /** A figure drawn on the card (cards with a figure have no picture). */
+  visual: Visual.optional(),
 });
 export type Card = z.infer<typeof Card>;
 

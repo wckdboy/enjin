@@ -115,12 +115,21 @@ public final class AgentSession {
     }
 
     /// The kid dived into a stub: fill it, with cards appearing in its portal.
+    /// A filled topic that's empty inside gets its next level built instead.
     public func fill(cardId: String) {
-        guard let card = session.card(cardId), card.state == .stub || card.state == .error else { return }
+        guard let card = session.card(cardId), let request = Self.fillRequest(for: card, in: session) else { return }
         // Already being prefetched: let that finish; the kid will see cards arrive.
         if prefetchingCardId == cardId, task != nil { return }
         guard let portal = session.childPortal(of: cardId) else { return }
-        start(.fill, request: .fill(cardId: cardId), portalId: portal.portalId, focusCardId: nil, kidSaid: "(dived into \(card.title))")
+        start(.fill, request: request, portalId: portal.portalId, focusCardId: nil, kidSaid: "(dived into \(card.title))")
+    }
+
+    /// What diving into `card` asks for: fill a stub, expand an empty topic, or nothing (it already has cards).
+    static func fillRequest(for card: StoredCard, in session: NotebookSession) -> PromptComposer.Request? {
+        if card.state == .stub || card.state == .error { return .fill(cardId: card.id) }
+        guard card.type == .topic, card.state == .filled else { return nil }
+        let inside = session.childPortal(of: card.id).map { session.activeCards(in: $0.portalId) } ?? []
+        return inside.isEmpty ? .expand(cardId: card.id) : nil
     }
 
     /// Open a brand-new notebook with a first set of cards.
@@ -130,12 +139,13 @@ public final class AgentSession {
 
     /// Background fill of a stub the kid is lingering on. Never interrupts real work.
     public func prefetch(cardId: String) {
-        guard prefetchEnabled, task == nil, backend?.isReduced == false, let card = session.card(cardId), card.state == .stub, card.type == .topic else { return }
+        guard prefetchEnabled, task == nil, backend?.isReduced == false, let card = session.card(cardId), card.type == .topic,
+              let request = Self.fillRequest(for: card, in: session) else { return }
         Task {
             guard let portal = try? await session.ensurePortal(for: cardId) else { return }
             guard task == nil else { return }
             prefetchingCardId = cardId
-            start(.prefetch, request: .fill(cardId: cardId), portalId: portal.portalId, focusCardId: nil, kidSaid: "(looked at \(card.title))")
+            start(.prefetch, request: request, portalId: portal.portalId, focusCardId: nil, kidSaid: "(looked at \(card.title))")
         }
     }
 
@@ -521,11 +531,13 @@ final class ToolExecutor {
                 added = true
             }
             let id = drafts[i].ids[n]
+            // A figure streams in item by item; its card keeps one size (fixed height per kind).
+            let visual = (c["visual"].flatMap { try? $0.decode(as: Visual.self) })?.sanitized()
             let card = Card(id: id, type: c["type"]?.stringValue == "note" ? .note : .topic,
                             title: AgentTools.clip(title, AgentTools.titleLimit),
                             summary: AgentTools.clip(c["summary"]?.stringValue ?? "", AgentTools.summaryLimit),
                             state: c["isStub"] == .bool(true) ? .stub : .filling, childCount: 0,
-                            imagePending: agent.picturesOn ? true : nil)
+                            imagePending: agent.picturesOn && visual == nil ? true : nil, visual: visual)
             if drafts[i].shown[id] != card {
                 drafts[i].shown[id] = card
                 ops.append(.upsert(card))
@@ -595,7 +607,7 @@ final class ToolExecutor {
                         summary: AgentTools.clip(c.summary, AgentTools.summaryLimit),
                         body: c.body.map { AgentTools.clip($0, AgentTools.bodyLimit) }.flatMap { $0.isEmpty ? nil : $0 },
                         state: c.isStub ? .stub : .filled, author: .agent, turnId: turnId, sources: sources(c.sources),
-                        imageQuery: imageQuery)
+                        imageQuery: imageQuery, visual: c.visual)
                     ids.append(card.id)
                     ops.append(.upsert(session.bridgeCard(card)))
                 }
@@ -625,7 +637,8 @@ final class ToolExecutor {
                     if let b = args.body { $0.body = AgentTools.clip(b, AgentTools.bodyLimit) }
                     if let st = args.state { $0.state = st } else if $0.state == .filling { $0.state = .filled }
                     if let srcs { $0.sources = srcs }
-                    if let q = args.image, !q.isEmpty, $0.image == nil, agent.picturesOn { $0.imageQuery = q }
+                    if let v = args.visual { $0.visual = v; $0.imageQuery = nil }
+                    if let q = args.image, !q.isEmpty, $0.image == nil, $0.visual == nil, agent.picturesOn { $0.imageQuery = q }
                 }) else { return .error("No card \(args.cardId).") }
                 await agent.canvas?.apply(portalId: updated.portalId, ops: [.upsert(session.bridgeCard(updated))])
                 if let header = session.header(forPortalOf: updated.id) { await agent.canvas?.setHeader(header) }

@@ -4,8 +4,9 @@
 // FontFaces shortly after mount, so wait for them to appear first.
 let ready: Promise<void> | null = null;
 
-// Excalifont for the kid's own text; Cascadia for the readouts on cards.
-const FAMILIES = new Set(["Excalifont", "Cascadia"]);
+// Excalifont for the kid's own text; Cascadia for the readouts on cards;
+// "Helvetica" is Inter (style.css) for everything else on cards.
+const FAMILIES = new Set(["Excalifont", "Cascadia", "Helvetica"]);
 const excalifontFaces = () => Array.from(document.fonts).filter((f) => FAMILIES.has(f.family.replace(/["']/g, "")));
 
 export function ensureFonts(timeoutMs = 3000): Promise<void> {

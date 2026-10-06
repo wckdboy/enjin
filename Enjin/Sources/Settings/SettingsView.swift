@@ -30,7 +30,7 @@ struct SettingsView: View {
                     Picker("Enjin uses", selection: $settings.provider) {
                         ForEach(AppSettings.Provider.allCases) { Text($0.label).tag($0) }
                     }
-                    Text(settings.activeDescription).font(.callout).foregroundStyle(.secondary)
+                    Text(settings.activeDescription).font(Theme.body(15)).foregroundStyle(.secondary)
                 } header: {
                     Text("Enjin's brain")
                 }
@@ -66,10 +66,10 @@ struct SettingsView: View {
                                 Image(systemName: r.ok ? "checkmark.circle.fill" : "exclamationmark.triangle.fill")
                             }
                                 .foregroundStyle(r.ok ? .green : .red)
-                                .font(.callout)
+                                .font(Theme.body(15))
                             if !r.ok && r.message.localizedCaseInsensitiveContains("workspace") {
                                 Text("This key belongs to an organization but doesn't pick a workspace. Paste a workspace ID from the Claude Console (it starts with wrkspc_), or create a new key inside a workspace.")
-                                    .font(.caption).foregroundStyle(.secondary)
+                                    .font(Theme.body(13)).foregroundStyle(.secondary)
                             }
                         }
                         Button("Remove key", role: .destructive) { settings.removeKey(); testResult = nil }

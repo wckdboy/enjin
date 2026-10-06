@@ -1,6 +1,7 @@
 // In-browser stand-in for the native app, so canvas-web runs under `vite dev`
 // and Playwright. Mirrors the portal logic in EnjinKit's DemoNotebook.
 import demo from "../../../shared/demo-notebook.json";
+import motors from "../../../shared/sample-motors.json";
 import type { Bridge, NativeTransport } from "./client";
 import { PROTOCOL_VERSION, type Card, type PortalScene, type Request, type Response } from "./schema";
 
@@ -15,7 +16,29 @@ interface DemoPortal {
 interface DemoData {
   rootPortalId: string;
   portals: DemoPortal[];
-  cards: { id: string; type: string; title: string; summary: string; state: string }[];
+  cards: { id: string; type: string; title: string; summary: string; state: string; visual?: unknown }[];
+}
+
+/** `?fixture=figures`: one card per figure kind, for looking at and testing figures. */
+function figuresFixture(): DemoData {
+  const cards: DemoData["cards"] = [
+    { id: "f-flow", type: "note", state: "filled", title: "How a robot decides", summary: "Every robot runs the same loop, many times a second.",
+      visual: { kind: "flow", items: [{ label: "Sense", detail: "cameras, lidar, touch" }, { label: "Think", detail: "where am I? what's next?" }, { label: "Act", detail: "motors move" }, { label: "Check", detail: "did it work?" }] } },
+    { id: "f-stat", type: "note", state: "filled", title: "Speed of light", summary: "Nothing with mass can reach it.", visual: { kind: "stat", value: "299,792", unit: "km/s" } },
+    { id: "f-cycle", type: "note", state: "filled", title: "The cell cycle", summary: "How one cell becomes two.",
+      visual: { kind: "cycle", center: "one cell → two", items: [{ label: "Grow (G1)" }, { label: "Copy DNA (S)" }, { label: "Check (G2)" }, { label: "Divide (M)" }] } },
+    { id: "f-formula", type: "note", state: "filled", title: "Newton's second law", summary: "Push harder, speed up faster.",
+      visual: { kind: "formula", text: "F = m × a", items: [{ label: "F", detail: "force, newtons" }, { label: "m", detail: "mass, kg" }, { label: "a", detail: "acceleration, m/s²" }] } },
+    { id: "f-bars", type: "note", state: "filled", title: "How fast can it compute?", summary: "Operations per second, roughly.",
+      visual: { kind: "bars", unit: "GFLOPS", items: [{ label: "Calculator", value: 0.001 }, { label: "Phone", value: 2000 }, { label: "Gaming PC", value: 80000 }, { label: "Supercomputer", value: 1200000 }] } },
+    { id: "f-timeline", type: "note", state: "filled", title: "Robots, a short history", summary: "From factory arms to Mars rovers.",
+      visual: { kind: "timeline", items: [{ tag: "1961", label: "Unimate", detail: "first factory robot arm" }, { tag: "1997", label: "Sojourner", detail: "first Mars rover" }, { tag: "2002", label: "Roomba", detail: "robots move in" }, { tag: "2021", label: "Ingenuity", detail: "flight on Mars" }] } },
+    { id: "f-parts", type: "note", state: "filled", title: "Inside a drone", summary: "Four motors, one brain.",
+      visual: { kind: "parts", center: "Quadcopter", items: [{ label: "Brushless motors" }, { label: "Flight controller" }, { label: "Propellers" }, { label: "Battery" }, { label: "GPS + compass" }, { label: "Camera" }] } },
+    { id: "f-code", type: "note", state: "filled", title: "A loop in Python", summary: "Repeat until the job is done.",
+      visual: { kind: "code", text: "for step in range(4):\n    sense()\n    think()\n    act()" } },
+  ];
+  return { rootPortalId: "p-root", portals: [{ portalId: "p-root", title: "Figures", ownerCardId: null, parentPortalId: null, cardIds: cards.map((c) => c.id) }], cards };
 }
 
 /** `?fixture=big`: 20 portals x 15 cards (300 cards), for performance tests. */
@@ -37,7 +60,9 @@ function bigFixture(): DemoData {
   return { rootPortalId: "p-root", portals, cards };
 }
 
-const data: DemoData = new URLSearchParams(location.search).get("fixture") === "big" ? bigFixture() : (demo as DemoData);
+const fixture = new URLSearchParams(location.search).get("fixture");
+const data: DemoData =
+  fixture === "big" ? bigFixture() : fixture === "figures" ? figuresFixture() : fixture === "motors" ? (motors as DemoData) : (demo as DemoData);
 const portals = data.portals;
 const savedElements = new Map<string, Record<string, unknown>[]>();
 

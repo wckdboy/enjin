@@ -121,7 +121,7 @@ struct AgentSessionTests {
         #expect(canvas.flashed == ["c-roads"])
         #expect(agent.status == .idle)
         #expect(agent.canUndo)
-        #expect(backend.prompts.first?.contains("The kid says: how did they fight?") == true)
+        #expect(backend.prompts.first?.contains("The explorer says: how did they fight?") == true)
         #expect(backend.prompts.first?.contains("Closest to the center of their screen: c-legions") == true)
     }
 
@@ -177,6 +177,23 @@ struct AgentSessionTests {
         #expect(states.first == .filling)
         #expect(states.last == .filled)
         #expect(states.contains(.filled))
+    }
+
+    @Test func divingIntoAnEmptyFilledTopicBuildsTheNextLevel() async throws {
+        let (agent, backend, _) = try await make([
+            .init(calls: [createCards([card("Via Appia"), card("How they were built", stub: true)], parent: "c-roads")], text: "Deeper we go."),
+        ])
+        let portal = try #require(try await agent.session.ensurePortal(for: "c-roads"))
+        agent.fill(cardId: "c-roads")
+        await waitIdle(agent)
+        #expect(backend.prompts.first?.contains("it's empty inside. Build the next level down") == true)
+        #expect(agent.session.activeCards(in: portal.portalId).map(\.title) == ["Via Appia", "How they were built"])
+        #expect(agent.session.card("c-roads")?.state == .filled, "the card itself is left alone")
+
+        // A topic that already has cards inside is just entered, no turn.
+        agent.fill(cardId: "c-legions")
+        await waitIdle(agent)
+        #expect(backend.prompts.count == 1)
     }
 
     @Test func cancellingAFillPutsTheStubBack() async throws {

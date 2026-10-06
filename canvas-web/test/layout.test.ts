@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { CARD_W, centerOn, fitZoom, intersects, placeCards, toView, viewCoverage } from "../src/cards/layout";
+import { CARD_W, GAP, centerOn, fitZoom, intersects, placeCards, toView, viewCoverage } from "../src/cards/layout";
 
 describe("placeCards", () => {
   it("never overlaps existing content or itself", () => {
@@ -96,5 +96,16 @@ describe("coverCrop", () => {
       expect(c.x + c.width).toBeLessThanOrEqual(w + 1e-9);
       expect(c.y + c.height).toBeLessThanOrEqual(h + 1e-9);
     }
+  });
+});
+
+describe("wide figure cards", () => {
+  it("span two columns and never start in the last one", () => {
+    const wide = { width: 2 * CARD_W + GAP, height: 300 };
+    const narrow = { width: CARD_W, height: 196 };
+    const placed = placeCards([narrow, narrow, wide, narrow], []);
+    expect(placed[2]!.x + placed[2]!.width).toBeLessThanOrEqual(3 * CARD_W + 2 * GAP);
+    for (let i = 0; i < placed.length; i++)
+      for (let j = i + 1; j < placed.length; j++) expect(intersects(placed[i]!, placed[j]!)).toBe(false);
   });
 });

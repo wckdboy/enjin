@@ -14,6 +14,11 @@ const scene: PortalScene = {
   cards: [
     { id: "c-why-won", type: "topic", title: "Why Rome won so much", summary: "Organisation.", state: "filled", childCount: 3, image: { fileId: "img-1", width: 800, height: 533 } },
     { id: "c-equipment", type: "topic", title: "Equipment", summary: "Gladius, pilum.", state: "filling", childCount: 0, imagePending: true },
+    {
+      id: "c-march", type: "note", title: "A day's march", summary: "Up before dawn, camp built by dusk.", state: "filled", childCount: 0,
+      visual: { kind: "flow", items: [{ label: "Break camp", detail: "at dawn" }, { label: "March", detail: "about 30 km" }, { label: "Build camp", detail: "ditch and wall" }] },
+    },
+    { id: "c-pace", type: "note", title: "Marching pace", summary: "With 30 kg on their backs.", state: "filled", childCount: 0, visual: { kind: "stat", value: "30", unit: "km/day" } },
   ],
   files: [{ id: "img-1", mimeType: "image/png", dataURL: "data:image/png;base64,iVBORw0KGgo=" }],
   hero: { fileId: "img-1", width: 800, height: 533 },
