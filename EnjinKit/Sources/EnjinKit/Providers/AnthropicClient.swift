@@ -41,12 +41,36 @@ public struct AnthropicModel: Hashable, Sendable, Identifiable {
 /// Raw Messages API over URLSession (there is no official Swift SDK).
 public struct AnthropicClient: Sendable {
     public var apiKey: String
+    /// Required for organization-level keys that aren't scoped to a workspace.
+    public var workspaceId: String?
     public var baseURL = URL(string: "https://api.anthropic.com/v1/messages")!
     public var maxRetries = 3
     public var timeout: TimeInterval = 45
 
-    public init(apiKey: String) {
+    public init(apiKey: String, workspaceId: String? = nil) {
         self.apiKey = apiKey
+        let w = workspaceId?.trimmingCharacters(in: .whitespacesAndNewlines)
+        self.workspaceId = w?.isEmpty == false ? w : nil
+    }
+
+    /// One tiny real request, to tell a parent whether the key and settings work.
+    /// Returns nil on success, or the API's own error message.
+    public func check(model: String) async -> String? {
+        let body: JSONValue = .object([
+            "model": .string(model), "max_tokens": .number(16),
+            "messages": .array([.object(["role": .string("user"), "content": .string("Reply with: ok")])]),
+        ])
+        do {
+            for try await _ in stream(body: body) {}
+            return nil
+        } catch let e as AnthropicError {
+            switch e {
+            case .http(_, _, let message), .stream(_, let message): return message
+            case .missingKey: return "No key"
+            }
+        } catch {
+            return error.localizedDescription
+        }
     }
 
     /// Streams one request. `body` is a complete Messages API body; `stream: true` is added here.
@@ -86,6 +110,7 @@ public struct AnthropicClient: Sendable {
         req.setValue(apiKey, forHTTPHeaderField: "x-api-key")
         req.setValue("2023-06-01", forHTTPHeaderField: "anthropic-version")
         if !betas.isEmpty { req.setValue(betas.joined(separator: ","), forHTTPHeaderField: "anthropic-beta") }
+        if let workspaceId { req.setValue(workspaceId, forHTTPHeaderField: "anthropic-workspace-id") }
         req.httpBody = try JSONEncoder().encode(JSONValue.object(obj))
 
         let (bytes, response) = try await URLSession.shared.bytes(for: req)

@@ -29,6 +29,8 @@ final class AppSettings {
     var dailyCapUSD: Double { didSet { defaults.set(dailyCapUSD, forKey: "dailyCapUSD") } }
     /// A parent read and accepted the data/cost notice (plan §7) before any key is used.
     var consentGiven: Bool { didSet { defaults.set(consentGiven, forKey: "consentGiven") } }
+    /// For organization keys that aren't scoped to a workspace (wrkspc_...).
+    var workspaceId: String { didSet { defaults.set(workspaceId, forKey: "workspaceId") } }
     /// Real pictures from Wikipedia on Enjin's cards.
     var showPictures: Bool { didSet { defaults.set(showPictures, forKey: "showPictures") } }
     private(set) var hasKey: Bool
@@ -40,10 +42,17 @@ final class AppSettings {
         dailyCapUSD = defaults.object(forKey: "dailyCapUSD") as? Double ?? 2
         consentGiven = defaults.bool(forKey: "consentGiven")
         showPictures = defaults.object(forKey: "showPictures") as? Bool ?? true
+        workspaceId = defaults.string(forKey: "workspaceId") ?? ""
         hasKey = Keychain.read(Self.keyAccount)?.isEmpty == false
     }
 
     var model: AnthropicModel { AnthropicModel.all.first { $0.id == modelId } ?? .opus55 }
+
+    /// A tiny real request with the saved key and settings. Nil means it works.
+    func testConnection() async -> String? {
+        guard let key = Keychain.read(Self.keyAccount), !key.isEmpty else { return "No key saved." }
+        return await AnthropicClient(apiKey: key, workspaceId: workspaceId).check(model: model.id)
+    }
 
     func saveKey(_ key: String) {
         let k = key.trimmingCharacters(in: .whitespacesAndNewlines)
@@ -74,7 +83,7 @@ final class AppSettings {
         if ProcessInfo.processInfo.arguments.contains("-uiTestingFakeAgent") { return UITestBackend() }
         #endif
         let key = consentGiven ? Keychain.read(Self.keyAccount) : nil
-        let claude = key.flatMap { $0.isEmpty ? nil : AnthropicBackend(apiKey: $0, model: model) }
+        let claude = key.flatMap { $0.isEmpty ? nil : AnthropicBackend(apiKey: $0, workspaceId: workspaceId, model: model) }
         let onDevice: AgentBackend? = {
             if #available(iOS 26.0, *), AppleFMBackend.unavailableReason == nil { return AppleFMBackend() }
             return nil

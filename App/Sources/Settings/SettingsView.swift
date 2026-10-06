@@ -8,6 +8,8 @@ struct SettingsView: View {
     @State private var keyDraft = ""
     @State private var showConsent = false
     @State private var spentToday = 0.0
+    @State private var testing = false
+    @State private var testResult: (ok: Bool, message: String)?
 
     var body: some View {
         NavigationStack {
@@ -29,7 +31,34 @@ struct SettingsView: View {
                         Picker("Model", selection: $settings.modelId) {
                             ForEach(AnthropicModel.all) { Text($0.label).tag($0.id) }
                         }
-                        Button("Remove key", role: .destructive) { settings.removeKey() }
+                        TextField("Workspace ID (only if needed, wrkspc_...)", text: $settings.workspaceId)
+                            .autocorrectionDisabled()
+                            .textInputAutocapitalization(.never)
+                            .font(.callout.monospaced())
+                        Button {
+                            Task {
+                                testing = true
+                                let err = await settings.testConnection()
+                                testResult = err.map { (false, $0) } ?? (true, "Connected. Enjin is ready.")
+                                testing = false
+                            }
+                        } label: {
+                            HStack {
+                                Text("Test connection")
+                                if testing { Spacer(); ProgressView() }
+                            }
+                        }
+                        .disabled(testing)
+                        if let r = testResult {
+                            Label(r.message, systemImage: r.ok ? "checkmark.circle.fill" : "exclamationmark.triangle.fill")
+                                .foregroundStyle(r.ok ? .green : .red)
+                                .font(.callout)
+                            if !r.ok && r.message.localizedCaseInsensitiveContains("workspace") {
+                                Text("This key belongs to an organization but doesn't pick a workspace. Paste a workspace ID from the Claude Console (it starts with wrkspc_), or create a new key inside a workspace.")
+                                    .font(.caption).foregroundStyle(.secondary)
+                            }
+                        }
+                        Button("Remove key", role: .destructive) { settings.removeKey(); testResult = nil }
                     } else {
                         SecureField("sk-ant-…", text: $keyDraft)
                             .textContentType(.password)

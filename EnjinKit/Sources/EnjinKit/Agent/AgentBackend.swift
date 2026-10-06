@@ -28,8 +28,9 @@ public struct AnthropicBackend: AgentBackend {
         "bet365.com", "pokerstars.com", "4chan.org", "8kun.top", "liveleak.com",
     ]
 
-    public init(apiKey: String, model: AnthropicModel, effort: String? = "low", blockedDomains: [String] = AnthropicBackend.defaultBlockedDomains) {
-        self.client = AnthropicClient(apiKey: apiKey)
+    public init(apiKey: String, workspaceId: String? = nil, model: AnthropicModel, effort: String? = "low",
+                blockedDomains: [String] = AnthropicBackend.defaultBlockedDomains) {
+        self.client = AnthropicClient(apiKey: apiKey, workspaceId: workspaceId)
         self.model = model
         self.effort = effort
         self.blockedDomains = blockedDomains

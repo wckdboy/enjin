@@ -278,6 +278,9 @@ public final class AgentSession {
                 return "Enjin's key isn't working. Ask a parent to check it in Settings."
             case .http(let status, _, _) where status == 429 || status == 529 || status >= 500:
                 return "Enjin is busy right now. Try again in a moment."
+            case .http(let status, _, _) where status == 400 || status == 404:
+                // Almost always setup (key, workspace, model), not the kid's question.
+                return "Enjin needs setting up. Ask a parent to open Settings and tap Test connection."
             case .stream: return "Enjin got interrupted. Try again."
             default: return "Something went wrong. Try again."
             }

@@ -59,7 +59,7 @@ struct AgentSpikeView: View {
         }
         Keychain.write(apiKey, account: "anthropic")
         log = []; cards = []; result = nil; error = nil
-        let loop = AgentLoop(client: AnthropicClient(apiKey: apiKey), config: SpikeAgent.config(model: model))
+        let loop = AgentLoop(client: AnthropicClient(apiKey: apiKey, workspaceId: UserDefaults.standard.string(forKey: "workspaceId")), config: SpikeAgent.config(model: model))
         let input = prompt
         running = Task {
             var messages: [JSONValue] = [.object(["role": .string("user"), "content": .string(input)])]

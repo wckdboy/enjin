@@ -96,4 +96,14 @@ struct AccumulatorTests {
         #expect(hb["output_config"] == nil)
         #expect(hb["fallbacks"] == nil)
     }
+
+    @Test func workspaceHeaderIsSentOnlyWhenSet() {
+        #expect(AnthropicClient(apiKey: "k", workspaceId: "  ").workspaceId == nil)
+        #expect(AnthropicClient(apiKey: "k", workspaceId: " wrkspc_01abc ").workspaceId == "wrkspc_01abc")
+    }
+
+    @Test @MainActor func setupErrorsTellTheKidToGetAParent() {
+        let msg = AgentSession.kidMessage(for: AnthropicError.http(status: 400, type: "invalid_request_error", message: "This API key is not scoped to a workspace"))
+        #expect(msg.contains("Ask a parent"))
+    }
 }
