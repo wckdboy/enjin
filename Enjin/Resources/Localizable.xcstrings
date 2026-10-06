@@ -11,6 +11,16 @@
         }
       }
     },
+    "%lld notebooks": {
+      "localizations": {
+        "da": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld notesbøger"
+          }
+        }
+      }
+    },
     "A topic, a question, anything…": {
       "localizations": {
         "da": {

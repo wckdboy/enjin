@@ -4,8 +4,8 @@
 // FontFaces shortly after mount, so wait for them to appear first.
 let ready: Promise<void> | null = null;
 
-// Excalifont for the kid's own text; Lilita One and Nunito for cards.
-const FAMILIES = new Set(["Excalifont", "Lilita One", "Nunito"]);
+// Excalifont for the kid's own text; Cascadia for the readouts on cards.
+const FAMILIES = new Set(["Excalifont", "Cascadia"]);
 const excalifontFaces = () => Array.from(document.fonts).filter((f) => FAMILIES.has(f.family.replace(/["']/g, "")));
 
 export function ensureFonts(timeoutMs = 3000): Promise<void> {

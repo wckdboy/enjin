@@ -472,8 +472,8 @@ test("the canvas speaks Danish when told to", async ({ page }) => {
       .filter((e) => e.customData?.role === "cue" || e.customData?.role === "badge")
       .map((e) => e.text),
   );
-  expect(texts).toContain("dyk ind →");
-  expect(texts).toContain("3 indeni →");
+  expect(texts).toContain("DYK IND →");
+  expect(texts).toContain("3 INDENI →");
   const p = await cardCenter(page, "c-legions");
   await page.touchscreen.tap(p.x, p.y);
   await expect(page.locator("[data-enjin=card-actions]").getByRole("button", { name: "Dyk ind" })).toBeVisible();

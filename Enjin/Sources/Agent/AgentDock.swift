@@ -19,7 +19,7 @@ struct AgentDock: View {
                     Label { Text(verbatim: "\(s.reason) → \(card.title)") } icon: { Image(systemName: "eye") }
                         .lineLimit(1)
                 }
-                .buttonStyle(StickerButtonStyle(kind: .quiet, radius: 22))
+                .buttonStyle(MachineButtonStyle(kind: .quiet))
                 .transition(.opacity)
             }
 
@@ -35,7 +35,7 @@ struct AgentDock: View {
                                     Text(q)
                                 }
                             }
-                            .buttonStyle(StickerButtonStyle(kind: step.isDive ? .primary : .quiet, radius: 22))
+                            .buttonStyle(MachineButtonStyle(kind: step.isDive ? .primary : .quiet))
                             .lineLimit(1)
                         }
                     }
@@ -47,10 +47,8 @@ struct AgentDock: View {
 
             if let line = statusLine {
                 HStack(alignment: .top, spacing: 10) {
-                    if agent.isRunning && agent.prefetchingCardId == nil {
-                        SparkDots()
-                    } else if !isError {
-                        Image(systemName: "bolt.fill").foregroundStyle(Theme.ink).font(.system(size: 15, weight: .bold))
+                    if !isError {
+                        Rotor(size: 20, spinning: agent.isRunning && agent.prefetchingCardId == nil).padding(.top, 1)
                     }
                     Text(line)
                         .font(Theme.body(17))
@@ -58,7 +56,7 @@ struct AgentDock: View {
                         .frame(maxWidth: .infinity, alignment: .leading)
                         .lineLimit(4)
                     if isError {
-                        Button("OK") { agent.dismissError() }.buttonStyle(StickerButtonStyle(kind: .quiet, radius: 12))
+                        Button("OK") { agent.dismissError() }.buttonStyle(MachineButtonStyle(kind: .quiet))
                     }
                 }
                 .padding(.horizontal, 4)
@@ -79,10 +77,10 @@ struct AgentDock: View {
                             send()
                         }
                     }
-                    .padding(.horizontal, 16)
-                    .padding(.vertical, 12)
-                    .background(.white, in: .rect(cornerRadius: 14))
-                    .overlay(RoundedRectangle(cornerRadius: 14).strokeBorder(Theme.ink, lineWidth: Theme.line))
+                    .padding(.horizontal, 20)
+                    .padding(.vertical, 13)
+                    .background(.white.opacity(0.85), in: .rect(cornerRadius: 24))
+                    .overlay(RoundedRectangle(cornerRadius: 24).strokeBorder(focused ? Theme.ink : Theme.hairline, lineWidth: focused ? 2 : 1))
                     .accessibilityIdentifier("askField")
                 if agent.isRunning && agent.prefetchingCardId == nil {
                     Button { agent.cancel() } label: { Image(systemName: "stop.fill") }
@@ -103,9 +101,9 @@ struct AgentDock: View {
                 }
             }
         }
-        .padding(16)
+        .padding(12)
         .frame(maxWidth: 640)
-        .sticker(Theme.paper, radius: 24)
+        .chrome(radius: 36)
         .animation(.snappy, value: agent.status)
         .animation(.snappy, value: agent.suggestion)
         .animation(.snappy, value: agent.nextSteps)
@@ -137,22 +135,4 @@ struct AgentDock: View {
 
 extension AgentSession.NextStep {
     var isDive: Bool { if case .dive = self { true } else { false } }
-}
-
-/// Three ember dots pulsing: Enjin is working.
-struct SparkDots: View {
-    @State private var on = false
-
-    var body: some View {
-        HStack(spacing: 4) {
-            ForEach(0..<3) { i in
-                Circle().fill(Theme.accent).frame(width: 7, height: 7)
-                    .opacity(on ? 1 : 0.25)
-                    .animation(.easeInOut(duration: 0.5).repeatForever().delay(Double(i) * 0.15), value: on)
-            }
-        }
-        .frame(height: 22)
-        .onAppear { on = true }
-        .accessibilityHidden(true)
-    }
 }

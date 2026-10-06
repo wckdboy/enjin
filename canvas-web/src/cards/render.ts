@@ -11,12 +11,13 @@ export interface EnjinData {
   role: CardRole;
 }
 
-// The ENJIN palette, monochrome like the motor icon (same values as the native Theme).
-const STYLE: Record<Card["state"], { bg: string; stroke: "solid" | "dashed" }> = {
-  stub: { bg: "#f2f2f2", stroke: "dashed" },
-  filling: { bg: "#e9e9e9", stroke: "solid" },
-  filled: { bg: "#ffffff", stroke: "solid" },
-  error: { bg: "#f6e3e3", stroke: "solid" },
+// The ENJIN palette, monochrome like the mark (same values as the native Theme).
+// Cards are machined panels: white, a hairline edge; a stub is a dashed outline.
+const STYLE: Record<Card["state"], { bg: string; edge: string; stroke: "solid" | "dashed" }> = {
+  stub: { bg: "#f2f2f2", edge: "#9a9aa0", stroke: "dashed" },
+  filling: { bg: "#e9e9e9", edge: "#c9c9cd", stroke: "solid" },
+  filled: { bg: "#ffffff", edge: "#c9c9cd", stroke: "solid" },
+  error: { bg: "#f6e3e3", edge: "#c92a2a", stroke: "solid" },
 };
 
 const INK = "#0b0b0c";
@@ -25,6 +26,9 @@ const ACCENT = INK;
 /** Clean, neutral type on cards (matches the native SF Pro): Helvetica for titles and text. */
 const DISPLAY = FONT_FAMILY.Helvetica;
 const READING = FONT_FAMILY.Helvetica;
+/** Machine readouts ("3 INSIDE", "DIVE IN"): monospace capitals, like the native Readout. */
+const READOUT = FONT_FAMILY.Cascadia;
+const READOUT_PX = 13;
 const INSET = 10;
 const TITLE_PX = 24;
 const SUMMARY_PX = 17;
@@ -83,10 +87,11 @@ function cardSkeletons(card: Card, at: Rect): Skeleton[] {
       y: at.y,
       width: at.width,
       height: at.height,
+      strokeColor: style.edge,
       backgroundColor: style.bg,
       fillStyle: "solid",
       strokeStyle: style.stroke,
-      strokeWidth: 2,
+      strokeWidth: 1,
       roundness: { type: 3 },
       customData: { cardId: card.id, role: "frame" },
     },
@@ -161,24 +166,24 @@ function cardSkeletons(card: Card, at: Rect): Skeleton[] {
       id: `${card.id}:cue`,
       x: at.x + INSET,
       y: bottom,
-      text: card.state === "stub" ? t.diveIn() : "",
-      fontSize: 16,
-      fontFamily: READING,
+      text: card.state === "stub" ? t.diveIn().toUpperCase() : "",
+      fontSize: READOUT_PX,
+      fontFamily: READOUT,
       strokeColor: ACCENT,
       customData: { cardId: card.id, role: "cue" },
     });
   }
   if (card.childCount > 0) {
-    const label = t.inside(card.childCount);
+    const label = t.inside(card.childCount).toUpperCase();
     out.push({
       ...common,
       type: "text",
       id: `${card.id}:badge`,
-      x: at.x + at.width - INSET - label.length * 16 * 0.55,
+      x: at.x + at.width - INSET - label.length * READOUT_PX * 0.6,
       y: bottom,
       text: label,
-      fontSize: 16,
-      fontFamily: READING,
+      fontSize: READOUT_PX,
+      fontFamily: READOUT,
       strokeColor: ACCENT,
       customData: { cardId: card.id, role: "badge" },
     });

@@ -10,14 +10,22 @@ body { background: #fafaf9; -webkit-user-select: none; user-select: none; -webki
    (its undo/redo buttons are driven from there) but is never shown. */
 .excalidraw .layer-ui__wrapper { display: none !important; }
 
-/* "Enjin is exploring…" */
+/* Liquid Glass, as close as the web gets: the same material as the native chrome. */
+.enjin-glass {
+  background: rgba(255, 255, 255, 0.62);
+  -webkit-backdrop-filter: blur(22px) saturate(180%); backdrop-filter: blur(22px) saturate(180%);
+  border: 1px solid rgba(255, 255, 255, 0.75);
+  box-shadow: 0 0 0 0.5px rgba(11, 11, 12, 0.14), inset 0 1px 0 rgba(255, 255, 255, 0.9), 0 10px 28px rgba(11, 11, 12, 0.12);
+  border-radius: 999px;
+}
+
+/* "Enjin is exploring…": the rotor steps round, one coil at a time. */
 [data-enjin="busy"] {
   position: absolute; left: 50%; top: 42%; transform: translate(-50%, -50%); z-index: 3; pointer-events: none;
-  display: flex; align-items: center; gap: 12px; padding: 14px 22px; border-radius: 12px;
-  background: #ffffff; border: 2px solid #0b0b0c; box-shadow: 3px 4px 0 #0b0b0c;
-  font: 700 18px -apple-system, system-ui, sans-serif; color: #0b0b0c; transition: opacity 200ms ease;
+  display: flex; align-items: center; gap: 12px; padding: 12px 22px 12px 14px;
+  font: 600 17px -apple-system, system-ui, sans-serif; color: #0b0b0c; transition: opacity 200ms ease;
 }
-[data-enjin="busy"] i { width: 10px; height: 10px; border-radius: 50%; background: #0b0b0c; animation: enjin-pulse 1s ease-in-out infinite; }
-[data-enjin="busy"] i:nth-child(2) { animation-delay: 0.15s; }
-[data-enjin="busy"] i:nth-child(3) { animation-delay: 0.3s; }
-@keyframes enjin-pulse { 0%, 100% { opacity: 0.25; transform: scale(0.8); } 50% { opacity: 1; transform: scale(1); } }
+/* The mark has six-fold symmetry, so one 60 degree step on a loop reads as a stepper motor turning. */
+[data-enjin="busy"] svg { width: 26px; height: 26px; animation: enjin-step 0.45s cubic-bezier(0.3, 1.5, 0.5, 1) infinite; }
+@keyframes enjin-step { 0%, 25% { transform: rotate(0deg); } 100% { transform: rotate(60deg); } }
+@media (prefers-reduced-motion: reduce) { [data-enjin="busy"] svg { animation: none; } }

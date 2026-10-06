@@ -49,7 +49,7 @@ struct CardDetailSheet: View {
                                 .scaledToFit()
                                 .frame(maxWidth: .infinity, maxHeight: 360)
                                 .clipShape(.rect(cornerRadius: 14))
-                                .sticker(Theme.card, radius: 14)
+                                .panel(Theme.card, radius: 14)
                                 .accessibilityLabel(Text("Picture for \(card.title)"))
                             HStack(spacing: 10) {
                                 if card.image?.kind == .illustration {
@@ -80,13 +80,13 @@ struct CardDetailSheet: View {
 
                     if let sources = card.sources, !sources.isEmpty {
                         VStack(alignment: .leading, spacing: 10) {
-                            HandHeading(text: "Sources", size: 22)
+                            Heading(text: "Sources", size: 22)
                             ForEach(sources, id: \.url) { s in
                                 if let url = URL(string: s.url) {
                                     Link(destination: url) {
                                         Label(s.title, systemImage: "link").font(Theme.body(16, weight: .semibold)).lineLimit(1)
                                     }
-                                    .buttonStyle(StickerButtonStyle(kind: .quiet))
+                                    .buttonStyle(MachineButtonStyle(kind: .quiet))
                                 }
                             }
                         }
@@ -108,7 +108,7 @@ struct CardDetailSheet: View {
                     HStack(spacing: 12) {
                         if let onDive {
                             Button(action: onDive) { Label("Dive in", systemImage: "arrow.down.right") }
-                                .buttonStyle(StickerButtonStyle(kind: .primary))
+                                .buttonStyle(MachineButtonStyle(kind: .primary))
                         }
                         if editable {
                             Button {
@@ -117,7 +117,7 @@ struct CardDetailSheet: View {
                                 onSave(t, summary.trimmingCharacters(in: .whitespacesAndNewlines), b.isEmpty ? nil : b)
                                 dismiss()
                             } label: { Label("Save", systemImage: "checkmark") }
-                                .buttonStyle(StickerButtonStyle(kind: onDive == nil ? .primary : .plain))
+                                .buttonStyle(MachineButtonStyle(kind: onDive == nil ? .primary : .plain))
                                 .disabled(!changed || title.trimmingCharacters(in: .whitespaces).isEmpty)
                         }
                     }

@@ -46,7 +46,7 @@ struct MapView: View {
                             .padding(.horizontal, 16)
                             .padding(.vertical, 12)
                             .frame(maxWidth: .infinity, alignment: .leading)
-                            .sticker(row.id == current ? Theme.accentSoft : (row.depth == 0 ? Theme.card : Theme.paper), radius: 14)
+                            .panel(row.id == current ? Theme.accentSoft : (row.depth == 0 ? Theme.card : Theme.paper), radius: 14)
                         }
                         .buttonStyle(.plain)
                         .padding(.leading, CGFloat(row.depth) * 28)
@@ -75,7 +75,7 @@ struct NewCardSheet: View {
             onCreate(type, title.trimmingCharacters(in: .whitespaces), summary.trimmingCharacters(in: .whitespaces))
         } content: {
             VStack(alignment: .leading, spacing: 16) {
-                StickerChoice(selection: $type, options: [(.topic, "Topic", "square.stack"), (.note, "Note", "note.text")])
+                SegmentChoice(selection: $type, options: [(.topic, "Topic", "square.stack"), (.note, "Note", "note.text")])
                 TextField(text: $title) { Text("Title") }.enjinField().accessibilityIdentifier("cardTitle")
                 TextField(text: $summary, axis: .vertical) { Text("What's it about?") }.lineLimit(2...5).enjinField()
                 Text(type == .topic ? "Topics can be dived into and explored." : "Notes are for your own thoughts.")

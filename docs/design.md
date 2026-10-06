@@ -1,21 +1,28 @@
 # ENJIN design system
 
-ENJIN ≈ engine. The app icon is a monochrome electric motor (a cylinder, one
-seam, a shaft), and everything else follows it: one engineered, monochrome
-visual language for native screens and the canvas.
+ENJIN ≈ engine. The mark is a motor seen end-on: a housing ring, six coils
+between six spokes, the rotor ring and the bore (`docs/enjin-mark.svg`).
+Everything follows it: precise, mechatronic, monochrome, for native screens
+and the canvas alike.
 
 - **Palette** (`Enjin/Sources/Design/Theme.swift`, mirrored in `canvas-web/src/cards/render.ts`):
   - paper `#FAFAF9`, card `#FFFFFF`, stub `#F2F2F2`, filling `#E9E9E9`
-  - ink `#0B0B0C`, ink-soft `#6A6A70`
+  - ink `#0B0B0C`, ink-soft `#6A6A70`, hairline = ink at 14%
   - The only accent is ink: every "go" (Explore, Send, Dive in, the active tool) is solid black with white text.
   - Drawing inks on the tool rail (ink, ember, sky, leaf) are content, not chrome.
+- **Shapes are the mark's:** circles, capsules, concentric rounded rects. No sharp corners, no hard shadows.
 - **Type:**
-  - **SF Pro Expanded Black** for display: the wordmark, headings, card titles in sheets.
+  - **SF Pro Expanded Black** for display: the wordmark, headings, titles.
   - **SF Pro** for reading.
-  - **Helvetica** on canvas cards.
-  - **Excalifont** only for what the kid writes with the text tool.
-- **Mark:** the motor from the icon (`Assets.xcassets/MotorMark`, a template image) sits beside the ENJIN wordmark. Bolts (⚡) stand for "Enjin is doing something".
-- **Stickers:** surfaces and buttons have a 2pt black outline and a hard black shadow offset by (3,4), and press into the page when tapped. Corner radius 12.
+  - **Readouts** (`Readout`): SF Mono, capitals, tracked out, for counts, status and "or try". On canvas cards the same role is Cascadia ("3 INSIDE →", "DIVE IN →").
+  - **Helvetica** for card text on the canvas; **Excalifont** only for what the kid writes.
+- **Surfaces:**
+  - Content (explore panel, notebook covers, sheets) sits on **machined panels** (`.panel()`): white, a 1pt hairline edge, a soft contact shadow.
+  - Chrome floating over the canvas (crumbs, actions, tool rail, dock, tips) is **Liquid Glass** (`.chrome()`, `.glassEffect`). Icon buttons are glass circles; active ones are ink-tinted glass.
+  - On the web side, the card actions pill and the busy hint use `.enjin-glass`, a backdrop-filter version of the same material.
+  - The library sits on engineering paper (`DotGrid`).
+- **Motion:** the mark is the busy indicator (`Rotor`). It steps round one coil (60°) at a time, like a stepper motor, natively and on the canvas. Buttons scale down slightly when pressed.
+- **Dividers** on the tool rail are three short ticks, like a scale on a dial.
 - **Canvas chrome is native:**
   - top-left: back plus breadcrumb;
   - top-right: New card, Map, Settings;
@@ -29,7 +36,7 @@ visual language for native screens and the canvas.
   - highlights melting into paper;
   - grain;
   - 55% of the original color: muted, so pictures sit calmly in the monochrome UI.
-- **Icon:** `tools/icon/motor_icon.py` renders the light (black on white, opaque), dark and tinted (white on transparent) variants.
+- **Icon:** `tools/icon/enjin_mark.py` draws the mark as exact geometry (true circles, parallel-sided spokes, one corner radius) and renders the light (black on white, opaque), dark and tinted (white on transparent) app icons, the `MotorMark` template image, and the SVGs.
 
 ## Language
 - English and Danish. Parents choose in Settings (or it follows the iPad); switching is live.

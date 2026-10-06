@@ -1,9 +1,11 @@
 @preconcurrency import SwiftUI
 
-/// ENJIN's look, matched to the monochrome motor icon: near-white paper, true
-/// black ink, greys for state, black as the only accent. Display type is SF Pro
-/// Expanded Black (precise, engine-like), reading type is SF Pro. Surfaces are
-/// "stickers": a black outline and a hard offset shadow that presses down.
+/// ENJIN's look, taken from the mark (a motor seen end-on): near-white paper, true
+/// black ink, greys for state, black as the only accent. Shapes are the mark's:
+/// circles, capsules, concentric rings. Display type is SF Pro Expanded Black,
+/// reading type is SF Pro, and small machine "readouts" (counts, status) are
+/// SF Mono in capitals. Content sits on machined white panels with hairline
+/// edges; chrome that floats over the canvas is Liquid Glass.
 enum Theme {
     static let paper = Color(hex: 0xFAFAF9)
     static let card = Color(hex: 0xFFFFFF)
@@ -30,10 +32,12 @@ enum Theme {
 
     static let radius: CGFloat = 12
     static let line: CGFloat = 2
-    static let shadow = CGSize(width: 3, height: 4)
+    /// The machined edge on panels and fields.
+    static let hairline = Color(hex: 0x0B0B0C).opacity(0.14)
 
     static func display(_ size: CGFloat) -> Font { .system(size: size, weight: .black).width(.expanded) }
     static func body(_ size: CGFloat = 17, weight: Font.Weight = .regular) -> Font { .system(size: size, weight: weight) }
+    static func mono(_ size: CGFloat = 13, weight: Font.Weight = .semibold) -> Font { .system(size: size, weight: weight, design: .monospaced) }
 }
 
 extension Color {
@@ -42,91 +46,97 @@ extension Color {
     }
 }
 
-/// Paper surface, ink outline, hard offset shadow.
-struct Sticker: ViewModifier {
-    var fill: Color = Theme.paper
+/// A machined panel: white, a hairline edge, a soft contact shadow.
+struct Panel: ViewModifier {
+    var fill: Color = Theme.card
     var radius: CGFloat = Theme.radius
     var lifted = true
 
     func body(content: Content) -> some View {
         content
             .background(fill, in: .rect(cornerRadius: radius))
-            .overlay(RoundedRectangle(cornerRadius: radius).strokeBorder(Theme.ink, lineWidth: Theme.line))
-            .background(
-                RoundedRectangle(cornerRadius: radius).fill(Theme.ink)
-                    .offset(lifted ? Theme.shadow : .zero)
-            )
+            .overlay(RoundedRectangle(cornerRadius: radius).strokeBorder(Theme.hairline, lineWidth: 1))
+            .shadow(color: Theme.ink.opacity(lifted ? 0.06 : 0), radius: 1, y: 1)
+            .shadow(color: Theme.ink.opacity(lifted ? 0.07 : 0), radius: 14, y: 8)
+    }
+}
+
+/// Liquid Glass for chrome that floats over the canvas.
+struct Chrome<S: Shape>: ViewModifier {
+    let shape: S
+    func body(content: Content) -> some View {
+        content.glassEffect(.regular, in: shape)
     }
 }
 
 extension View {
-    func sticker(_ fill: Color = Theme.paper, radius: CGFloat = Theme.radius, lifted: Bool = true) -> some View {
-        modifier(Sticker(fill: fill, radius: radius, lifted: lifted))
+    func panel(_ fill: Color = Theme.card, radius: CGFloat = Theme.radius, lifted: Bool = true) -> some View {
+        modifier(Panel(fill: fill, radius: radius, lifted: lifted))
     }
+
+    func chrome(radius: CGFloat) -> some View { modifier(Chrome(shape: .rect(cornerRadius: radius))) }
+    func chrome() -> some View { modifier(Chrome(shape: .capsule)) }
 }
 
-/// Buttons that feel like pressing a sticker into the page.
-struct StickerButtonStyle: ButtonStyle {
+/// Capsule buttons. Primary is solid ink (the one "go"), plain is glass,
+/// quiet is a white chip with a hairline (for use on panels and inside glass).
+struct MachineButtonStyle: ButtonStyle {
     enum Kind { case primary, plain, quiet }
     var kind: Kind = .plain
-    var radius: CGFloat = 14
+    @Environment(\.isEnabled) private var enabled
 
     func makeBody(configuration: Configuration) -> some View {
         let pressed = configuration.isPressed
-        let fill: Color = switch kind {
-        case .primary: Theme.accent
-        case .plain: Theme.paper
-        case .quiet: Theme.card
-        }
         configuration.label
             .font(Theme.body(17, weight: .semibold))
             .foregroundStyle(kind == .primary ? Color.white : Theme.ink)
-            .padding(.horizontal, 16)
+            .padding(.horizontal, 18)
             .frame(minHeight: 44)
-            .background(fill, in: .rect(cornerRadius: radius))
-            .overlay(RoundedRectangle(cornerRadius: radius).strokeBorder(Theme.ink, lineWidth: Theme.line))
-            .background(RoundedRectangle(cornerRadius: radius).fill(Theme.ink).offset(pressed ? .zero : Theme.shadow))
-            .offset(pressed ? Theme.shadow : .zero)
-            .animation(.spring(duration: 0.18, bounce: 0.3), value: pressed)
-            .contentShape(.rect)
+            .background {
+                switch kind {
+                case .primary: Capsule().fill(Theme.ink)
+                case .quiet: Capsule().fill(Theme.card).strokeBorder(Theme.hairline, lineWidth: 1)
+                case .plain: Capsule().fill(.clear)
+                }
+            }
+            .glassEffect(kind == .plain ? .regular.interactive() : .identity, in: .capsule)
+            .opacity(enabled ? 1 : 0.4)
+            .scaleEffect(pressed ? 0.96 : 1)
+            .animation(.spring(duration: 0.2, bounce: 0.35), value: pressed)
+            .contentShape(.capsule)
     }
 }
 
-/// Round icon sticker (toolbar actions).
+/// Round glass icon button; active is solid ink.
 struct IconButtonStyle: ButtonStyle {
     var active = false
     var size: CGFloat = 44
+    @Environment(\.isEnabled) private var enabled
 
     func makeBody(configuration: Configuration) -> some View {
         let pressed = configuration.isPressed
         configuration.label
-            .font(.system(size: 18, weight: .semibold))
+            .font(.system(size: size * 0.4, weight: .semibold))
             .foregroundStyle(active ? Color.white : Theme.ink)
             .frame(width: size, height: size)
-            .background(active ? Theme.accent : Theme.paper, in: .circle)
-            .overlay(Circle().strokeBorder(Theme.ink, lineWidth: Theme.line))
-            .background(Circle().fill(Theme.ink).offset(pressed ? .zero : CGSize(width: 2, height: 3)))
-            .offset(pressed ? CGSize(width: 2, height: 3) : .zero)
-            .animation(.spring(duration: 0.18, bounce: 0.3), value: pressed)
+            .glassEffect(active ? .regular.tint(Theme.ink).interactive() : .regular.interactive(), in: .circle)
+            .opacity(enabled ? 1 : 0.4)
+            .scaleEffect(pressed ? 0.92 : 1)
+            .animation(.spring(duration: 0.2, bounce: 0.35), value: pressed)
             .contentShape(.circle)
     }
 }
 
-/// The ENJIN wordmark: the motor from the app icon, then the name, expanded.
+/// The ENJIN wordmark: the mark from the app icon, then the name, expanded.
 struct Wordmark: View {
     var size: CGFloat = 44
 
     var body: some View {
-        HStack(alignment: .center, spacing: size * 0.3) {
-            Image("MotorMark")
-                .renderingMode(.template)
-                .resizable()
-                .scaledToFit()
-                .frame(height: size * 1.25)
-                .foregroundStyle(Theme.ink)
+        HStack(alignment: .center, spacing: size * 0.32) {
+            Rotor(size: size * 1.05)
             Text(verbatim: "ENJIN")
                 .font(Theme.display(size))
-                .tracking(size * 0.04)
+                .tracking(size * 0.06)
                 .foregroundStyle(Theme.ink)
         }
         .accessibilityElement(children: .ignore)
@@ -134,12 +144,82 @@ struct Wordmark: View {
     }
 }
 
-/// Section headings in the hand-drawn face.
-struct HandHeading: View {
+/// The mark itself. When `spinning`, the rotor turns: Enjin is working.
+struct Rotor: View {
+    var size: CGFloat = 22
+    var spinning = false
+    var color: Color = Theme.ink
+
+    var body: some View {
+        Image("MotorMark")
+            .renderingMode(.template)
+            .resizable()
+            .scaledToFit()
+            .frame(width: size, height: size)
+            .foregroundStyle(color)
+            .modifier(Spin(on: spinning))
+            .accessibilityHidden(true)
+    }
+}
+
+/// Steps the rotor one coil (60 degrees) at a time, like a stepper motor.
+private struct Spin: ViewModifier {
+    let on: Bool
+    @State private var steps = 0.0
+    func body(content: Content) -> some View {
+        content
+            .rotationEffect(.degrees(steps * 60))
+            .task(id: on) {
+                guard on else { return }
+                while !Task.isCancelled {
+                    try? await Task.sleep(for: .milliseconds(420))
+                    withAnimation(.spring(duration: 0.32, bounce: 0.25)) { steps += 1 }
+                }
+            }
+    }
+}
+
+/// Section headings: expanded black.
+struct Heading: View {
     let text: LocalizedStringKey
     var size: CGFloat = 28
 
     var body: some View {
         Text(text).font(Theme.display(size)).foregroundStyle(Theme.ink)
+    }
+}
+
+/// A machine readout: SF Mono, capitals, tracked out. For counts and status.
+struct Readout: View {
+    let text: Text
+    var color: Color = Theme.inkSoft
+
+    init(_ key: LocalizedStringKey, color: Color = Theme.inkSoft) { text = Text(key); self.color = color }
+    init(text: Text, color: Color = Theme.inkSoft) { self.text = text; self.color = color }
+
+    var body: some View {
+        text.font(Theme.mono(12)).tracking(1.2).textCase(.uppercase).foregroundStyle(color)
+    }
+}
+
+/// Engineering paper: a faint dot grid.
+struct DotGrid: View {
+    var spacing: CGFloat = 24
+
+    var body: some View {
+        Canvas { ctx, size in
+            let dot = Path(ellipseIn: CGRect(x: -0.9, y: -0.9, width: 1.8, height: 1.8))
+            var y = spacing / 2
+            while y < size.height {
+                var x = spacing / 2
+                while x < size.width {
+                    ctx.fill(dot.offsetBy(dx: x, dy: y), with: .color(Theme.ink.opacity(0.10)))
+                    x += spacing
+                }
+                y += spacing
+            }
+        }
+        .background(Theme.paper)
+        .accessibilityHidden(true)
     }
 }

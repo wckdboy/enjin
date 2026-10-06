@@ -38,7 +38,11 @@ struct LibraryView: View {
 
                     if !library.notebooks.isEmpty {
                         VStack(alignment: .leading, spacing: 16) {
-                            HandHeading(text: "Your notebooks", size: 30)
+                            HStack(alignment: .firstTextBaseline) {
+                                Heading(text: "Your notebooks", size: 30)
+                                Spacer()
+                                Readout(text: Text("\(library.notebooks.count) notebooks"))
+                            }
                             LazyVGrid(columns: [GridItem(.adaptive(minimum: 230, maximum: 320), spacing: 24)], alignment: .leading, spacing: 28) {
                                 ForEach(library.notebooks) { nb in
                                     NavigationLink(value: nb.id) {
@@ -59,7 +63,7 @@ struct LibraryView: View {
                 .frame(maxWidth: 1100, alignment: .leading)
                 .frame(maxWidth: .infinity)
             }
-            .background(Theme.paper.ignoresSafeArea())
+            .background(DotGrid().ignoresSafeArea())
             .toolbar(.hidden, for: .navigationBar)
             .navigationDestination(for: String.self) { id in
                 NotebookScreen(notebookId: id, store: library.store, settings: settings, telemetry: telemetry)
@@ -85,7 +89,7 @@ struct LibraryView: View {
 
     private var explorePrompt: some View {
         VStack(alignment: .leading, spacing: 18) {
-            HandHeading(text: "What do you want to explore?", size: 40)
+            Heading(text: "What do you want to explore?", size: 40)
             HStack(spacing: 12) {
                 TextField(text: $topic) { Text("A topic, a question, anything…") }
                     .font(Theme.body(22))
@@ -93,23 +97,25 @@ struct LibraryView: View {
                     .focused($topicFocused)
                     .submitLabel(.go)
                     .onSubmit { start(topic) }
-                    .padding(.horizontal, 18)
+                    .padding(.horizontal, 22)
                     .frame(height: 58)
-                    .sticker(.white, radius: Theme.radius, lifted: false)
+                    .background(Theme.paper, in: .capsule)
+                    .overlay(Capsule().strokeBorder(topicFocused ? Theme.ink : Theme.hairline, lineWidth: topicFocused ? 2 : 1))
+                    .animation(.snappy, value: topicFocused)
                     .accessibilityIdentifier("topicField")
                 Button { start(topic) } label: {
-                    Label("Explore", systemImage: "bolt.fill").font(Theme.body(20, weight: .bold)).frame(minHeight: 50)
+                    Label("Explore", systemImage: "arrow.right").labelStyle(TrailingIcon()).font(Theme.body(20, weight: .bold)).frame(minHeight: 50)
                 }
-                .buttonStyle(StickerButtonStyle(kind: .primary))
+                .buttonStyle(MachineButtonStyle(kind: .primary))
                 .disabled(topic.trimmingCharacters(in: .whitespaces).isEmpty)
                 .accessibilityIdentifier("explore")
             }
             ScrollView(.horizontal, showsIndicators: false) {
                 HStack(spacing: 10) {
-                    Text("or try").font(Theme.body(16)).foregroundStyle(Theme.inkSoft)
+                    Readout("or try")
                     ForEach(starters.indices, id: \.self) { i in
                         Button { start(starterText(i)) } label: { Text(starters[i]).font(Theme.body(16, weight: .semibold)) }
-                            .buttonStyle(StickerButtonStyle(kind: .quiet, radius: 22))
+                            .buttonStyle(MachineButtonStyle(kind: .quiet))
                     }
                 }
                 .padding(.vertical, 6)
@@ -117,7 +123,7 @@ struct LibraryView: View {
             }
         }
         .padding(28)
-        .sticker(Theme.card, radius: 24)
+        .panel(Theme.card, radius: 32)
     }
 
     /// The starter's text in the current language (the key itself is English).
@@ -144,17 +150,17 @@ struct NotebookCover: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
             ZStack {
-                Theme.accentSoft
+                Theme.stub
                 if let cover {
                     Image(uiImage: cover).resizable().scaledToFill()
                 } else {
-                    Image("MotorMark").renderingMode(.template).resizable().scaledToFit().frame(height: 70).foregroundStyle(Theme.ink.opacity(0.18))
+                    Rotor(size: 64, color: Theme.ink.opacity(0.14))
                 }
             }
             .frame(height: 170)
             .frame(maxWidth: .infinity)
-            .clipped()
-            .overlay(alignment: .bottom) { Rectangle().fill(Theme.ink).frame(height: Theme.line) }
+            .clipShape(.rect(cornerRadius: 14))
+            .padding([.horizontal, .top], 8)
 
             VStack(alignment: .leading, spacing: 6) {
                 Text(meta.title)
@@ -162,20 +168,19 @@ struct NotebookCover: View {
                     .foregroundStyle(Theme.ink)
                     .lineLimit(2)
                     .multilineTextAlignment(.leading)
-                HStack(spacing: 6) {
-                    Text("\(cardCount) cards")
-                    Text(verbatim: "·")
-                    Text(meta.updatedAt, format: .relative(presentation: .named))
+                HStack(spacing: 8) {
+                    Readout(text: Text("\(cardCount) cards"), color: Theme.ink)
+                    Circle().fill(Theme.hairline).frame(width: 4, height: 4)
+                    Readout(text: Text(meta.updatedAt, format: .relative(presentation: .named)))
                 }
-                .font(Theme.body(15))
-                .foregroundStyle(Theme.inkSoft)
             }
-            .padding(16)
+            .padding(.horizontal, 16)
+            .padding(.top, 12)
+            .padding(.bottom, 16)
             .frame(maxWidth: .infinity, alignment: .leading)
         }
-        .clipShape(.rect(cornerRadius: 20))
-        .sticker(Theme.card, radius: 20)
-        .contentShape(.rect(cornerRadius: 20))
+        .panel(Theme.card, radius: 22)
+        .contentShape(.rect(cornerRadius: 22))
     }
 }
 
@@ -212,5 +217,12 @@ struct NotebookScreen: View {
                 self.error = error.localizedDescription
             }
         }
+    }
+}
+
+/// Title first, icon after: "Explore →".
+struct TrailingIcon: LabelStyle {
+    func makeBody(configuration: Configuration) -> some View {
+        HStack(spacing: 10) { configuration.title; configuration.icon }
     }
 }

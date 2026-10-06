@@ -42,10 +42,11 @@ struct CanvasScreen: View {
                         Image(systemName: "hand.pinch").font(.system(size: 24, weight: .semibold)).foregroundStyle(Theme.accent)
                         Text("Tip: pinch a card open, or tap it and press **Dive in**, to go inside it.")
                             .font(Theme.body(16)).foregroundStyle(Theme.ink)
-                        Button("Got it") { diveTipSeen = true }.buttonStyle(StickerButtonStyle(kind: .primary))
+                        Button("Got it") { diveTipSeen = true }.buttonStyle(MachineButtonStyle(kind: .primary))
                     }
-                    .padding(14)
-                    .sticker(Theme.paper)
+                    .padding(.vertical, 12)
+                    .padding(.horizontal, 18)
+                    .chrome(radius: 28)
                     .transition(.move(edge: .bottom).combined(with: .opacity))
                 }
                 if controller.status == .ready {
@@ -92,12 +93,12 @@ struct CanvasScreen: View {
     private var navigation: some View {
         HStack(spacing: 4) {
             Button { dismiss() } label: { Image(systemName: "chevron.left").font(.system(size: 18, weight: .bold)) }
-                .buttonStyle(IconButtonStyle(size: 40))
+                .buttonStyle(IconButtonStyle(active: true, size: 40))
                 .accessibilityLabel(Text("Notebooks"))
                 .accessibilityIdentifier("notebooks")
                 .padding(.trailing, 8)
             ForEach(Array(controller.path.enumerated()), id: \.element.portalId) { i, crumb in
-                if i > 0 { Image(systemName: "chevron.right").font(.system(size: 13, weight: .heavy)).foregroundStyle(Theme.accent) }
+                if i > 0 { Image(systemName: "chevron.right").font(.system(size: 12, weight: .bold)).foregroundStyle(Theme.inkSoft) }
                 if i == controller.path.count - 1 {
                     Text(crumb.title)
                         .font(Theme.display(22))
@@ -121,7 +122,7 @@ struct CanvasScreen: View {
         .padding(.vertical, 6)
         .padding(.leading, 6)
         .padding(.trailing, 14)
-        .sticker(Theme.paper, radius: 26)
+        .chrome()
         .animation(.snappy, value: controller.path)
     }
 
@@ -166,28 +167,39 @@ struct ToolRail: View {
                     .accessibilityLabel(Text(t.label))
                     .accessibilityAddTraits(controller.tool == t ? .isSelected : [])
             }
-            Divider().frame(width: 30).overlay(Theme.ink.opacity(0.25)).padding(.vertical, 4)
+            Ticks()
             ForEach(Theme.inkColors) { c in
                 Button { controller.select(color: c) } label: {
-                    Circle().fill(c.color).frame(width: 22, height: 22)
-                        .overlay(Circle().strokeBorder(Theme.ink, lineWidth: controller.inkColor == c ? 3 : 1.5))
+                    // A color is a little rotor face: chosen, it gets the housing ring.
+                    Circle().fill(c.color).frame(width: 20, height: 20)
                         .padding(4)
-                        .overlay(Circle().strokeBorder(controller.inkColor == c ? Theme.ink : .clear, lineWidth: 1.5))
-                        .frame(width: 44, height: 40)
+                        .overlay(Circle().strokeBorder(controller.inkColor == c ? Theme.ink : .clear, lineWidth: 2))
+                        .frame(width: 44, height: 38)
                 }
                 .buttonStyle(.plain)
                 .accessibilityLabel(Text(c.name))
                 .accessibilityAddTraits(controller.inkColor == c ? .isSelected : [])
             }
-            Divider().frame(width: 30).overlay(Theme.ink.opacity(0.25)).padding(.vertical, 4)
+            Ticks()
             Button { controller.history(.undo) } label: { Image(systemName: "arrow.uturn.backward") }
                 .buttonStyle(RailButtonStyle()).accessibilityLabel(Text("Undo"))
             Button { controller.history(.redo) } label: { Image(systemName: "arrow.uturn.forward") }
                 .buttonStyle(RailButtonStyle()).accessibilityLabel(Text("Redo"))
         }
-        .padding(.vertical, 10)
-        .padding(.horizontal, 6)
-        .sticker(Theme.paper, radius: 28)
+        .padding(.vertical, 8)
+        .padding(.horizontal, 5)
+        .chrome()
+    }
+}
+
+/// Three short ticks: a divider that looks like a scale on a dial.
+private struct Ticks: View {
+    var body: some View {
+        HStack(spacing: 5) {
+            ForEach(0..<3) { _ in Capsule().fill(Theme.ink.opacity(0.22)).frame(width: 2, height: 6) }
+        }
+        .frame(height: 14)
+        .accessibilityHidden(true)
     }
 }
 
@@ -199,11 +211,10 @@ struct RailButtonStyle: ButtonStyle {
             .font(.system(size: 19, weight: .semibold))
             .foregroundStyle(active ? Color.white : Theme.ink)
             .frame(width: 44, height: 44)
-            .background(active ? Theme.accent : (configuration.isPressed ? Theme.card : .clear), in: .rect(cornerRadius: 12))
-            .overlay(RoundedRectangle(cornerRadius: 12).strokeBorder(active ? Theme.ink : .clear, lineWidth: Theme.line))
+            .background(active ? Theme.ink : (configuration.isPressed ? Theme.ink.opacity(0.08) : .clear), in: .circle)
             .scaleEffect(configuration.isPressed ? 0.92 : 1)
             .animation(.spring(duration: 0.15), value: configuration.isPressed)
-            .contentShape(.rect)
+            .contentShape(.circle)
     }
 }
 
