@@ -250,6 +250,16 @@
         }
       }
     },
+    "Curious": {
+      "localizations": {
+        "da": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Nysgerrig"
+          }
+        }
+      }
+    },
     "Daily limit": {
       "localizations": {
         "da": {
@@ -286,6 +296,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Slet “%@”"
+          }
+        }
+      }
+    },
+    "Depth": {
+      "localizations": {
+        "da": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Dybde"
           }
         }
       }
@@ -382,6 +402,16 @@
     },
     "Error": {
       "shouldTranslate": false
+    },
+    "Expert": {
+      "localizations": {
+        "da": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ekspert"
+          }
+        }
+      }
     },
     "Explore": {
       "localizations": {
@@ -947,6 +977,16 @@
     },
     "Stream": {
       "shouldTranslate": false
+    },
+    "Student": {
+      "localizations": {
+        "da": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Elev"
+          }
+        }
+      }
     },
     "Summary": {
       "localizations": {

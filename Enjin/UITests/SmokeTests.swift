@@ -8,7 +8,7 @@ final class SmokeTests: XCTestCase {
     override func setUp() async throws {
         continueAfterFailure = false
         app = XCUIApplication()
-        app.launchArguments = ["-uiTestingFreshStore", "-uiTestingFakeAgent"]
+        app.launchArguments = ["-uiTestingFreshStore", "-uiTestingFakeAgent", "-seedSample"]
         app.launch()
     }
 
@@ -49,6 +49,26 @@ final class SmokeTests: XCTestCase {
         let again = app.buttons["map:Electric motors"]
         XCTAssertTrue(again.waitForExistence(timeout: 5))
         XCTAssertEqual(again.value as? String, "6 cards", "new card persisted across reopen")
+    }
+
+    /// Nothing is pre-built: a fresh install has no notebooks, and exploring a topic makes Enjin generate one.
+    func testExploringATopicGeneratesItsNotebook() {
+        app.terminate()
+        app.launchArguments = ["-uiTestingFreshStore", "-uiTestingFakeAgent"]
+        app.launch()
+        let topic = app.textFields["topicField"]
+        XCTAssertTrue(topic.waitForExistence(timeout: 10))
+        XCTAssertFalse(app.staticTexts["Your notebooks"].exists, "no pre-built notebooks")
+        app.buttons["Expert"].tap()
+        topic.tap()
+        topic.typeText("Quantum computers")
+        app.buttons["explore"].tap()
+        XCTAssertTrue(app.staticTexts["Here are two cards from the test agent."].waitForExistence(timeout: 15), "Enjin opens the topic itself")
+        snap("generated-notebook")
+        app.buttons["Map"].tap()
+        let root = app.buttons["map:Quantum computers"]
+        XCTAssertTrue(root.waitForExistence(timeout: 5))
+        XCTAssertEqual(root.value as? String, "2 cards", "the cards were generated, not seeded")
     }
 
     private func snap(_ name: String) {

@@ -18,15 +18,20 @@ final class Library {
         self.store = store
     }
 
-    /// First launch: seed the Electric motors sample so there is something to explore.
+    /// Every notebook is generated live by Enjin from what the explorer picks; nothing
+    /// is pre-built. (Debug builds can seed a hand-made sample for tests and screenshots
+    /// with `-seedSample`.)
     func load(language: AppLanguage) async {
         do {
             notebooks = await store.list()
+            #if DEBUG
             let name = language == .da ? "sample-motors.da" : "sample-motors"
-            if notebooks.isEmpty, let url = Bundle.main.url(forResource: name, withExtension: "json") {
+            if notebooks.isEmpty, ProcessInfo.processInfo.arguments.contains("-seedSample"),
+               let url = Bundle.main.url(forResource: name, withExtension: "json") {
                 try await store.save(DemoNotebook.make(from: Data(contentsOf: url)))
                 notebooks = await store.list()
             }
+            #endif
             await loadCovers()
         } catch {
             log.error("library load failed: \(error.localizedDescription)")
@@ -34,8 +39,8 @@ final class Library {
         }
     }
 
-    func create(title: String) async -> String? {
-        let nb = NotebookData.new(title: title.isEmpty ? "Untitled" : title)
+    func create(title: String, level: ExplorerLevel) async -> String? {
+        let nb = NotebookData.new(title: title.isEmpty ? "Untitled" : title, level: level)
         do {
             try await store.save(nb)
             notebooks = await store.list()

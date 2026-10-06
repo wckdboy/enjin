@@ -37,6 +37,20 @@ struct GenerativeTests {
         #expect(try await agent.session.scene(for: agent.session.rootPortalId)?.hero?.fileId == cover.fileId, "and so does the next visit")
     }
 
+    @Test func everyTurnIsPitchedAtTheChosenDepth() async throws {
+        let (agent, _) = try await base.make([.init(calls: [], text: "ok"), .init(calls: [], text: "ok")],
+                                             notebook: NotebookData.new(title: "Quantum computers", level: .expert))
+        let root = agent.session.rootPortalId
+        agent.begin(portalId: root)
+        try await base.settle(agent)
+        agent.ask("why qubits?", portalId: root, focusCardId: nil)
+        try await base.settle(agent)
+        let prompts = (agent.backend as! ScriptedBackend).prompts
+        #expect(prompts.count == 2)
+        #expect(prompts.allSatisfy { $0.contains("Level: expert (university)") })
+        #expect(NotebookData.new(title: "x").meta.level == nil, "older notebooks read as student")
+    }
+
     @Test func visualizeAsksForOneFigureCardBesideIt() async throws {
         let (agent, _) = try await base.make([.init(calls: [], text: "Here it is.")])
         agent.visualize(cardId: "c-roads", portalId: "p-root")

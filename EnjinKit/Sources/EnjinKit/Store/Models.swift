@@ -95,6 +95,18 @@ public struct NotebookMeta: Codable, Equatable, Sendable, Identifiable {
     public var updatedAt: Date
     /// Cover art for the library and the top-level banner (generated when the notebook begins).
     public var cover: CardImage?
+    /// How deep the explorer wants to go; every turn is pitched at it (nil in older notebooks: student).
+    public var level: ExplorerLevel?
+}
+
+/// How deep and technical Enjin goes, chosen by the explorer for each notebook.
+public enum ExplorerLevel: String, Codable, Sendable, CaseIterable {
+    /// Big ideas, vivid examples, few terms.
+    case curious
+    /// Real mechanisms, key terms, numbers, simple formulas and code.
+    case student
+    /// University level: precise terms, equations, real data, research.
+    case expert
 }
 
 public struct NotebookData: Equatable, Sendable {
@@ -102,11 +114,11 @@ public struct NotebookData: Equatable, Sendable {
     public var cards: [StoredCard]
     public var portals: [Portal]
 
-    public static func new(title: String, now: Date = .storeNow) -> NotebookData {
+    public static func new(title: String, level: ExplorerLevel? = nil, now: Date = .storeNow) -> NotebookData {
         let now = now.roundedToMilliseconds
         let root = Portal(title: title, ownerCardId: nil, parentPortalId: nil)
-        return NotebookData(
-            meta: NotebookMeta(id: "nb-\(UUID().uuidString.lowercased())", title: title, rootPortalId: root.portalId, createdAt: now, updatedAt: now),
-            cards: [], portals: [root])
+        var meta = NotebookMeta(id: "nb-\(UUID().uuidString.lowercased())", title: title, rootPortalId: root.portalId, createdAt: now, updatedAt: now)
+        meta.level = level
+        return NotebookData(meta: meta, cards: [], portals: [root])
     }
 }

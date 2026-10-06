@@ -9,6 +9,8 @@ struct LibraryView: View {
     let telemetry: Telemetry
     @State private var open: [String] = []
     @State private var topic = ""
+    /// How deep new notebooks go; remembered between launches.
+    @AppStorage("explore.level") private var level: ExplorerLevel = .student
     @State private var showSettings = false
     @State private var confirmDelete: NotebookMeta?
     @FocusState private var topicFocused: Bool
@@ -126,6 +128,15 @@ struct LibraryView: View {
                 .disabled(topic.trimmingCharacters(in: .whitespaces).isEmpty)
                 .accessibilityIdentifier("explore")
             }
+            HStack(spacing: 12) {
+                Readout("Depth")
+                SegmentChoice(selection: $level, options: [
+                    (.curious, "Curious", "sparkles"),
+                    (.student, "Student", "graduationcap"),
+                    (.expert, "Expert", "atom"),
+                ])
+                .accessibilityIdentifier("levelPicker")
+            }
             ScrollView(.horizontal, showsIndicators: false) {
                 HStack(spacing: 10) {
                     Readout("or try")
@@ -152,7 +163,7 @@ struct LibraryView: View {
         guard !t.isEmpty else { return }
         topic = ""
         topicFocused = false
-        Task { if let id = await library.create(title: t) { open = [id] } }
+        Task { if let id = await library.create(title: t, level: level) { open = [id] } }
     }
 }
 
@@ -184,6 +195,10 @@ struct NotebookCover: View {
                     .lineLimit(2)
                     .multilineTextAlignment(.leading)
                 HStack(spacing: 8) {
+                    if let level = meta.level {
+                        Readout(text: Text(level.label), color: Theme.ink)
+                        Circle().fill(Theme.hairline).frame(width: 4, height: 4)
+                    }
                     Readout(text: Text("\(cardCount) cards"), color: Theme.ink)
                     Circle().fill(Theme.hairline).frame(width: 4, height: 4)
                     Readout(text: Text(meta.updatedAt, format: .relative(presentation: .named)))
@@ -239,5 +254,15 @@ struct NotebookScreen: View {
 struct TrailingIcon: LabelStyle {
     func makeBody(configuration: Configuration) -> some View {
         HStack(spacing: 10) { configuration.title; configuration.icon }
+    }
+}
+
+extension ExplorerLevel {
+    var label: LocalizedStringKey {
+        switch self {
+        case .curious: "Curious"
+        case .student: "Student"
+        case .expert: "Expert"
+        }
     }
 }

@@ -62,7 +62,7 @@ Cards can carry a **figure** (`visual`) instead of a picture. It is drawn as can
   - a CSP that blocks all network access;
   - the bridge itself refuses non-main frames, and the navigation policy only allows `about:srcdoc` in subframes.
 - Live models animate all the time and take touches while their card is selected. A card's detail sheet shows the model at full size in its own sandboxed web view.
-- The seeded **Electric motors** sample (`tools/samples/motors.py`, en/da) has every kind except cycle, including a live brushless motor you drive.
+- Nothing is pre-built: every notebook is generated live by Enjin from the topic the explorer types and the **depth** they choose (Curious, Student or Expert, stored per notebook and sent with every turn), then grown by their dives and questions. The hand-made **Electric motors** notebook (`tools/samples/motors.py`, en/da) is a test and dev fixture only: `-seedSample` in debug builds, `?fixture=motors` in the dev host.
 - **Visualize:** a button in a filled card's action pill. Enjin turns that card's idea into one figure or live model and places it beside the card.
 
 ## Generated pictures

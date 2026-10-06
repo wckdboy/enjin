@@ -40,7 +40,7 @@ public enum PromptComposer {
         let elsewhere = compact ? "" : distant(session, portalId)
         let changeText = changesText(session, changes, portalId)
         let tailText = compact ? "" : tailText(tail)
-        var ask = requestText(session, request)
+        var ask = requestText(session, request) + "\n\n" + levelText(session.data.meta.level ?? .student)
         if language != .en {
             // Per turn (not in the cached system prompt), so switching language takes effect at once.
             ask += "\n\nLanguage: write your reply and every card's title, summary and body in \(language.promptName). Keep image phrases in English (they search English Wikipedia)."
@@ -123,6 +123,18 @@ public enum PromptComposer {
             "- In \"\(t.portalTitle)\" the explorer said \"\(String(t.kidSaid.prefix(120)))\"" + (t.cardsMade.isEmpty ? "" : "; you made: \(t.cardsMade.joined(separator: ", "))")
         }
         return "<earlier_elsewhere>\n" + lines.joined(separator: "\n") + "\n</earlier_elsewhere>"
+    }
+
+    /// The explorer's chosen depth, every turn (not cached in the system prompt, so a change applies at once).
+    static func levelText(_ level: ExplorerLevel) -> String {
+        switch level {
+        case .curious:
+            return "Level: curious. Big ideas and vivid, concrete examples; few technical terms (define each one); round numbers; prefer flows, parts, stats and live models over formulas."
+        case .student:
+            return "Level: student (secondary school). Real mechanisms, the key terms, real numbers, simple formulas and short code; figures that show how it works."
+        case .expert:
+            return "Level: expert (university). Precise terminology, equations with their symbols, real data and units, edge cases, open questions and current research; real code."
+        }
     }
 
     static func requestText(_ session: NotebookSession, _ request: Request) -> String {

@@ -13,3 +13,5 @@ Legions: 3 cards; Why Rome won so much: 3 cards; Logistics: 2 cards
 </elsewhere>
 
 The explorer dived into the stub card c-emperors "Emperors" (From Augustus in 27 BC to Romulus Augustulus in AD 476.). Fill it: updateCard c-emperors with a real summary, a body and state "filled", then createCards with parentCardId c-emperors (3-5 cards: filled cards with bodies, at least one with a visual, and 2 stubs). Keep your reply to one short sentence.
+
+Level: student (secondary school). Real mechanisms, the key terms, real numbers, simple formulas and short code; figures that show how it works.
