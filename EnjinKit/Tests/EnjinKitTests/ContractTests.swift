@@ -42,7 +42,7 @@ struct ContractTests {
         let methods = Set(files.map { String($0.dropLast(5)) })
         #expect(methods == [
             "portal.load", "ink.lock", "ink.commit", "canvas.flash", "canvas.applyOps", "canvas.frame", "canvas.addFiles", "canvas.setHeader", "canvas.setBusy", "canvas.setLanguage", "canvas.setTool", "canvas.history", "canvas.setInsets",
-            "canvas.ready", "canvas.changed", "focus.changed", "selection.changed", "card.open", "media.stylize", "portal.enter", "portal.exit", "log.event",
+            "canvas.ready", "canvas.changed", "focus.changed", "selection.changed", "card.open", "card.visualize", "media.stylize", "portal.enter", "portal.exit", "log.event",
         ])
     }
 
@@ -68,6 +68,7 @@ struct ContractTests {
         try roundTrip("focus.changed", WebMethod.FocusChanged.self, Empty?.self)
         try roundTrip("selection.changed", WebMethod.SelectionChanged.self, Empty?.self)
         try roundTrip("card.open", WebMethod.CardOpen.self, Empty?.self)
+        try roundTrip("card.visualize", WebMethod.CardVisualize.self, Empty?.self)
         try roundTrip("media.stylize", WebMethod.MediaStylize.self, WebMethod.MediaStylize.self)
         try roundTrip("portal.enter", WebMethod.PortalEnter.self, PortalScene?.self)
         try roundTrip("portal.exit", WebMethod.PortalExit.self, WebMethod.PortalExitResult?.self)

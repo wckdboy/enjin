@@ -4,6 +4,7 @@ import { onLangChange, t } from "../i18n";
 export interface CardActionHandlers {
   open(cardId: string): void;
   dive(cardId: string): void;
+  visualize(cardId: string): void;
 }
 
 /**
@@ -14,6 +15,7 @@ export class CardActions {
   private host: HTMLDivElement;
   private open: HTMLButtonElement;
   private dive: HTMLButtonElement;
+  private visualize: HTMLButtonElement;
   private cardId: string | null = null;
 
   constructor(private handlers: CardActionHandlers) {
@@ -26,15 +28,17 @@ export class CardActions {
     });
     this.open = this.button("Open", "M4 4h7v2H6v12h12v-5h2v7H4V4zm10 0h6v6h-2V7.4l-7.3 7.3-1.4-1.4L16.6 6H14V4z", () => this.cardId && this.handlers.open(this.cardId));
     this.dive = this.button("Dive in", "M10 4a6 6 0 0 1 4.7 9.7l5 5-1.4 1.4-5-5A6 6 0 1 1 10 4zm0 2a4 4 0 1 0 0 8 4 4 0 0 0 0-8zm-1 1.5h2V9h1.5v2H11v1.5H9V11H7.5V9H9V7.5z", () => this.cardId && this.handlers.dive(this.cardId));
+    // A little chart: turn this card into a figure or live model.
+    this.visualize = this.button("Visualize", "M4 19h16v2H4v-2zm1-2V9h3v8H5zm5 0V4h3v13h-3zm5 0v-6h3v6h-3z", () => this.cardId && this.handlers.visualize(this.cardId));
     // "Dive in" is the main action: solid ink, like every "go" in ENJIN.
     Object.assign(this.dive.style, { background: "#0b0b0c", color: "#ffffff" });
-    this.host.append(this.dive, this.open);
+    this.host.append(this.dive, this.visualize, this.open);
     onLangChange(() => this.relabel());
     this.relabel();
   }
 
   private relabel(): void {
-    for (const [b, text] of [[this.open, t.actionOpen()], [this.dive, t.actionDive()]] as const) {
+    for (const [b, text] of [[this.open, t.actionOpen()], [this.dive, t.actionDive()], [this.visualize, t.actionVisualize()]] as const) {
       b.setAttribute("aria-label", text);
       b.querySelector("span")!.textContent = text;
     }
@@ -59,7 +63,7 @@ export class CardActions {
   }
 
   /** Show for `cardId` at its view-space rect, or hide (null). */
-  update(cardId: string | null, viewRect: Rect | null, divable: boolean): void {
+  update(cardId: string | null, viewRect: Rect | null, divable: boolean, visualizable = false): void {
     if (!this.host.isConnected) (document.querySelector(".excalidraw") ?? document.body).appendChild(this.host);
     this.cardId = cardId;
     if (!cardId || !viewRect) {
@@ -67,6 +71,7 @@ export class CardActions {
       return;
     }
     this.dive.style.display = divable ? "inline-flex" : "none";
+    this.visualize.style.display = visualizable ? "inline-flex" : "none";
     this.host.style.display = "flex";
     const w = this.host.offsetWidth;
     const h = this.host.offsetHeight;

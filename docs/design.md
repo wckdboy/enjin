@@ -52,6 +52,9 @@ Cards can carry a **figure** (`visual`) instead of a picture. It is drawn as can
   - **stat**: one big number;
   - **formula**: with a symbol legend;
   - **code**;
+  - **graph**: a concept map with labelled relations, laid out by a deterministic force layout (`figureMath.ts`);
+  - **table**: up to 5 × 6; numeric columns right-aligned in mono;
+  - **chart**: line or scatter, up to 3 series, nice ticks or log decades;
   - **live**.
 - Figures span two columns (except stat and formula). Each kind has a fixed height, so a figure streaming in item by item never reflows the canvas.
 - **Live models** are small interactive simulations and animated dioramas the agent writes as HTML/JS. They run in a sandboxed iframe over the card's slot, following pan and zoom (`LiveLayer.ts`). The sandbox:
@@ -60,6 +63,12 @@ Cards can carry a **figure** (`visual`) instead of a picture. It is drawn as can
   - the bridge itself refuses non-main frames, and the navigation policy only allows `about:srcdoc` in subframes.
 - Live models animate all the time and take touches while their card is selected. A card's detail sheet shows the model at full size in its own sandboxed web view.
 - The seeded **Electric motors** sample (`tools/samples/motors.py`, en/da) has every kind except cycle, including a live brushless motor you drive.
+- **Visualize:** a button in a filled card's action pill. Enjin turns that card's idea into one figure or live model and places it beside the card.
+
+## Generated pictures
+- A card can carry an `illustrate` prompt instead of an image phrase. Image Playground then paints it on the device, for what no photo can show: a cell's interior, a cutaway, deep time. Real things still get real photos from Wikimedia.
+- A new notebook gets **cover art**, painted while its first cards are written. It's used as the library cover and the top-level banner.
+- Everything, generated or found, goes through the Enjin print shader. Where Image Playground isn't available (simulator, no Apple Intelligence), photos are used instead.
 
 ## Language
 - English and Danish. Parents choose in Settings (or it follows the iPad); switching is live.

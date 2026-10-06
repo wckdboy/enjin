@@ -46,7 +46,24 @@ public struct VisualItem: Codable, Equatable, Sendable {
     }
 }
 
-public enum VisualKind: String, Codable, Sendable, CaseIterable { case flow, cycle, timeline, bars, parts, stat, formula, code, live }
+public enum VisualKind: String, Codable, Sendable, CaseIterable { case flow, cycle, timeline, bars, parts, stat, formula, code, live, graph, table, chart }
+
+/// graph: a labelled relation between two nodes, named by their labels.
+public struct VisualLink: Codable, Equatable, Sendable {
+    public var from: String
+    public var to: String
+    public var label: String?
+    public init(from: String, to: String, label: String? = nil) { self.from = from; self.to = to; self.label = label }
+}
+
+/// chart: one named series of [x, y] points.
+public struct VisualSeries: Codable, Equatable, Sendable {
+    public var label: String
+    public var points: [[Double]]
+    public init(label: String, points: [[Double]]) { self.label = label; self.points = points }
+}
+
+public enum PlotStyle: String, Codable, Sendable { case line, scatter }
 
 /// A figure drawn on a card as canvas geometry (mirrors schema.ts `Visual`).
 public struct Visual: Codable, Equatable, Sendable {
@@ -58,13 +75,25 @@ public struct Visual: Codable, Equatable, Sendable {
     public var text: String?
     /// live: a self-contained HTML page (simulation or diorama), run sandboxed with no network.
     public var html: String?
+    public var links: [VisualLink]?
+    public var columns: [String]?
+    public var rows: [[String]]?
+    public var series: [VisualSeries]?
+    public var plot: PlotStyle?
+    public var xLabel: String?
+    public var yLabel: String?
+    public var logY: Bool?
 
     public init(kind: VisualKind, items: [VisualItem]? = nil, center: String? = nil, value: String? = nil, unit: String? = nil,
-                text: String? = nil, html: String? = nil) {
+                text: String? = nil, html: String? = nil, links: [VisualLink]? = nil, columns: [String]? = nil, rows: [[String]]? = nil,
+                series: [VisualSeries]? = nil, plot: PlotStyle? = nil, xLabel: String? = nil, yLabel: String? = nil, logY: Bool? = nil) {
         self.kind = kind; self.items = items; self.center = center; self.value = value; self.unit = unit; self.text = text; self.html = html
+        self.links = links; self.columns = columns; self.rows = rows; self.series = series; self.plot = plot
+        self.xLabel = xLabel; self.yLabel = yLabel; self.logY = logY
     }
 
-    static let maxItems: [VisualKind: Int] = [.flow: 5, .cycle: 6, .timeline: 6, .bars: 6, .parts: 6, .stat: 0, .formula: 4, .code: 0, .live: 0]
+    static let maxItems: [VisualKind: Int] = [.flow: 5, .cycle: 6, .timeline: 6, .bars: 6, .parts: 6, .stat: 0, .formula: 4, .code: 0, .live: 0,
+                                              .graph: 8, .table: 0, .chart: 0]
     /// Live models are small on purpose: one idea, one screen.
     public static let maxHTML = 24_000
 
@@ -84,6 +113,27 @@ public struct Visual: Codable, Equatable, Sendable {
         v.value = clip(value, 12)
         v.unit = clip(unit, 16)
         v.html = kind == .live ? html.flatMap { $0.count <= Self.maxHTML && !$0.isEmpty ? $0 : nil } : nil
+        let names = Set((v.items ?? []).map { $0.label.lowercased() })
+        v.links = kind == .graph ? (links ?? []).compactMap { l -> VisualLink? in
+            // Only relations between nodes that exist (the model names them by label).
+            guard names.contains(l.from.trimmingCharacters(in: .whitespaces).lowercased()),
+                  names.contains(l.to.trimmingCharacters(in: .whitespaces).lowercased()) else { return nil }
+            return VisualLink(from: l.from, to: l.to, label: clip(l.label, 20))
+        }.prefix(12).map { $0 } : nil
+        if v.links?.isEmpty == true { v.links = nil }
+        v.columns = kind == .table ? columns.map { $0.prefix(5).map { clip($0, 18) ?? "" } } : nil
+        v.rows = kind == .table ? rows.map { $0.prefix(6).map { $0.prefix(5).map { clip($0, 22) ?? "" } } } : nil
+        v.series = kind == .chart ? series.map {
+            $0.prefix(3).compactMap { s in
+                let pts = s.points.filter { $0.count == 2 && $0.allSatisfy(\.isFinite) }.prefix(40).map { $0 }
+                return pts.isEmpty ? nil : VisualSeries(label: clip(s.label, 20) ?? "", points: pts)
+            }
+        } : nil
+        if v.series?.isEmpty == true { v.series = nil }
+        v.plot = kind == .chart ? (plot ?? .line) : nil
+        v.xLabel = kind == .chart ? clip(xLabel, 24) : nil
+        v.yLabel = kind == .chart ? clip(yLabel, 24) : nil
+        v.logY = kind == .chart && logY == true ? true : nil
         if kind == .code {
             v.text = text.map { $0.split(separator: "\n", omittingEmptySubsequences: false).prefix(10).map { String($0.prefix(64)) }.joined(separator: "\n") }
         } else {
@@ -93,6 +143,9 @@ public struct Visual: Codable, Equatable, Sendable {
         case .stat: return v.value == nil ? nil : v
         case .formula, .code: return v.text == nil ? nil : v
         case .live: return v.html == nil ? nil : v
+        case .graph: return (v.items?.count ?? 0) >= 2 ? v : nil
+        case .table: return (v.rows?.isEmpty ?? true) ? nil : v
+        case .chart: return v.series == nil ? nil : v
         case .parts: return v.items == nil && v.center == nil ? nil : v
         case .bars: return (v.items?.count ?? 0) >= 2 ? v : nil
         default: return v.items == nil ? nil : v
@@ -327,6 +380,10 @@ public enum WebMethod {
     }
 
     public struct CardOpen: Codable, Sendable {
+        public var cardId: String
+    }
+
+    public struct CardVisualize: Codable, Sendable {
         public var cardId: String
     }
 

@@ -29,7 +29,15 @@ export const VisualItem = z.object({
 });
 export type VisualItem = z.infer<typeof VisualItem>;
 
-export const VisualKind = z.enum(["flow", "cycle", "timeline", "bars", "parts", "stat", "formula", "code", "live"]);
+export const VisualKind = z.enum(["flow", "cycle", "timeline", "bars", "parts", "stat", "formula", "code", "live", "graph", "table", "chart"]);
+
+/** graph: a labelled relation between two nodes (by label). */
+export const VisualLink = z.object({ from: z.string(), to: z.string(), label: z.string().optional() });
+export type VisualLink = z.infer<typeof VisualLink>;
+
+/** chart: one named series of [x, y] points. */
+export const VisualSeries = z.object({ label: z.string(), points: z.array(z.tuple([z.number(), z.number()])) });
+export type VisualSeries = z.infer<typeof VisualSeries>;
 export type VisualKind = z.infer<typeof VisualKind>;
 
 /**
@@ -38,7 +46,10 @@ export type VisualKind = z.infer<typeof VisualKind>;
  * (label + value, `unit`), parts (`center` + labelled parts), stat (big
  * `value` + `unit`), formula (`text` + items as symbol legend), code (`text`),
  * live (`html`: a small interactive simulation or animated diorama, run in a
- * sandboxed iframe with no network; absent while it's still being written).
+ * sandboxed iframe with no network; absent while it's still being written),
+ * graph (items = nodes, `links` = labelled relations, laid out automatically),
+ * table (`columns` + `rows` of cells), chart (`series` of points, `plot` line or
+ * scatter, axis labels, optional log y).
  */
 export const Visual = z.object({
   kind: VisualKind,
@@ -48,6 +59,14 @@ export const Visual = z.object({
   unit: z.string().optional(),
   text: z.string().optional(),
   html: z.string().optional(),
+  links: z.array(VisualLink).optional(),
+  columns: z.array(z.string()).optional(),
+  rows: z.array(z.array(z.string())).optional(),
+  series: z.array(VisualSeries).optional(),
+  plot: z.enum(["line", "scatter"]).optional(),
+  xLabel: z.string().optional(),
+  yLabel: z.string().optional(),
+  logY: z.boolean().optional(),
 });
 export type Visual = z.infer<typeof Visual>;
 
@@ -209,6 +228,11 @@ export const webToNative = {
   },
   "card.open": {
     /** Kid tapped the card's Open action: show its detail sheet. */
+    params: z.object({ cardId: z.string() }),
+    result: Null,
+  },
+  "card.visualize": {
+    /** Explorer tapped Visualize: Enjin turns the card's idea into a figure or live model beside it. */
     params: z.object({ cardId: z.string() }),
     result: Null,
   },

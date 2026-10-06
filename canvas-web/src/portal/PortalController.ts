@@ -43,6 +43,7 @@ export class PortalController {
   private live = new LiveLayer();
   private actions = new CardActions({
     open: (cardId) => this.bridge.notify("card.open", { cardId }),
+    visualize: (cardId) => this.bridge.notify("card.visualize", { cardId }),
     dive: (cardId) => void this.requestDive(cardId),
   });
   private selectedCardId: string | null = null;
@@ -572,7 +573,9 @@ export class PortalController {
     const busy = this.transitioning || state.selectedElementsAreBeingDragged || state.resizingElement != null;
     const c = id && !busy ? cardRects(this.api.getSceneElements()).find((r) => r.cardId === id) : undefined;
     const card = c && this.scene?.cards.find((x) => x.id === c.cardId);
-    this.actions.update(c ? c.cardId : null, c ? toView(c.rect, this.viewport()) : null, card?.type === "topic");
+    // Visualize: for cards with words to show (not figures already, not unexplored stubs).
+    const visualizable = !!card && !card.visual && card.state === "filled";
+    this.actions.update(c ? c.cardId : null, c ? toView(c.rect, this.viewport()) : null, card?.type === "topic", visualizable);
     this.syncLive(busy);
   }
 

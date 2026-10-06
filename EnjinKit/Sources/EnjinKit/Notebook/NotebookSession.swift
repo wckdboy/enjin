@@ -150,6 +150,17 @@ public final class NotebookSession {
         }
     }
 
+    /// Give the notebook its cover art. Returns the top level's new header.
+    public func attachCover(data bytes: Data, image: CardImage) async throws -> NativeMethod.SetHeader {
+        try await store.saveFile(id, fileId: image.fileId, data: bytes)
+        fileCache[image.fileId] = BridgeFile(id: image.fileId, mimeType: image.mimeType,
+                                             dataURL: "data:\(image.mimeType);base64,\(bytes.base64EncodedString())")
+        data.meta.cover = image
+        try await touch()
+        return NativeMethod.SetHeader(portalId: rootPortalId, title: portal(rootPortalId)?.title ?? title, subtitle: nil,
+                                      hero: CardImageRef(fileId: image.fileId, width: image.width, height: image.height))
+    }
+
     /// Picture URLs already used in this notebook, so cards don't repeat each other.
     public var usedImageSources: Set<String> {
         Set(data.cards.compactMap { $0.image?.sourceURL })
@@ -166,10 +177,12 @@ public final class NotebookSession {
         }
         var files = await files(in: portalId)
         let owner = p.ownerCardId.flatMap(card)
-        if let img = owner?.image, let f = await bridgeFile(img) { files.append(f) }
+        // The top level's banner is the notebook's cover art; a portal's is its card's picture.
+        let banner = owner?.image ?? (portalId == rootPortalId ? data.meta.cover : nil)
+        if let img = banner, let f = await bridgeFile(img) { files.append(f) }
         return PortalScene(portalId: p.portalId, title: p.title, path: path(to: portalId),
                            cards: activeCards(in: portalId).map(bridgeCard), elements: elements, files: files.isEmpty ? nil : files,
-                           hero: owner?.image.map { CardImageRef(fileId: $0.fileId, width: $0.width, height: $0.height) },
+                           hero: banner.map { CardImageRef(fileId: $0.fileId, width: $0.width, height: $0.height) },
                            subtitle: owner.flatMap { $0.summary.isEmpty ? nil : $0.summary })
     }
 
@@ -239,13 +252,14 @@ public final class NotebookSession {
 
     public func createCard(id cardId: String? = nil, in portalId: String, type: CardType, title: String, summary: String, body: String? = nil,
                            state: CardState = .filled, author: Author, turnId: String? = nil, sources: [Source]? = nil,
-                           imageQuery: String? = nil, visual: Visual? = nil) async throws -> StoredCard {
+                           imageQuery: String? = nil, visual: Visual? = nil, imagePrefer: PictureKind? = nil) async throws -> StoredCard {
         var card = StoredCard(portalId: portalId, type: type, title: title, summary: summary, body: body, state: state,
                               createdBy: author, createdByTurnId: turnId, now: clock())
         if let cardId { card.id = cardId }
         card.sources = sources
         card.imageQuery = visual == nil ? imageQuery : nil
         card.visual = visual
+        card.imagePrefer = imagePrefer
         data.cards.append(card)
         if author == .kid { logChange(.init(portalId: portalId, kind: .createdCard(title: title))) }
         try await store.saveCards(id, data.cards)

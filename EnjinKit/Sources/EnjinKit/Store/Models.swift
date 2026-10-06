@@ -61,6 +61,8 @@ public struct StoredCard: Codable, Equatable, Sendable, Identifiable {
     public var imageQuery: String?
     /// A figure drawn on the card instead of a picture.
     public var visual: Visual?
+    /// What kind of picture the agent asked for (nil: decided by the card, see PicturePipeline).
+    public var imagePrefer: PictureKind?
 
     public var isActive: Bool { deletedAt == nil }
 
@@ -91,6 +93,8 @@ public struct NotebookMeta: Codable, Equatable, Sendable, Identifiable {
     public var rootPortalId: String
     public var createdAt: Date
     public var updatedAt: Date
+    /// Cover art for the library and the top-level banner (generated when the notebook begins).
+    public var cover: CardImage?
 }
 
 public struct NotebookData: Equatable, Sendable {

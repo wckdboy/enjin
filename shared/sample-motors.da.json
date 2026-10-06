@@ -24,6 +24,7 @@
         "c-live",
         "c-steps",
         "c-force",
+        "c-torque",
         "c-brushless",
         "c-backemf"
       ]
@@ -35,6 +36,7 @@
       "parentPortalId": "p-how",
       "cardIds": [
         "c-parts",
+        "c-system",
         "c-esc",
         "c-brushes"
       ]
@@ -56,6 +58,7 @@
       "parentPortalId": "p-root",
       "cardIds": [
         "c-efficiency",
+        "c-types",
         "c-drones",
         "c-joints"
       ]
@@ -139,6 +142,46 @@
       }
     },
     {
+      "id": "c-torque",
+      "type": "note",
+      "state": "filled",
+      "title": "Hurtig eller stærk, ikke begge",
+      "summary": "En DC-motor trækker hårdest, når den står stille, og har intet træk tilbage ved topfart. Mest kraft midt imellem.",
+      "visual": {
+        "kind": "chart",
+        "plot": "line",
+        "xLabel": "fart, o/min",
+        "yLabel": "moment, N·m",
+        "series": [
+          {
+            "label": "lille DC-motor",
+            "points": [
+              [
+                0,
+                0.5
+              ],
+              [
+                2500,
+                0.375
+              ],
+              [
+                5000,
+                0.25
+              ],
+              [
+                7500,
+                0.125
+              ],
+              [
+                10000,
+                0
+              ]
+            ]
+          }
+        ]
+      }
+    },
+    {
       "id": "c-brushless",
       "type": "topic",
       "state": "filled",
@@ -173,6 +216,68 @@
           },
           {
             "label": "Tre ledninger"
+          }
+        ]
+      }
+    },
+    {
+      "id": "c-system",
+      "type": "note",
+      "state": "filled",
+      "title": "Hvem taler med hvem",
+      "summary": "Et børsteløst drev er et loop: mærk hvor rotoren er, skift de rigtige spoler, gentag.",
+      "visual": {
+        "kind": "graph",
+        "items": [
+          {
+            "label": "ESC"
+          },
+          {
+            "label": "Batteri"
+          },
+          {
+            "label": "Spoler"
+          },
+          {
+            "label": "Magneter"
+          },
+          {
+            "label": "Rotor"
+          },
+          {
+            "label": "Hall-sensorer"
+          }
+        ],
+        "links": [
+          {
+            "from": "Batteri",
+            "to": "ESC",
+            "label": "forsyner"
+          },
+          {
+            "from": "ESC",
+            "to": "Spoler",
+            "label": "skifter"
+          },
+          {
+            "from": "Spoler",
+            "to": "Magneter",
+            "label": "trækker"
+          },
+          {
+            "from": "Magneter",
+            "to": "Rotor",
+            "label": "drejer"
+          },
+          {
+            "from": "Rotor",
+            "to": "Hall-sensorer",
+            "label": "passerer"
+          },
+          {
+            "from": "Hall-sensorer",
+            "to": "ESC",
+            "label": "melder"
           }
         ]
       }
@@ -251,6 +356,48 @@
             "label": "Elmotor",
             "value": 95
           }
+        ]
+      }
+    },
+    {
+      "id": "c-types",
+      "type": "note",
+      "state": "filled",
+      "title": "Fire slags motorer",
+      "summary": "Samme idé, magneter der jagter magneter, bygget på fire måder.",
+      "visual": {
+        "kind": "table",
+        "columns": [
+          "Type",
+          "Børster",
+          "Skiftes af",
+          "Findes i"
+        ],
+        "rows": [
+          [
+            "Børste-DC",
+            "ja",
+            "kommutator",
+            "legetøj, viskere"
+          ],
+          [
+            "Børsteløs",
+            "nej",
+            "ESC-chip",
+            "droner, blæsere"
+          ],
+          [
+            "Induktion",
+            "nej",
+            "vekselstrøm",
+            "pumper, tog"
+          ],
+          [
+            "Stepper",
+            "nej",
+            "driverpulser",
+            "3D-printere"
+          ]
         ]
       }
     },

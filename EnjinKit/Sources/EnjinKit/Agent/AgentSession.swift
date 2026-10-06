@@ -132,6 +132,12 @@ public final class AgentSession {
         return inside.isEmpty ? .expand(cardId: card.id) : nil
     }
 
+    /// Turn a card's idea into a figure or live model, placed beside it.
+    public func visualize(cardId: String, portalId: String) {
+        guard let card = session.card(cardId), card.isActive else { return }
+        start(.ask, request: .visualize(cardId: cardId), portalId: portalId, focusCardId: cardId, kidSaid: "(visualize \(card.title))")
+    }
+
     /// Open a brand-new notebook with a first set of cards.
     public func begin(portalId: String) {
         start(.begin, request: .begin, portalId: portalId, focusCardId: nil, kidSaid: "(started \(session.title))")
@@ -235,6 +241,7 @@ public final class AgentSession {
             suggestion = nil
             nextSteps = []
         }
+        if kind == .begin { paintCover() }
         let showBusy = (kind == .fill || kind == .begin) && session.activeCards(in: portalId).isEmpty
         if showBusy {
             let what = kind == .begin ? session.title : (session.portal(portalId)?.title ?? "")
@@ -427,6 +434,28 @@ public final class AgentSession {
         }
     }
 
+    /// Cover art for a new notebook, made on the device while the first cards are written
+    /// (a photo if Image Playground isn't available). It becomes the library cover and the top banner.
+    private func paintCover() {
+        guard picturesOn, session.data.meta.cover == nil else { return }
+        let pipeline = PicturePipeline(photos: imageFinder, illustrations: imageGenerator, stylizer: imageStylizer)
+        guard !pipeline.isEmpty else { return }
+        let title = session.title
+        Task {
+            var prompt = title
+            if let assist { prompt = await assist.imagePhrase(title: title, summary: "", topic: title) ?? title }
+            guard let (found, kind) = await pipeline.picture(for: prompt, prefer: .illustration, excluding: session.usedImageSources) else { return }
+            var image = CardImage(fileId: "img-\(UUID().uuidString.lowercased())", mimeType: found.mimeType, width: found.width,
+                                  height: found.height, credit: found.credit, sourceURL: found.sourceURL)
+            image.kind = kind
+            guard let header = try? await session.attachCover(data: found.data, image: image),
+                  let file = await session.bridgeFile(image) else { return }
+            await canvas?.addFiles([file])
+            await canvas?.setHeader(header)
+            await telemetry?.record("cover", ["kind": .string(kind.rawValue)])
+        }
+    }
+
     /// The kid made a card: give it a picture too (free: on-device phrase, illustration or photo).
     public func decorateKidCard(_ cardId: String) async {
         guard picturesOn, session.card(cardId)?.image == nil,
@@ -601,7 +630,9 @@ final class ToolExecutor {
                 var ops: [CardOp] = []
                 for (n, c) in wanted.enumerated() {
                     // "" = no phrase yet; the on-device model (or the title) will supply one.
-                    let phrase = c.image.flatMap { $0.trimmingCharacters(in: .whitespaces).isEmpty ? nil : $0 }
+                    // An `illustrate` prompt asks for art made on the device instead of a photo.
+                    let art = c.illustrate.flatMap { $0.trimmingCharacters(in: .whitespaces).isEmpty ? nil : $0 }
+                    let phrase = art ?? c.image.flatMap { $0.trimmingCharacters(in: .whitespaces).isEmpty ? nil : $0 }
                     let imageQuery = agent.picturesOn ? (phrase ?? "") : nil
                     let card = try await session.createCard(
                         id: n < reuse.count ? reuse[n] : nil,
@@ -609,7 +640,7 @@ final class ToolExecutor {
                         summary: AgentTools.clip(c.summary, AgentTools.summaryLimit),
                         body: c.body.map { AgentTools.clip($0, AgentTools.bodyLimit) }.flatMap { $0.isEmpty ? nil : $0 },
                         state: c.isStub ? .stub : .filled, author: .agent, turnId: turnId, sources: sources(c.sources),
-                        imageQuery: imageQuery, visual: c.visual)
+                        imageQuery: imageQuery, visual: c.visual, imagePrefer: art == nil ? nil : .illustration)
                     ids.append(card.id)
                     ops.append(.upsert(session.bridgeCard(card)))
                 }
@@ -641,6 +672,10 @@ final class ToolExecutor {
                     if let srcs { $0.sources = srcs }
                     if let v = args.visual { $0.visual = v; $0.imageQuery = nil }
                     if let q = args.image, !q.isEmpty, $0.image == nil, $0.visual == nil, agent.picturesOn { $0.imageQuery = q }
+                    if let q = args.illustrate, !q.isEmpty, $0.image == nil, $0.visual == nil, agent.picturesOn {
+                        $0.imageQuery = q
+                        $0.imagePrefer = .illustration
+                    }
                 }) else { return .error("No card \(args.cardId).") }
                 await agent.canvas?.apply(portalId: updated.portalId, ops: [.upsert(session.bridgeCard(updated))])
                 if let header = session.header(forPortalOf: updated.id) { await agent.canvas?.setHeader(header) }

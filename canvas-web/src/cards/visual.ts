@@ -1,6 +1,7 @@
 import { FONT_FAMILY, type convertToExcalidrawElements } from "@excalidraw/excalidraw";
 import type { Visual, VisualItem } from "../bridge/schema";
 import { t } from "../i18n";
+import { exitPoint, layoutGraph, logTicks, niceTicks, tickLabel } from "./figureMath";
 import { CARD_W, GAP, type Rect } from "./layout";
 
 // Figures: process flows, cycles, timelines, comparisons, labelled parts, big
@@ -21,7 +22,16 @@ const MONO = FONT_FAMILY.Cascadia;
 export const WIDE_W = 2 * CARD_W + GAP;
 const FIG_LABEL_H = 22;
 
-const MAX_ITEMS: Record<Visual["kind"], number> = { flow: 5, cycle: 6, timeline: 6, bars: 6, parts: 6, stat: 0, formula: 4, code: 0, live: 0 };
+const MAX_ITEMS: Record<Visual["kind"], number> = { flow: 5, cycle: 6, timeline: 6, bars: 6, parts: 6, stat: 0, formula: 4, code: 0, live: 0, graph: 8, table: 0, chart: 0 };
+const ACCENT = "#e8590c";
+const TABLE_COLS = 5;
+const TABLE_ROWS = 6;
+const TABLE_ROW_H = 32;
+const SERIES_STYLE = [
+  { color: INK, dash: "solid" },
+  { color: ACCENT, dash: "solid" },
+  { color: MUTED, dash: "dashed" },
+] as const;
 /** Live models run in an iframe laid over this slot (see LiveLayer). */
 export const LIVE_H = 380;
 const CODE_LINES = 10;
@@ -51,6 +61,9 @@ export function visualHeight(v: Visual): number {
     formula: 52 + 4 * 26,
     code: Math.max(1, codeLines(v).length) * CODE_LINE_H + 24,
     live: LIVE_H,
+    graph: 290,
+    table: 30 + TABLE_ROWS * TABLE_ROW_H,
+    chart: 262,
   }[v.kind];
   return FIG_LABEL_H + body;
 }
@@ -80,11 +93,12 @@ export function visualSkeletons(v: Visual, box: Rect, cardId: string, base: Base
     label: { text: s, fontSize: size, fontFamily: SANS, strokeColor: INK, textAlign: "center", verticalAlign: "middle", customData: { cardId, role: "label" } } as never,
   });
   const arrow = (key: string, x1: number, y1: number, x2: number, y2: number, color = INK): Skeleton => ({
-    ...base, type: "arrow", id: id(key), x: x1, y: y1, width: x2 - x1, height: y2 - y1, strokeColor: color, strokeWidth: 1.5,
+    // Explicit points: a zero width or height would otherwise fall back to a default size.
+    ...base, type: "arrow", id: id(key), x: x1, y: y1, points: [[0, 0], [x2 - x1, y2 - y1]], strokeColor: color, strokeWidth: 1.5,
     startArrowhead: null, endArrowhead: "triangle", customData: data,
   } as Skeleton);
   const line = (key: string, x1: number, y1: number, x2: number, y2: number, color = HAIR, width = 1.5): Skeleton => ({
-    ...base, type: "line", id: id(key), x: x1, y: y1, width: x2 - x1, height: y2 - y1, strokeColor: color, strokeWidth: width, customData: data,
+    ...base, type: "line", id: id(key), x: x1, y: y1, points: [[0, 0], [x2 - x1, y2 - y1]], strokeColor: color, strokeWidth: width, customData: data,
   } as Skeleton);
   const dot = (key: string, cx: number, cy: number, r: number, fill = INK): Skeleton => ({
     ...base, type: "ellipse", id: id(key), x: cx - r, y: cy - r, width: 2 * r, height: 2 * r, backgroundColor: fill, fillStyle: "solid", strokeWidth: 1.5, customData: data,
@@ -211,6 +225,115 @@ export function visualSkeletons(v: Visual, box: Rect, cardId: string, base: Base
         ...base, type: "rectangle", id: id("live"), x: x0, y: y0, width: W, height: LIVE_H, backgroundColor: SOFT, fillStyle: "solid",
         strokeColor: HAIR, strokeWidth: 1, roundness: { type: 3 }, customData: { cardId, role: "live" },
         label: { text: v.html ? "" : t.building(), fontSize: 14, fontFamily: MONO, strokeColor: MUTED, customData: { cardId, role: "label" } } as never,
+      });
+      break;
+    }
+    case "graph": {
+      if (!n) break;
+      const sizes = list.map((it) => ({ w: Math.min(190, Math.max(96, it.label.length * 8 + 34)), h: 40 }));
+      const index = new Map(list.map((it, i) => [it.label.trim().toLowerCase(), i]));
+      const links = (v.links ?? [])
+        .map((l) => ({ a: index.get(l.from.trim().toLowerCase()), b: index.get(l.to.trim().toLowerCase()), label: l.label }))
+        .filter((l): l is { a: number; b: number; label: string | undefined } => l.a !== undefined && l.b !== undefined && l.a !== l.b)
+        .slice(0, 12);
+      const pos = layoutGraph(sizes, links.map((l) => [l.a, l.b]), { x: x0, y: y0, width: W, height: 286 });
+      // Edges first so the pills sit on top of them.
+      links.forEach((l, i) => {
+        const A = pos[l.a]!;
+        const B = pos[l.b]!;
+        const p = exitPoint(A, sizes[l.a]!.w / 2, sizes[l.a]!.h / 2, B);
+        const q = exitPoint(B, sizes[l.b]!.w / 2, sizes[l.b]!.h / 2, A, 7);
+        out.push(arrow(`e${i}`, p.x, p.y, q.x, q.y, MUTED));
+        if (l.label) {
+          const lw = Math.min(150, l.label.length * 6.6 + 12);
+          // Steep edges are short between stacked pills: label beside the arrow, not over it.
+          const steep = Math.abs(q.x - p.x) < Math.abs(q.y - p.y);
+          out.push({
+            ...base, type: "rectangle", id: id(`el${i}`), x: steep ? (p.x + q.x) / 2 + 6 : (p.x + q.x) / 2 - lw / 2, y: (p.y + q.y) / 2 - 10,
+            width: lw, height: 20, backgroundColor: steep ? "transparent" : "#ffffff", fillStyle: "solid", strokeColor: "transparent",
+            roundness: { type: 3 }, customData: data,
+            label: { text: l.label, fontSize: 11, fontFamily: MONO, strokeColor: MUTED, textAlign: steep ? "left" : "center", customData: { cardId, role: "label" } } as never,
+          });
+        }
+      });
+      list.forEach((it, i) => {
+        const P = pos[i]!;
+        const z = sizes[i]!;
+        out.push(pill(`n${i}`, { x: P.cx - z.w / 2, y: P.cy - z.h / 2, width: z.w, height: z.h }, it.label, 14, i === 0 ? SOFT : "#ffffff"));
+      });
+      break;
+    }
+    case "table": {
+      const cols = (v.columns ?? []).slice(0, TABLE_COLS);
+      const rows = (v.rows ?? []).slice(0, TABLE_ROWS).map((r) => r.slice(0, Math.max(cols.length, 1)));
+      const nc = Math.max(cols.length, ...rows.map((r) => r.length), 1);
+      // The first column names the row: a little wider.
+      const firstW = W * (nc > 1 ? 0.28 : 1);
+      const colW = nc > 1 ? (W - firstW) / (nc - 1) : 0;
+      const cx = (c: number) => (c === 0 ? x0 : x0 + firstW + (c - 1) * colW);
+      const cw = (c: number) => (c === 0 ? firstW : colW);
+      // Numbers line up on the right; words read from the left. A column is numeric if all its cells are.
+      const isNum = (cell: string) => /^[-+~≈<>]?\s*[\d.,]+\s*\S{0,6}$/.test(cell.trim());
+      const numericCol = (c: number) => c > 0 && rows.length > 0 && rows.every((r) => !r[c] || isNum(r[c]!));
+      const align = (c: number) => (numericCol(c) ? "right" : "left");
+      cols.forEach((h, c) => out.push(label(`h${c}`, { x: cx(c) + 4, y: y0, width: cw(c) - 8, height: 24 }, h.toUpperCase(), 11, { align: align(c), family: MONO, color: MUTED })));
+      out.push(line("hr", x0, y0 + 28, x0 + W, y0 + 28, INK, 1.5));
+      rows.forEach((row, r) => {
+        const ry = y0 + 30 + r * TABLE_ROW_H;
+        row.forEach((cell, c) => {
+          out.push(label(`c${r}_${c}`, { x: cx(c) + 4, y: ry, width: cw(c) - 8, height: TABLE_ROW_H }, cell, c === 0 ? 14 : 13,
+            { align: align(c), family: numericCol(c) ? MONO : SANS, color: INK }));
+        });
+        if (r < rows.length - 1) out.push(line(`r${r}`, x0, ry + TABLE_ROW_H, x0 + W, ry + TABLE_ROW_H, SOFT, 1));
+      });
+      break;
+    }
+    case "chart": {
+      const series = (v.series ?? []).slice(0, 3).map((s) => ({ ...s, points: s.points.filter((p) => p.every(Number.isFinite)).slice(0, 40) }))
+        .filter((s) => s.points.length > 0);
+      if (!series.length) break;
+      const pts = series.flatMap((s) => s.points);
+      const log = !!v.logY && pts.every(([, y]) => y > 0);
+      const xs = pts.map(([x]) => x);
+      const ys = pts.map(([, y]) => y);
+      const xT = niceTicks(Math.min(...xs), Math.max(...xs), 6);
+      const yT = log ? logTicks(Math.min(...ys), Math.max(...ys)) : niceTicks(Math.min(0, ...ys), Math.max(...ys), 5);
+      const [xa, xb] = [xT[0]!, xT[xT.length - 1]!];
+      const [ya, yb] = [yT[0]!, yT[yT.length - 1]!];
+      const left = x0 + 52;
+      const right = x0 + W - 8;
+      const top = y0 + 26;
+      const bottom = y0 + 214;
+      const px = (x: number) => left + ((x - xa) / (xb - xa || 1)) * (right - left);
+      const py = (y: number) => bottom - (log ? (Math.log10(y) - Math.log10(ya)) / (Math.log10(yb) - Math.log10(ya) || 1) : (y - ya) / (yb - ya || 1)) * (bottom - top);
+      // Grid and ticks.
+      yT.forEach((t, i) => {
+        out.push(line(`gy${i}`, left, py(t), right, py(t), i === 0 ? INK : SOFT, i === 0 ? 1.5 : 1));
+        out.push(label(`ty${i}`, { x: x0, y: py(t) - 9, width: 46, height: 18 }, tickLabel(t), 11, { align: "right", family: MONO, color: MUTED }));
+      });
+      out.push(line("ax", left, top - 6, left, bottom, INK, 1.5));
+      xT.forEach((t, i) => out.push(label(`tx${i}`, { x: px(t) - 30, y: bottom + 4, width: 60, height: 18 }, tickLabel(t), 11, { family: MONO, color: MUTED })));
+      if (v.xLabel) out.push(label("xl", { x: left, y: bottom + 22, width: right - left, height: 18 }, v.xLabel.toUpperCase(), 11, { family: MONO, color: MUTED }));
+      if (v.yLabel) out.push(text("yl", left + 6, y0, `${v.yLabel.toUpperCase()}${log ? " · LOG" : ""}`, 11, MONO, MUTED));
+      // Series: a polyline (line plot) or dots (scatter), and a legend top-right.
+      series.forEach((s, si) => {
+        const st = SERIES_STYLE[si]!;
+        const sorted = v.plot === "scatter" ? s.points : [...s.points].sort((a, b) => a[0] - b[0]);
+        if (v.plot !== "scatter" && sorted.length > 1) {
+          const [fx, fy] = [px(sorted[0]![0]), py(sorted[0]![1])];
+          out.push({
+            ...base, type: "line", id: id(`s${si}`), x: fx, y: fy, strokeColor: st.color, strokeWidth: 2, strokeStyle: st.dash,
+            points: sorted.map(([x, y]) => [px(x) - fx, py(y) - fy]), customData: data,
+          } as Skeleton);
+        }
+        sorted.forEach(([x, y], pi) => {
+          if (v.plot === "scatter" || sorted.length <= 12) out.push(dot(`p${si}_${pi}`, px(x), py(y), v.plot === "scatter" ? 4 : 3, st.color));
+        });
+        if (series.length > 1 || s.label) {
+          const ly = y0 + 2 + si * 16;
+          out.push(line(`lg${si}`, right - 150, ly + 8, right - 130, ly + 8, st.color, 2));
+          out.push(text(`lt${si}`, right - 124, ly, s.label.slice(0, 20), 12, SANS, INK));
+        }
       });
       break;
     }

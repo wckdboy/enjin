@@ -269,6 +269,12 @@ final class CanvasController: NSObject {
             self?.openCardId = p.cardId
             return Empty()
         }
+        router.on("card.visualize", WebMethod.CardVisualize.self) { [weak self] p in
+            guard let self, let portalId = self.currentPortalId else { return Empty() }
+            Task { await self.telemetry.record("visualize") }
+            self.agent.visualize(cardId: p.cardId, portalId: portalId)
+            return Empty()
+        }
         router.on("selection.changed", WebMethod.SelectionChanged.self) { [weak self] p in
             self?.selectedCardId = p.cardIds.count == 1 ? p.cardIds[0] : nil
             return Empty()

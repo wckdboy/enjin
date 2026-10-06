@@ -60,3 +60,27 @@ test("a live model takes touches only while its card is selected, and waits for 
   await page.touchscreen.tap(p.x, p.y);
   await expect(iframe).toHaveCSS("pointer-events", "auto");
 });
+
+test("Visualize is offered on filled cards, not stubs or figures, and asks native", async ({ page }) => {
+  await ready(page);
+  const center = (id: string) =>
+    page.evaluate((id) => {
+      const { api } = (window as unknown as { __enjinDebug: { api: { getSceneElements(): { x: number; y: number; width: number; height: number; customData?: Record<string, string> }[]; getAppState(): { scrollX: number; scrollY: number; zoom: { value: number } } } } }).__enjinDebug;
+      const f = api.getSceneElements().find((e) => e.customData?.cardId === id && e.customData?.role === "frame")!;
+      const s = api.getAppState();
+      return { x: (f.x + f.width / 2 + s.scrollX) * s.zoom.value, y: (f.y + f.height / 2 + s.scrollY) * s.zoom.value };
+    }, id);
+  const visualize = page.locator("[data-enjin=card-actions]").getByRole("button", { name: "Visualize" });
+
+  let p = await center("c-legions");
+  await page.touchscreen.tap(p.x, p.y);
+  await expect(visualize).toBeVisible();
+  await visualize.tap();
+  const sent = await page.evaluate(() => (window as unknown as { __devLog: { method: string; params: { cardId?: string } }[] }).__devLog
+    .filter((r) => r.method === "card.visualize").map((r) => r.params.cardId));
+  expect(sent).toEqual(["c-legions"]);
+
+  p = await center("c-emperors"); // a stub
+  await page.touchscreen.tap(p.x, p.y);
+  await expect(visualize).toBeHidden();
+});

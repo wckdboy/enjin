@@ -9,9 +9,10 @@ const words = {
   inside: { en: (n: number) => `${n} inside →`, da: (n: number) => `${n} indeni →` },
   actionDive: { en: "Dive in", da: "Dyk ind" },
   actionOpen: { en: "Open", da: "Åbn" },
+  actionVisualize: { en: "Visualize", da: "Visualisér" },
   fig: {
-    en: { flow: "Process", cycle: "Cycle", timeline: "Timeline", bars: "Compare", parts: "Parts", stat: "Number", formula: "Formula", code: "Code", live: "Live model" },
-    da: { flow: "Proces", cycle: "Kredsløb", timeline: "Tidslinje", bars: "Sammenlign", parts: "Dele", stat: "Tal", formula: "Formel", code: "Kode", live: "Levende model" },
+    en: { flow: "Process", cycle: "Cycle", timeline: "Timeline", bars: "Compare", parts: "Parts", stat: "Number", formula: "Formula", code: "Code", live: "Live model", graph: "Concept map", table: "Table", chart: "Chart" },
+    da: { flow: "Proces", cycle: "Kredsløb", timeline: "Tidslinje", bars: "Sammenlign", parts: "Dele", stat: "Tal", formula: "Formel", code: "Kode", live: "Levende model", graph: "Begrebskort", table: "Tabel", chart: "Graf" },
   },
 } as const;
 
@@ -41,5 +42,6 @@ export const t = {
   inside: (n: number) => words.inside[current](n),
   actionDive: () => words.actionDive[current],
   actionOpen: () => words.actionOpen[current],
+  actionVisualize: () => words.actionVisualize[current],
   fig: (kind: keyof (typeof words.fig)["en"]) => words.fig[current][kind],
 };

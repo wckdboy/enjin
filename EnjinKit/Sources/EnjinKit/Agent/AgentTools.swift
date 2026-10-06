@@ -21,7 +21,11 @@ public enum AgentTools {
         timeline (2-6 events: items[].tag = when, label, detail), bars (2-6 numbers to compare: items[].label + value, one unit), \
         parts (what something is made of: center + 3-6 items[].label), stat (one striking number: value + unit), \
         formula (text like "F = m × a" + items[] as symbol legend: label = symbol, detail = meaning with unit), \
-        code (text: up to 10 short lines of real code), live (html: an interactive model, see below). \
+        code (text: up to 10 short lines of real code), live (html: an interactive model, see below), \
+        graph (a concept map: items[].label = 3-8 nodes, links[] = {from, to, label} relations by node label, \
+        e.g. "steers", "is made of", "causes"), table (compare things across properties: columns[] headers, rows[][] of \
+        cells, first cell names the row; up to 5 x 6), chart (real data over a range: series[] = {label, points: [[x, y]]}, \
+        up to 3 series and 40 points, plot line or scatter, xLabel, yLabel, logY for exponential growth). \
         Labels <= 30 characters, details <= 48.
         """),
         "properties": .object([
@@ -43,6 +47,26 @@ public enum AgentTools {
             "value": .object(["type": .string("string"), "description": .string("stat: the number as written, e.g. \"299,792\"")]),
             "unit": .object(["type": .string("string")]),
             "text": .object(["type": .string("string"), "description": .string("formula expression or code")]),
+            "links": .object(["type": .string("array"), "items": .object([
+                "type": .string("object"),
+                "properties": .object(["from": .object(["type": .string("string")]), "to": .object(["type": .string("string")]),
+                                       "label": .object(["type": .string("string")])]),
+                "required": .array([.string("from"), .string("to")]),
+            ])]),
+            "columns": .object(["type": .string("array"), "items": .object(["type": .string("string")])]),
+            "rows": .object(["type": .string("array"), "items": .object(["type": .string("array"), "items": .object(["type": .string("string")])])]),
+            "series": .object(["type": .string("array"), "items": .object([
+                "type": .string("object"),
+                "properties": .object([
+                    "label": .object(["type": .string("string")]),
+                    "points": .object(["type": .string("array"), "items": .object(["type": .string("array"), "items": .object(["type": .string("number")])])]),
+                ]),
+                "required": .array([.string("label"), .string("points")]),
+            ])]),
+            "plot": .object(["type": .string("string"), "enum": .array([.string("line"), .string("scatter")])]),
+            "xLabel": .object(["type": .string("string")]),
+            "yLabel": .object(["type": .string("string")]),
+            "logY": .object(["type": .string("boolean")]),
             "html": .object(["type": .string("string"), "description": .string("""
             live only: one self-contained HTML snippet (markup, <style>, <script>; no <html>/<head>) under 20,000 characters. \
             It runs in a sandboxed iframe, about 650 x 380 px (read innerWidth/innerHeight, handle resize), with NO network: \
@@ -74,6 +98,7 @@ public enum AgentTools {
                             "type": .object(["type": .string("string"), "enum": .array([.string("topic"), .string("note")])]),
                             "isStub": .object(["type": .string("boolean"), "description": .string("true for an unexplored follow-up door")]),
                             "image": string("Short search phrase for a real picture that helps a kid picture this, e.g. 'Mars Curiosity rover selfie' or 'neuron microscope'. Give one to every card without a visual."),
+                            "illustrate": string("Instead of image: a prompt for an illustration made on the device, for what no photo can show (inside a cell, a machine cutaway, a black hole up close, a future robot). Describe subject, viewpoint and setting; no words in the picture."),
                             "visual": visual,
                             "sources": .object(["type": .string("array"), "items": .object(["type": .string("string")]),
                                                 "description": .string("URLs from this turn's web search that back this card")]),
@@ -98,6 +123,7 @@ public enum AgentTools {
                 "body": string("New detail, <= 900 characters"),
                 "state": .object(["type": .string("string"), "enum": .array([.string("filled"), .string("stub")])]),
                 "image": string("Optional short search phrase for a picture for this card"),
+                "illustrate": string("Optional prompt for an illustration made on the device instead of a photo"),
                 "visual": visual,
                 "sources": .object(["type": .string("array"), "items": .object(["type": .string("string")])]),
             ]),
@@ -133,8 +159,9 @@ public enum AgentTools {
         public var image: String?
         public var sources: [String]?
         public var visual: Visual?
+        public var illustrate: String?
 
-        private enum CodingKeys: String, CodingKey { case title, summary, body, type, isStub, image, sources, visual }
+        private enum CodingKeys: String, CodingKey { case title, summary, body, type, isStub, image, sources, visual, illustrate }
 
         public init(from decoder: Decoder) throws {
             let c = try decoder.container(keyedBy: CodingKeys.self)
@@ -145,6 +172,7 @@ public enum AgentTools {
             isStub = (try? c.decodeIfPresent(Bool.self, forKey: .isStub)) ?? false
             image = try c.decodeIfPresent(String.self, forKey: .image)
             sources = try? c.decodeIfPresent([String].self, forKey: .sources)
+            illustrate = try? c.decodeIfPresent(String.self, forKey: .illustrate)
             // A figure the canvas can't draw is dropped, never the whole card.
             visual = (try? c.decodeIfPresent(Visual.self, forKey: .visual))?.sanitized()
         }
@@ -164,8 +192,9 @@ public enum AgentTools {
         public var image: String?
         public var sources: [String]?
         public var visual: Visual?
+        public var illustrate: String?
 
-        private enum CodingKeys: String, CodingKey { case cardId, title, summary, body, state, image, sources, visual }
+        private enum CodingKeys: String, CodingKey { case cardId, title, summary, body, state, image, sources, visual, illustrate }
 
         public init(from decoder: Decoder) throws {
             let c = try decoder.container(keyedBy: CodingKeys.self)
@@ -177,6 +206,7 @@ public enum AgentTools {
             image = try c.decodeIfPresent(String.self, forKey: .image)
             sources = try? c.decodeIfPresent([String].self, forKey: .sources)
             visual = (try? c.decodeIfPresent(Visual.self, forKey: .visual))?.sanitized()
+            illustrate = try? c.decodeIfPresent(String.self, forKey: .illustrate)
         }
     }
 

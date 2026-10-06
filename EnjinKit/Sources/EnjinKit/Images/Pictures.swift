@@ -34,7 +34,8 @@ public struct PicturePipeline: Sendable {
     public var isEmpty: Bool { photos == nil && illustrations == nil }
 
     public static func preferredKind(for card: StoredCard) -> PictureKind {
-        card.state == .stub || card.createdBy == .kid || card.type == .note ? .illustration : .photo
+        if let asked = card.imagePrefer { return asked }
+        return card.state == .stub || card.createdBy == .kid || card.type == .note ? .illustration : .photo
     }
 
     public func picture(for query: String, prefer: PictureKind, excluding: Set<String>) async -> (FoundImage, PictureKind)? {

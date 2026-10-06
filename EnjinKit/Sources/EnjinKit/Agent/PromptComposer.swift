@@ -14,6 +14,8 @@ public enum PromptComposer {
         case begin
         /// The explorer dived into a filled topic that is empty inside: build the next level down.
         case expand(cardId: String)
+        /// The explorer asked to see a card's idea as a visual.
+        case visualize(cardId: String)
     }
 
     /// A finished turn elsewhere, carried into other portals' prompts as text.
@@ -133,6 +135,16 @@ public enum PromptComposer {
             then createCards with 3-4 filled topic cards that show how this really works (each with a body and an image \
             phrase), one note card with a visual (the key process, parts, numbers or formula), and 2 stubs (with image \
             phrases) as doors to explore. Concrete, accurate, surprising.
+            """
+        case .visualize(let cardId):
+            let c = session.card(cardId)
+            return """
+            The explorer pressed Visualize on \(cardId) "\(c?.title ?? "")"\(c.map { $0.summary.isEmpty ? "" : ": \($0.summary)" } ?? "")\
+            \(c?.body.map { " (detail: \(String($0.prefix(400))))" } ?? ""). Show this idea visually: createCards with ONE note card \
+            in this portal whose visual explains it best. Choose the form: a live model if moving and touching it teaches most \
+            (a mechanism, a system with a variable, an algorithm), otherwise the right figure (flow, cycle, chart, table, graph, \
+            parts, formula, code, timeline, bars, stat). Title it after what it shows; the summary says what to notice. \
+            Accuracy first. Keep your reply to one short sentence.
             """
         case .expand(let cardId):
             let c = session.card(cardId)
