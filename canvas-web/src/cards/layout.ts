@@ -8,23 +8,32 @@ export interface Rect {
 }
 
 export const CARD_W = 320;
+/** Text area height; picture cards add the image area on top. */
 export const CARD_H = 180;
+export const IMAGE_H = 190;
 export const GAP = 48;
 export const COLUMNS = 3;
 export const HEADER_H = 110;
+const STEP = 12;
 
 /**
- * Place `count` new cards in a grid below the portal header, skipping any
- * slot that overlaps an existing rect (kid content or earlier cards).
+ * Place new cards (of any height) in columns below the portal header: each goes
+ * to the highest free spot in any column, so tall picture cards stack like
+ * masonry instead of leaving holes. Never overlaps `occupied` (kid content,
+ * other cards). Deterministic.
  */
-export function placeCards(count: number, occupied: Rect[]): Rect[] {
+export function placeCards(sizes: { width: number; height: number }[], occupied: Rect[]): Rect[] {
   const placed: Rect[] = [];
-  for (let slot = 0; placed.length < count; slot++) {
-    const col = slot % COLUMNS;
-    const row = Math.floor(slot / COLUMNS);
-    const r = { x: col * (CARD_W + GAP), y: HEADER_H + row * (CARD_H + GAP), width: CARD_W, height: CARD_H };
-    if (![...occupied, ...placed].some((o) => intersects(o, r, GAP / 2))) placed.push(r);
-    if (slot > 10_000) throw new Error("placeCards: no free slot");
+  for (const size of sizes) {
+    let spot: Rect | null = null;
+    for (let y = HEADER_H; !spot; y += STEP) {
+      for (let col = 0; col < COLUMNS && !spot; col++) {
+        const r = { x: col * (CARD_W + GAP), y, width: size.width, height: size.height };
+        if (![...occupied, ...placed].some((o) => intersects(o, r, GAP / 2))) spot = r;
+      }
+      if (y > 200_000) throw new Error("placeCards: no free spot");
+    }
+    placed.push(spot);
   }
   return placed;
 }
@@ -133,4 +142,17 @@ export function mapRect(r: Rect, from: Rect, to: Rect): Rect {
 /** The scene rect currently on screen. */
 export function visibleRect(vp: Viewport): Rect {
   return { x: -vp.scrollX, y: -vp.scrollY, width: vp.width / vp.zoom, height: vp.height / vp.zoom };
+}
+
+/**
+ * Crop (in the image's own pixels) so it fills a box of `boxAspect` without
+ * distortion. Tall pictures keep their upper part, where the subject usually is.
+ */
+export function coverCrop(w: number, h: number, boxAspect: number): { x: number; y: number; width: number; height: number } {
+  if (w / h > boxAspect) {
+    const cw = h * boxAspect;
+    return { x: (w - cw) / 2, y: 0, width: cw, height: h };
+  }
+  const ch = w / boxAspect;
+  return { x: 0, y: (h - ch) * 0.3, width: w, height: ch };
 }

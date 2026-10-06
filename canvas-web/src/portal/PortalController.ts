@@ -2,7 +2,7 @@ import { CaptureUpdateAction, exportToCanvas, getSceneVersion, newElementWith, r
 import type { ExcalidrawElement, NonDeletedExcalidrawElement } from "@excalidraw/excalidraw/element/types";
 import type { ExcalidrawImperativeAPI } from "@excalidraw/excalidraw/types";
 import type { Bridge } from "../bridge/client";
-import type { Card, Params, NativeToWeb, PortalScene, Result } from "../bridge/schema";
+import type { BridgeFile, Card, Params, NativeToWeb, PortalScene, Result } from "../bridge/schema";
 import { buildPortalElements, cardRects, renderCards } from "../cards/render";
 import { type Rect, type Viewport, centerOn, containsPoint, fitZoom, framedRect, mapRect, nearestToCenter, toView, union, visibleRect, windowIn } from "../cards/layout";
 import type { InputGate } from "../inputGate";
@@ -98,6 +98,25 @@ export class PortalController {
     }
   }
 
+  /**
+   * Excalidraw decodes images only for image elements that exist when files
+   * are added. After placing image elements, hand their files over again so
+   * they render instead of showing the loading icon.
+   */
+  private refreshImages(): void {
+    const files = this.api.getFiles();
+    const used = this.api.getSceneElements().flatMap((e) => (e.type === "image" && e.fileId && files[e.fileId] ? [files[e.fileId]!] : []));
+    if (used.length) this.api.addFiles(used);
+  }
+
+  /** Give Excalidraw image data before (or as) cards that use it arrive. */
+  addFiles(files: BridgeFile[] | undefined): void {
+    if (!files?.length) return;
+    const have = this.api.getFiles();
+    const fresh = files.filter((f) => !have[f.id]);
+    if (fresh.length) this.api.addFiles(fresh.map((f) => ({ ...f, id: f.id as never, mimeType: f.mimeType as never, dataURL: f.dataURL as never, created: Date.now() })));
+  }
+
   frame(cardId: string): { framed: boolean } {
     const c = cardRects(this.api.getSceneElements()).find((r) => r.cardId === cardId);
     if (!c || this.transitioning) return { framed: false };
@@ -143,6 +162,7 @@ export class PortalController {
     const { elements, placed } = renderCards(this.api.getSceneElementsIncludingDeleted(), upserts, deletes);
     // Agent/native ops stay out of the kid's undo stack (plan §5.3).
     this.api.updateScene({ elements, captureUpdate: CaptureUpdateAction.NEVER });
+    if (upserts.some((c) => c.image)) this.refreshImages();
     return { placed: placed.map((p) => ({ cardId: p.cardId, ...p.rect })) };
   }
 
@@ -199,6 +219,7 @@ export class PortalController {
   }
 
   private buildElements(scene: PortalScene): ExcalidrawElement[] {
+    this.addFiles(scene.files);
     return buildPortalElements(scene.title, scene.cards, restoreElements(scene.elements as never, null));
   }
 
@@ -206,6 +227,7 @@ export class PortalController {
   private install(scene: PortalScene, elements = this.buildElements(scene)): void {
     this.scene = scene;
     this.api.updateScene({ elements, captureUpdate: CaptureUpdateAction.NEVER });
+    this.refreshImages();
     this.api.history.clear();
     this.lastSceneVersion = getSceneVersion(elements as never);
     this.api.updateScene({ appState: { selectedElementIds: {}, selectedGroupIds: {} }, captureUpdate: CaptureUpdateAction.NEVER });

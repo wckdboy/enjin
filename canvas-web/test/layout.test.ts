@@ -4,13 +4,20 @@ import { CARD_W, centerOn, fitZoom, intersects, placeCards, toView, viewCoverage
 describe("placeCards", () => {
   it("never overlaps existing content or itself", () => {
     const occupied = [{ x: 0, y: 110, width: 500, height: 200 }];
-    const placed = placeCards(7, occupied);
+    const placed = placeCards([180, 370, 180, 370, 370, 180, 180].map((h) => ({ width: CARD_W, height: h })), occupied);
     expect(placed).toHaveLength(7);
     for (const p of placed) expect(occupied.some((o) => intersects(o, p))).toBe(false);
     for (let i = 0; i < placed.length; i++) for (let j = i + 1; j < placed.length; j++) expect(intersects(placed[i]!, placed[j]!)).toBe(false);
   });
   it("is deterministic", () => {
-    expect(placeCards(5, [])).toEqual(placeCards(5, []));
+    const sizes = [1, 2, 3, 4, 5].map((i) => ({ width: CARD_W, height: i % 2 ? 180 : 370 }));
+    expect(placeCards(sizes, [])).toEqual(placeCards(sizes, []));
+  });
+  it("fills the shortest column first (masonry)", () => {
+    const [a, b, c, d] = placeCards([370, 180, 180, 180].map((h) => ({ width: CARD_W, height: h })), []);
+    expect([a!.y, b!.y, c!.y]).toEqual([110, 110, 110]);
+    // The 4th goes under a short card, not under the tall one.
+    expect(d!.x).not.toBe(a!.x);
   });
 });
 
@@ -63,5 +70,20 @@ describe("dive geometry", () => {
     expect(mapRect(from, from, to)).toEqual(to);
     const inner = mapRect({ x: 450, y: 616, width: 0, height: 0 }, from, to);
     expect(inner.x).toBeCloseTo(to.x + to.width / 2);
+  });
+});
+
+import { coverCrop } from "../src/cards/layout";
+
+describe("coverCrop", () => {
+  it("keeps the box aspect and stays inside the image", () => {
+    for (const [w, h] of [[800, 1067], [800, 300], [640, 384]] as const) {
+      const c = coverCrop(w, h, 300 / 180);
+      expect(c.width / c.height).toBeCloseTo(300 / 180);
+      expect(c.x).toBeGreaterThanOrEqual(0);
+      expect(c.y).toBeGreaterThanOrEqual(0);
+      expect(c.x + c.width).toBeLessThanOrEqual(w + 1e-9);
+      expect(c.y + c.height).toBeLessThanOrEqual(h + 1e-9);
+    }
   });
 });

@@ -7,6 +7,7 @@ import os
 public protocol CanvasSink: AnyObject {
     func apply(portalId: String, ops: [CardOp]) async
     func flash(cardId: String) async
+    func addFiles(_ files: [BridgeFile]) async
 }
 
 /// Runs agent turns against one open notebook (plan §5). One turn at a time:
@@ -45,6 +46,9 @@ public final class AgentSession {
     public private(set) var prefetchingCardId: String?
 
     @ObservationIgnored public var backend: AgentBackend?
+    /// Where pictures come from; nil turns pictures off.
+    @ObservationIgnored public var imageFinder: ImageFinder?
+    @ObservationIgnored private var claimedImages: Set<String> = []
     @ObservationIgnored public var dailyCapUSD: Double = 2
     @ObservationIgnored public let session: NotebookSession
     @ObservationIgnored public weak var canvas: CanvasSink?
@@ -197,6 +201,7 @@ public final class AgentSession {
 
         let tools = backend.isReduced ? AgentTools.reduced : AgentTools.all
         let executor = ToolExecutor(agent: self, portalId: portalId, turnId: turnId)
+        defer { Task { await executor.discardUnusedDrafts() } }
         let foreground = kind != .prefetch
         let started = Date()
         var made: [String] = []
@@ -205,6 +210,9 @@ public final class AgentSession {
             let result = try await backend.run(thread: &thread, system: Persona.system, tools: tools, onEvent: { [weak self, executor] e in
                 Task { @MainActor in
                     executor.observe(e)
+                    if case .toolInputProgress(let id, let name, let partial) = e, name == "createCards" {
+                        executor.schedulePreview(toolId: id, partial: partial)
+                    }
                     guard foreground, let self else { return }
                     switch e {
                     case .textDelta(let t): self.reply += t
@@ -285,6 +293,44 @@ public final class AgentSession {
         await canvas?.apply(portalId: c.portalId, ops: [.upsert(session.bridgeCard(c))])
     }
 
+    /// Look for a picture for a card in the background; the card holds a placeholder meanwhile.
+    func findImage(for cardId: String) {
+        guard let card = session.card(cardId), let query = card.imageQuery else { return }
+        guard let finder = imageFinder else {
+            Task { await clearImageQuery(cardId) }
+            return
+        }
+        Task {
+            var found: FoundImage?
+            for _ in 0..<2 {
+                let excluded = session.usedImageSources.union(claimedImages)
+                found = try? await finder.find(query, excluding: excluded)
+                // Another card grabbed the same picture meanwhile: look again.
+                if let f = found, claimedImages.contains(f.sourceURL) { found = nil; continue }
+                break
+            }
+            guard let found, session.card(cardId)?.isActive == true else {
+                await clearImageQuery(cardId)
+                await telemetry?.record("image", ["found": .bool(false)])
+                return
+            }
+            claimedImages.insert(found.sourceURL)
+            defer { claimedImages.remove(found.sourceURL) }
+            let image = CardImage(fileId: "img-\(UUID().uuidString.lowercased())", mimeType: found.mimeType, width: found.width,
+                                  height: found.height, credit: found.credit, sourceURL: found.sourceURL)
+            guard let updated = try? await session.attachImage(cardId, data: found.data, image: image),
+                  let file = await session.bridgeFile(image) else { return }
+            await canvas?.addFiles([file])
+            await canvas?.apply(portalId: updated.portalId, ops: [.upsert(session.bridgeCard(updated))])
+            await telemetry?.record("image", ["found": .bool(true)])
+        }
+    }
+
+    private func clearImageQuery(_ cardId: String) async {
+        guard let c = try? await session.updateCard(cardId, by: .agent, { $0.imageQuery = nil }) else { return }
+        await canvas?.apply(portalId: c.portalId, ops: [.upsert(session.bridgeCard(c))])
+    }
+
     fileprivate func setSuggestion(_ s: Suggestion) async {
         suggestion = s
         await canvas?.flash(cardId: s.cardId)
@@ -303,6 +349,20 @@ final class ToolExecutor {
     private var seen: [String: String] = [:]
     private(set) var searches = 0
 
+    /// Cards shown on the canvas while a createCards call is still streaming.
+    /// They become the real cards (same ids) when the call completes.
+    struct Draft {
+        var toolId: String
+        var portalId: String
+        var ids: [String] = []
+        var shown: [String: Card] = [:]
+        var lastSend: Date = .distantPast
+        var finalized = false
+    }
+    private var drafts: [Draft] = []
+    private var latestPartial: [String: String] = [:]
+    private var previewTask: Task<Void, Never>?
+
     init(agent: AgentSession, portalId: String, turnId: String) {
         self.agent = agent
         self.portalId = portalId
@@ -316,6 +376,84 @@ final class ToolExecutor {
         case .serverToolUse: searches += 1
         default: break
         }
+    }
+
+    // MARK: - Streaming previews
+
+    /// Previews run one at a time, always on the newest text, so the canvas
+    /// never shows an older version after a newer one.
+    func schedulePreview(toolId: String, partial: String) {
+        latestPartial[toolId] = partial
+        guard previewTask == nil else { return }
+        previewTask = Task {
+            while let (id, text) = latestPartial.first {
+                latestPartial[id] = nil
+                await preview(toolId: id, partial: text)
+            }
+            previewTask = nil
+        }
+    }
+
+    /// Let queued stream events and previews land before a call is finalized,
+    /// so the final cards reuse the preview ids instead of replacing them.
+    private func drainPreviews() async {
+        for _ in 0..<3 { await Task.yield() }
+        while let t = previewTask { await t.value }
+    }
+
+    private func preview(toolId: String, partial: String) async {
+        guard let agent, let parsed = PartialJSON.parse(partial), case .array(let cards)? = parsed["cards"] else { return }
+        let session = agent.session
+        var index = drafts.firstIndex { $0.toolId == toolId }
+        if index == nil {
+            var target = portalId
+            if let parent = parsed["parentCardId"]?.stringValue, let p = session.childPortal(of: parent) { target = p.portalId }
+            drafts.append(Draft(toolId: toolId, portalId: target))
+            index = drafts.count - 1
+        }
+        guard let i = index, !drafts[i].finalized else { return }
+        let limit = min(AgentTools.maxCardsPerCall, max(0, AgentTools.maxCardsPerTurn - created.count))
+        var ops: [CardOp] = []
+        var added = false
+        for (n, c) in cards.prefix(limit).enumerated() {
+            guard let title = c["title"]?.stringValue, !title.isEmpty else { continue }
+            if n >= drafts[i].ids.count {
+                drafts[i].ids.append("c-\(UUID().uuidString.lowercased())")
+                added = true
+            }
+            let id = drafts[i].ids[n]
+            let card = Card(id: id, type: c["type"]?.stringValue == "note" ? .note : .topic,
+                            title: AgentTools.clip(title, AgentTools.titleLimit),
+                            summary: AgentTools.clip(c["summary"]?.stringValue ?? "", AgentTools.summaryLimit),
+                            state: c["isStub"] == .bool(true) ? .stub : .filling, childCount: 0,
+                            imagePending: c["image"] != nil && agent.imageFinder != nil ? true : nil)
+            if drafts[i].shown[id] != card {
+                drafts[i].shown[id] = card
+                ops.append(.upsert(card))
+            }
+        }
+        // New cards go out at once; text growth is throttled to ~8 updates/s.
+        guard !ops.isEmpty, added || Date().timeIntervalSince(drafts[i].lastSend) > 0.12 else { return }
+        drafts[i].lastSend = Date()
+        await agent.canvas?.apply(portalId: drafts[i].portalId, ops: ops)
+    }
+
+    /// The next streamed createCards call, in order (tool calls execute in stream order).
+    private func takeDraft() -> Draft? {
+        guard let i = drafts.firstIndex(where: { !$0.finalized }) else { return nil }
+        drafts[i].finalized = true
+        latestPartial[drafts[i].toolId] = nil
+        return drafts[i]
+    }
+
+    /// Remove preview cards that never became real (cancelled turn, dropped by caps).
+    func discardUnusedDrafts() async {
+        guard let agent else { return }
+        for d in drafts {
+            let orphans = d.ids.filter { agent.session.card($0) == nil }
+            if !orphans.isEmpty { await agent.canvas?.apply(portalId: d.portalId, ops: orphans.map { .delete(cardId: $0) }) }
+        }
+        drafts.removeAll()
     }
 
     private func sources(_ urls: [String]?) -> [Source]? {
@@ -342,19 +480,31 @@ final class ToolExecutor {
                 let room = AgentTools.maxCardsPerTurn - created.count
                 guard room > 0 else { return .error("This turn already added \(AgentTools.maxCardsPerTurn) cards, the limit. Stop adding cards.") }
                 let wanted = Array(args.cards.prefix(min(AgentTools.maxCardsPerCall, room)))
+                await drainPreviews()
+                let draft = takeDraft()
+                // Previews keep their ids (and canvas positions) if they're in the right portal.
+                let reuse = draft?.portalId == target ? draft?.ids ?? [] : []
                 var ids: [String] = []
                 var ops: [CardOp] = []
-                for c in wanted {
+                for (n, c) in wanted.enumerated() {
+                    let imageQuery = agent.imageFinder != nil ? c.image.flatMap { $0.trimmingCharacters(in: .whitespaces).isEmpty ? nil : $0 } : nil
                     let card = try await session.createCard(
+                        id: n < reuse.count ? reuse[n] : nil,
                         in: target, type: c.type ?? .topic, title: AgentTools.clip(c.title, AgentTools.titleLimit),
                         summary: AgentTools.clip(c.summary, AgentTools.summaryLimit),
                         body: c.body.map { AgentTools.clip($0, AgentTools.bodyLimit) }.flatMap { $0.isEmpty ? nil : $0 },
-                        state: c.isStub ? .stub : .filled, author: .agent, turnId: turnId, sources: sources(c.sources))
+                        state: c.isStub ? .stub : .filled, author: .agent, turnId: turnId, sources: sources(c.sources),
+                        imageQuery: c.isStub ? nil : imageQuery)
                     ids.append(card.id)
                     ops.append(.upsert(session.bridgeCard(card)))
                 }
                 created += ids
+                if let draft {
+                    let leftover = draft.ids.filter { !ids.contains($0) }
+                    if !leftover.isEmpty { await agent.canvas?.apply(portalId: draft.portalId, ops: leftover.map { .delete(cardId: $0) }) }
+                }
                 await agent.canvas?.apply(portalId: target, ops: ops)
+                for id in ids { agent.findImage(for: id) }
                 if let parent, let fresh = session.card(parent.id) {
                     await agent.canvas?.apply(portalId: fresh.portalId, ops: [.upsert(session.bridgeCard(fresh))]) // child count badge
                 }
@@ -374,8 +524,10 @@ final class ToolExecutor {
                     if let b = args.body { $0.body = AgentTools.clip(b, AgentTools.bodyLimit) }
                     if let st = args.state { $0.state = st } else if $0.state == .filling { $0.state = .filled }
                     if let srcs { $0.sources = srcs }
+                    if let q = args.image, !q.isEmpty, $0.image == nil, agent.imageFinder != nil { $0.imageQuery = q }
                 }) else { return .error("No card \(args.cardId).") }
                 await agent.canvas?.apply(portalId: updated.portalId, ops: [.upsert(session.bridgeCard(updated))])
+                agent.findImage(for: updated.id)
                 return .ok("Updated \(updated.id).")
 
             case "suggestFocus":

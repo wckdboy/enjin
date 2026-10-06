@@ -65,6 +65,8 @@ final class SmokeTests: XCTestCase {
         ask.typeText("what did they eat?\n")
 
         XCTAssertTrue(app.staticTexts["Here are two cards from the test agent."].waitForExistence(timeout: 10))
+        sleep(1) // let the picture land
+        snap("after-agent-turn")
         app.buttons["Map"].tap()
         let root = app.buttons["map:Roman Empire"]
         XCTAssertTrue(root.waitForExistence(timeout: 5))

@@ -29,6 +29,8 @@ final class AppSettings {
     var dailyCapUSD: Double { didSet { defaults.set(dailyCapUSD, forKey: "dailyCapUSD") } }
     /// A parent read and accepted the data/cost notice (plan §7) before any key is used.
     var consentGiven: Bool { didSet { defaults.set(consentGiven, forKey: "consentGiven") } }
+    /// Real pictures from Wikipedia on Enjin's cards.
+    var showPictures: Bool { didSet { defaults.set(showPictures, forKey: "showPictures") } }
     private(set) var hasKey: Bool
 
     init(defaults: UserDefaults = .standard) {
@@ -37,6 +39,7 @@ final class AppSettings {
         modelId = defaults.string(forKey: "modelId") ?? AnthropicModel.opus55.id
         dailyCapUSD = defaults.object(forKey: "dailyCapUSD") as? Double ?? 2
         consentGiven = defaults.bool(forKey: "consentGiven")
+        showPictures = defaults.object(forKey: "showPictures") as? Bool ?? true
         hasKey = Keychain.read(Self.keyAccount)?.isEmpty == false
     }
 
@@ -57,6 +60,13 @@ final class AppSettings {
     var onDeviceUnavailableReason: String? {
         if #available(iOS 26.0, *) { return AppleFMBackend.unavailableReason }
         return "Needs iPadOS 26."
+    }
+
+    func makeImageFinder() -> ImageFinder? {
+        #if DEBUG
+        if ProcessInfo.processInfo.arguments.contains("-uiTestingFakeAgent") { return UITestImageFinder() }
+        #endif
+        return showPictures ? WikimediaImages() : nil
     }
 
     func makeBackend() -> AgentBackend? {

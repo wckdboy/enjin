@@ -73,6 +73,7 @@ struct AgentSpikeView: View {
                         case .webSearchError(let code): log.append("   search error: \(code)")
                         case .citation(let r, _): log.append("   cites \(r.url)")
                         case .toolUse(_, let name, let input, _): log.append("🛠 \(name) \(input == nil ? "(invalid JSON)" : "")")
+                        case .toolInputProgress: break
                         case .stop(let reason): log.append("■ \(reason)  \(streamedText.prefix(400))"); streamedText = ""
                         }
                     }

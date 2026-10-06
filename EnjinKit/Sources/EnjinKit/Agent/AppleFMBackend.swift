@@ -62,6 +62,8 @@ struct CreateCardsTool: Tool {
         var summary: String
         @Guide(description: "true for a follow-up idea the kid can explore later")
         var isStub: Bool
+        @Guide(description: "Short search phrase for a real picture of this, or empty")
+        var imageSearch: String
     }
 
     @Generable
@@ -74,7 +76,8 @@ struct CreateCardsTool: Tool {
 
     func call(arguments: Arguments) async throws -> String {
         var input: [String: JSONValue] = ["cards": .array(arguments.cards.map {
-            .object(["title": .string($0.title), "summary": .string($0.summary), "isStub": .bool($0.isStub)])
+            .object(["title": .string($0.title), "summary": .string($0.summary), "isStub": .bool($0.isStub),
+                     "image": $0.imageSearch.isEmpty ? .null : .string($0.imageSearch)])
         })]
         if !arguments.parentCardId.isEmpty { input["parentCardId"] = .string(arguments.parentCardId) }
         onEvent(.toolUse(id: UUID().uuidString, name: name, input: .object(input), raw: ""))

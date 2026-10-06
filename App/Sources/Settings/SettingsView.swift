@@ -48,6 +48,14 @@ struct SettingsView: View {
                 }
 
                 Section {
+                    Toggle("Show pictures on cards", isOn: $settings.showPictures)
+                } header: {
+                    Text("Pictures")
+                } footer: {
+                    Text("Pictures come from Wikipedia (free-licensed lead images of articles, with credit). A word filter skips unsuitable ones, but no filter is perfect.")
+                }
+
+                Section {
                     Stepper(value: $settings.dailyCapUSD, in: 0.5...20, step: 0.5) {
                         LabeledContent("Daily limit", value: settings.dailyCapUSD.formatted(.currency(code: "USD")))
                     }

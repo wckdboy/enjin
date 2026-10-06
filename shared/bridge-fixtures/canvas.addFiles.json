@@ -1,0 +1,22 @@
+{
+  "direction": "nativeToWeb",
+  "request": {
+    "v": 1,
+    "id": "fx-1",
+    "method": "canvas.addFiles",
+    "params": {
+      "files": [
+        {
+          "id": "img-2",
+          "mimeType": "image/jpeg",
+          "dataURL": "data:image/jpeg;base64,/9j/"
+        }
+      ]
+    }
+  },
+  "response": {
+    "v": 1,
+    "id": "fx-1",
+    "result": null
+  }
+}

@@ -10,6 +10,13 @@ export const PROTOCOL_VERSION = 1;
 export const CardType = z.enum(["topic", "source", "image", "note"]);
 export const CardState = z.enum(["stub", "filling", "filled", "error"]);
 
+export const CardImageRef = z.object({
+  fileId: z.string(),
+  /** Natural pixel size, for fitting without distortion. */
+  width: z.number().int().positive(),
+  height: z.number().int().positive(),
+});
+
 export const Card = z.object({
   id: z.string(),
   type: CardType,
@@ -18,10 +25,17 @@ export const Card = z.object({
   state: CardState,
   /** Number of cards inside this card's portal (0 = never dived). */
   childCount: z.number().int().nonnegative(),
+  image: CardImageRef.optional(),
+  /** A picture is being looked for: reserve its space with a placeholder. */
+  imagePending: z.boolean().optional(),
 });
 export type Card = z.infer<typeof Card>;
 
 export const Crumb = z.object({ portalId: z.string(), title: z.string() });
+
+/** Excalidraw BinaryFileData, minus `created`. */
+export const BridgeFile = z.object({ id: z.string(), mimeType: z.string(), dataURL: z.string() });
+export type BridgeFile = z.infer<typeof BridgeFile>;
 
 export const PortalScene = z.object({
   portalId: z.string(),
@@ -31,6 +45,8 @@ export const PortalScene = z.object({
   cards: z.array(Card),
   /** Persisted Excalidraw elements; empty on first visit (web lays out cards). */
   elements: z.array(z.record(z.string(), z.unknown())),
+  /** Images used by this portal's cards. */
+  files: z.array(BridgeFile).optional(),
 });
 export type PortalScene = z.infer<typeof PortalScene>;
 
@@ -85,6 +101,10 @@ export const nativeToWeb = {
     }),
     /** Where each upserted card ended up (empty if the portal isn't current). */
     result: z.object({ placed: z.array(PlacedCard) }),
+  },
+  "canvas.addFiles": {
+    params: z.object({ files: z.array(BridgeFile) }),
+    result: Null,
   },
   "canvas.frame": {
     /** Kid asked to go to a card (e.g. tapped a suggestion): ease the camera onto it. */

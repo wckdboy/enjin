@@ -345,3 +345,93 @@ test("selecting a card doesn't open Excalidraw's style panel; selecting a drawin
   await expect(page.locator("[data-enjin=card-actions]")).toBeHidden();
   await expect(page.getByText("Stroke").first()).toBeVisible();
 });
+
+test("picture cards: placeholder reserves space, image arrives in place without distortion", async ({ page }) => {
+  await ready(page);
+  const card = { id: "c-pic", type: "topic", title: "Testudo", summary: "Shields locked like a tortoise shell.", state: "filled", childCount: 0 };
+  await call(page, "canvas.applyOps", { portalId: "p-root", ops: [{ op: "upsert", card: { ...card, imagePending: true } }] });
+  const before = (await frames(page)).find((c) => c.cardId === "c-pic")!;
+  expect(before.height).toBe(370);
+  const roles = () =>
+    page.evaluate(() =>
+      (window as unknown as { __enjinDebug: Debug }).__enjinDebug.api
+        .getSceneElements()
+        .filter((e) => e.customData?.cardId === "c-pic")
+        .map((e) => e.customData!.role),
+    );
+  expect(await roles()).toContain("placeholder");
+
+  // A 2:1 image, made in the page.
+  const dataURL = await page.evaluate(() => {
+    const c = document.createElement("canvas");
+    c.width = 400;
+    c.height = 200;
+    const g = c.getContext("2d")!;
+    g.fillStyle = "#c92a2a";
+    g.fillRect(0, 0, 400, 200);
+    return c.toDataURL("image/png");
+  });
+  await call(page, "canvas.addFiles", { files: [{ id: "img-test", mimeType: "image/png", dataURL }] });
+  await call(page, "canvas.applyOps", { portalId: "p-root", ops: [{ op: "upsert", card: { ...card, image: { fileId: "img-test", width: 400, height: 200 } } }] });
+
+  const after = (await frames(page)).find((c) => c.cardId === "c-pic")!;
+  expect([after.x, after.y, after.height]).toEqual([before.x, before.y, 370]);
+  const img = await page.evaluate(() =>
+    (window as unknown as { __enjinDebug: Debug }).__enjinDebug.api.getSceneElements().find((e) => e.type === "image") as unknown as {
+      width: number; height: number; fileId: string; x: number;
+    },
+  );
+  expect(img.fileId).toBe("img-test");
+  // Fills the picture area (cropped to fit, not stretched).
+  expect([img.width, img.height]).toEqual([300, 180]);
+  const crop = (img as unknown as { crop: { width: number; height: number } }).crop;
+  expect(crop.width / crop.height).toBeCloseTo(300 / 180);
+  expect(await roles()).not.toContain("placeholder");
+  // Actually drawn: sample the canvas at the image's center, it should be the image's red.
+  const center = await page.evaluate(() => {
+    const { api } = (window as unknown as { __enjinDebug: Debug }).__enjinDebug;
+    const e = api.getSceneElements().find((el) => el.type === "image") as unknown as { x: number; y: number; width: number; height: number };
+    const s = api.getAppState();
+    return { x: (e.x + e.width / 2 + s.scrollX) * s.zoom.value, y: (e.y + e.height / 2 + s.scrollY) * s.zoom.value };
+  });
+  await expect
+    .poll(() =>
+      page.evaluate(({ x, y }) => {
+        const c = document.querySelector("canvas.excalidraw__canvas.static") as HTMLCanvasElement;
+        const dpr = c.width / c.clientWidth;
+        return Array.from(c.getContext("2d")!.getImageData(Math.round(x * dpr), Math.round(y * dpr), 1, 1).data.slice(0, 3));
+      }, center),
+    )
+    .toEqual([201, 42, 42]);
+  // Text is visible too (dark pixels in the text area).
+  await page.screenshot({ path: "test-results/picture-card.png" });
+});
+
+test("new cards never overlap tall picture cards", async ({ page }) => {
+  await ready(page);
+  const ops = Array.from({ length: 6 }, (_, i) => ({
+    op: "upsert",
+    card: { id: `c-m${i}`, type: "topic", title: `M${i}`, summary: "x", state: "filled", childCount: 0, ...(i % 2 ? {} : { imagePending: true }) },
+  }));
+  await call(page, "canvas.applyOps", { portalId: "p-root", ops });
+  const all = await frames(page);
+  for (let i = 0; i < all.length; i++)
+    for (let j = i + 1; j < all.length; j++) {
+      const a = all[i]!;
+      const b = all[j]!;
+      const overlap = a.x < b.x + b.width && b.x < a.x + a.width && a.y < b.y + b.height && b.y < a.y + a.height;
+      expect(overlap, `${a.cardId} overlaps ${b.cardId}`).toBe(false);
+    }
+});
+
+test("card text is actually drawn (not transparent)", async ({ page }) => {
+  await ready(page);
+  const label = await page.evaluate(() =>
+    (window as unknown as { __enjinDebug: { api: { getSceneElements(): { strokeColor: string; customData?: Record<string, string> }[] } } }).__enjinDebug.api
+      .getSceneElements()
+      .filter((e) => e.customData?.role === "label")
+      .map((e) => e.strokeColor),
+  );
+  expect(label.length).toBeGreaterThan(0);
+  expect(label.every((c) => c !== "transparent")).toBe(true);
+});

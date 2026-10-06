@@ -1,9 +1,9 @@
 import { convertToExcalidrawElements } from "@excalidraw/excalidraw";
 import type { ExcalidrawElement } from "@excalidraw/excalidraw/element/types";
 import type { Card } from "../bridge/schema";
-import { CARD_H, CARD_W, type Rect, placeCards } from "./layout";
+import { CARD_H, CARD_W, IMAGE_H, type Rect, coverCrop, placeCards } from "./layout";
 
-export type CardRole = "frame" | "label" | "badge" | "header";
+export type CardRole = "frame" | "image" | "placeholder" | "textbox" | "label" | "badge" | "header";
 export interface EnjinData {
   cardId?: string;
   role: CardRole;
@@ -15,6 +15,8 @@ const STYLE: Record<Card["state"], { bg: string; stroke: "solid" | "dashed" }> =
   filled: { bg: "#fff4e6", stroke: "solid" },
   error: { bg: "#ffe3e3", stroke: "solid" },
 };
+
+const INSET = 10;
 
 export function enjinData(el: { customData?: Record<string, unknown> }): EnjinData | null {
   const d = el.customData as EnjinData | undefined;
@@ -28,14 +30,28 @@ export function cardRects(elements: readonly ExcalidrawElement[]): { cardId: str
     .map((e) => ({ cardId: enjinData(e)!.cardId!, rect: { x: e.x, y: e.y, width: e.width, height: e.height } }));
 }
 
+export function hasPicture(card: Card): boolean {
+  return !!card.image || !!card.imagePending;
+}
+
+export function cardSize(card: Card, width = CARD_W): { width: number; height: number } {
+  return { width, height: hasPicture(card) ? IMAGE_H + CARD_H : CARD_H };
+}
+
 type Skeleton = NonNullable<Parameters<typeof convertToExcalidrawElements>[0]>[number];
 
+
+/**
+ * A card is a group: frame (background + border) → picture area (image or a
+ * placeholder while one is found) → text. Text and pictures are owned by
+ * native and regenerated from it; the kid moves the card as one piece.
+ */
 function cardSkeletons(card: Card, at: Rect): Skeleton[] {
   const style = STYLE[card.state];
-  // Cards move as a unit (group) but their text is never edited in place:
-  // card content is owned by native and regenerated from it.
   const common = { groupIds: [`g:${card.id}`], strokeColor: "#343a40", roughness: 0 } as const;
-  const skeletons: Skeleton[] = [
+  const picture = hasPicture(card);
+  const textTop = picture ? at.y + IMAGE_H : at.y;
+  const out: Skeleton[] = [
     {
       ...common,
       type: "rectangle",
@@ -50,17 +66,61 @@ function cardSkeletons(card: Card, at: Rect): Skeleton[] {
       strokeWidth: 2,
       roundness: { type: 3 },
       customData: { cardId: card.id, role: "frame" },
-      label: {
-        text: `${card.title}\n\n${card.summary}`,
-        fontSize: 20,
-        textAlign: "left",
-        verticalAlign: "top",
-        customData: { cardId: card.id, role: "label" },
-      },
     },
   ];
+  if (picture) {
+    const box = { x: at.x + INSET, y: at.y + INSET, width: at.width - 2 * INSET, height: IMAGE_H - INSET };
+    if (card.image) {
+      const { width: w, height: h } = card.image;
+      out.push({
+        ...common,
+        type: "image",
+        id: `${card.id}:image`,
+        ...box,
+        fileId: card.image.fileId as never,
+        status: "saved",
+        crop: { ...coverCrop(w, h, box.width / box.height), naturalWidth: w, naturalHeight: h },
+        customData: { cardId: card.id, role: "image" },
+      });
+    } else {
+      out.push({
+        ...common,
+        type: "rectangle",
+        id: `${card.id}:placeholder`,
+        ...box,
+        backgroundColor: "#e9ecef",
+        fillStyle: "solid",
+        strokeColor: "transparent",
+        roundness: { type: 3 },
+        customData: { cardId: card.id, role: "placeholder" },
+        label: { text: "finding a picture…", fontSize: 16, strokeColor: "#868e96", customData: { cardId: card.id, role: "label" } } as never,
+      });
+    }
+  }
+  out.push({
+    ...common,
+    type: "rectangle",
+    id: `${card.id}:text`,
+    // A little air between the text and the card's border.
+    x: at.x + 8,
+    y: textTop + 4,
+    width: at.width - 16,
+    height: at.y + at.height - textTop - 8,
+    strokeColor: "transparent",
+    backgroundColor: "transparent",
+    customData: { cardId: card.id, role: "textbox" },
+    label: {
+      text: card.summary ? `${card.title}\n\n${card.summary}` : card.title,
+      // Labels inherit their container's stroke color, which is transparent here.
+      strokeColor: "#1e1e1e",
+      fontSize: 20,
+      textAlign: "left",
+      verticalAlign: "top",
+      customData: { cardId: card.id, role: "label" },
+    },
+  });
   if (card.childCount > 0) {
-    skeletons.push({
+    out.push({
       ...common,
       type: "text",
       id: `${card.id}:badge`,
@@ -72,7 +132,7 @@ function cardSkeletons(card: Card, at: Rect): Skeleton[] {
       customData: { cardId: card.id, role: "badge" },
     });
   }
-  return skeletons;
+  return out;
 }
 
 function headerSkeleton(title: string): Skeleton {
@@ -86,23 +146,25 @@ export interface RenderResult {
 
 /**
  * Apply card upserts/deletes to a scene. Existing cards are regenerated in
- * place (same position and size, same z-order slot); new cards are placed in
- * free space. Everything that isn't a card (kid ink, shapes) is untouched.
+ * place (same position and width, same z-order slot; height follows the
+ * content); new cards are placed in free space. Everything that isn't a card
+ * (kid ink, shapes) is untouched.
  */
 export function renderCards(current: readonly ExcalidrawElement[], upserts: Card[], deletes: string[], header?: string): RenderResult {
-  const rects = new Map(cardRects(current).map((c) => [c.cardId, c.rect]));
+  const existing = new Map(cardRects(current).map((c) => [c.cardId, c.rect]));
   const replaced = new Set([...upserts.map((c) => c.id), ...deletes]);
   const cardOf = (e: ExcalidrawElement) => enjinData(e)?.cardId;
 
-  // Everything that stays, used both as the base and to find free slots.
+  const rects = new Map<string, Rect>();
+  for (const c of upserts) {
+    const old = existing.get(c.id);
+    if (old) rects.set(c.id, { x: old.x, y: old.y, width: old.width, height: cardSize(c, old.width).height });
+  }
   const kept = current.filter((e) => !(cardOf(e) && replaced.has(cardOf(e)!)));
   const fresh = upserts.filter((c) => !rects.has(c.id));
   // Updated cards keep their spot, so it stays occupied; deleted cards free theirs.
-  const occupied = [
-    ...kept.filter((e) => !e.isDeleted).map((e) => ({ x: e.x, y: e.y, width: e.width, height: e.height })),
-    ...upserts.flatMap((c) => (rects.has(c.id) ? [rects.get(c.id)!] : [])),
-  ];
-  const slots = placeCards(fresh.length, occupied);
+  const occupied = [...kept.filter((e) => !e.isDeleted).map((e) => ({ x: e.x, y: e.y, width: e.width, height: e.height })), ...rects.values()];
+  const slots = placeCards(fresh.map((c) => cardSize(c)), occupied);
   fresh.forEach((c, i) => rects.set(c.id, slots[i]!));
 
   const versionOf = new Map(current.map((e) => [e.id, e.version]));

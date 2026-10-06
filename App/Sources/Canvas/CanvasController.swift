@@ -40,6 +40,7 @@ final class CanvasController: NSObject {
         self.telemetry = telemetry
         agent = AgentSession(session: session, backend: settings.makeBackend(), telemetry: telemetry)
         agent.dailyCapUSD = settings.dailyCapUSD
+        agent.imageFinder = settings.makeImageFinder()
 
         let config = WKWebViewConfiguration()
         config.setURLSchemeHandler(SchemeHandler(root: bundle.resourceURL!.appendingPathComponent("canvas-web")), forURLScheme: SchemeHandler.scheme)
@@ -95,6 +96,7 @@ final class CanvasController: NSObject {
     func refreshAgent() {
         agent.backend = settings.makeBackend()
         agent.dailyCapUSD = settings.dailyCapUSD
+        agent.imageFinder = settings.makeImageFinder()
     }
 
     func ask(_ text: String) {
@@ -284,5 +286,9 @@ extension CanvasController: CanvasSink {
 
     func flash(cardId: String) async {
         _ = try? await call("canvas.flash", NativeMethod.CanvasFlash(cardId: cardId))
+    }
+
+    func addFiles(_ files: [BridgeFile]) async {
+        _ = try? await call("canvas.addFiles", NativeMethod.AddFiles(files: files))
     }
 }

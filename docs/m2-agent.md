@@ -27,3 +27,10 @@ Built and tested against a scripted model (no API key available here).
 - [ ] Add a key in Settings (gear in the library). Run the worked example: "Roman Empire" → dive "Legions" → "why did Rome win so much?" Record turn latency and cost from `telemetry.jsonl` (Application Support).
 - [ ] Choose the default model from those numbers.
 - [ ] Build the 25-prompt eval set (plan §8) once real turns can be run.
+
+## Live cards and pictures (added 2026-10-06)
+- **Cards build on screen while Enjin writes.** `createCards` input streams in (`eager_input_streaming`) and is parsed as partial JSON (`PartialJSON`). Each card appears as soon as its title exists, and its summary types in at about 8 updates per second. The finished card keeps the preview's id and position, so nothing jumps. Previews from a cancelled turn, or ones dropped by the caps, are removed.
+- **Pictures.** The model gives filled cards an `image` phrase. `WikimediaImages` searches Wikipedia, takes the lead image of the best-matching article (`pilicense=free`, at least 160px), and records attribution (artist and license from Commons). It skips pictures already used in the notebook and screens title, file name, description and Commons categories against a word blocklist. Live check (`ENJIN_LIVE=1 swift test --filter LiveWikimedia`): Roman legionary, Colosseum, Via Appia and testudo all found.
+- On the canvas, picture cards reserve their space with a "finding a picture…" placeholder, so arriving images never push other cards around. Images are cover-cropped (portraits keep their upper part) and new cards are placed masonry-style.
+- Images are saved in `notebooks/<id>/files/`, sent to the canvas as data URLs (`canvas.addFiles`, `PortalScene.files`), and shown large in the card's detail sheet with credit, a "About this picture" link, and the card's sources.
+- Parents can turn pictures off in Settings.

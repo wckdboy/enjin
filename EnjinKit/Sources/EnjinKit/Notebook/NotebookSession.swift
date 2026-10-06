@@ -7,6 +7,7 @@ public final class NotebookSession {
     public private(set) var data: NotebookData
     public let store: NotebookStore
     private var scenes: [String: [JSONValue]] = [:]
+    private var fileCache: [String: BridgeFile] = [:]
     private let clock: @Sendable () -> Date
 
     /// What the kid did since the agent last looked (plan §5.2 #4). Capped; the agent drains it.
@@ -109,7 +110,42 @@ public final class NotebookSession {
 
     public func bridgeCard(_ c: StoredCard) -> Card {
         let childCount = data.portals.first { $0.ownerCardId == c.id }.map { activeCards(in: $0.portalId).count } ?? 0
-        return Card(id: c.id, type: c.type, title: c.title, summary: c.summary, state: c.state, childCount: childCount)
+        return Card(id: c.id, type: c.type, title: c.title, summary: c.summary, state: c.state, childCount: childCount,
+                    image: c.image.map { CardImageRef(fileId: $0.fileId, width: $0.width, height: $0.height) },
+                    imagePending: c.image == nil && c.imageQuery != nil ? true : nil)
+    }
+
+    /// The image file for the canvas, from cache or disk.
+    public func bridgeFile(_ image: CardImage) async -> BridgeFile? {
+        if let f = fileCache[image.fileId] { return f }
+        guard let data = await store.file(id, fileId: image.fileId) else { return nil }
+        let f = BridgeFile(id: image.fileId, mimeType: image.mimeType, dataURL: "data:\(image.mimeType);base64,\(data.base64EncodedString())")
+        fileCache[image.fileId] = f
+        return f
+    }
+
+    public func files(in portalId: String) async -> [BridgeFile] {
+        var out: [BridgeFile] = []
+        for c in activeCards(in: portalId) {
+            if let img = c.image, let f = await bridgeFile(img) { out.append(f) }
+        }
+        return out
+    }
+
+    /// Store a found picture and put it on the card.
+    public func attachImage(_ cardId: String, data bytes: Data, image: CardImage) async throws -> StoredCard? {
+        try await store.saveFile(id, fileId: image.fileId, data: bytes)
+        fileCache[image.fileId] = BridgeFile(id: image.fileId, mimeType: image.mimeType,
+                                             dataURL: "data:\(image.mimeType);base64,\(bytes.base64EncodedString())")
+        return try await updateCard(cardId, by: .agent) {
+            $0.image = image
+            $0.imageQuery = nil
+        }
+    }
+
+    /// Picture URLs already used in this notebook, so cards don't repeat each other.
+    public var usedImageSources: Set<String> {
+        Set(data.cards.compactMap { $0.image?.sourceURL })
     }
 
     public func scene(for portalId: String) async throws -> PortalScene? {
@@ -121,8 +157,9 @@ public final class NotebookSession {
             elements = try await store.scene(id, portalId: portalId)
             scenes[portalId] = elements
         }
+        let files = await files(in: portalId)
         return PortalScene(portalId: p.portalId, title: p.title, path: path(to: portalId),
-                           cards: activeCards(in: portalId).map(bridgeCard), elements: elements)
+                           cards: activeCards(in: portalId).map(bridgeCard), elements: elements, files: files.isEmpty ? nil : files)
     }
 
     // MARK: - Navigation
@@ -189,11 +226,14 @@ public final class NotebookSession {
         return changed
     }
 
-    public func createCard(in portalId: String, type: CardType, title: String, summary: String, body: String? = nil,
-                           state: CardState = .filled, author: Author, turnId: String? = nil, sources: [Source]? = nil) async throws -> StoredCard {
+    public func createCard(id cardId: String? = nil, in portalId: String, type: CardType, title: String, summary: String, body: String? = nil,
+                           state: CardState = .filled, author: Author, turnId: String? = nil, sources: [Source]? = nil,
+                           imageQuery: String? = nil) async throws -> StoredCard {
         var card = StoredCard(portalId: portalId, type: type, title: title, summary: summary, body: body, state: state,
                               createdBy: author, createdByTurnId: turnId, now: clock())
+        if let cardId { card.id = cardId }
         card.sources = sources
+        card.imageQuery = imageQuery
         data.cards.append(card)
         if author == .kid { logChange(.init(portalId: portalId, kind: .createdCard(title: title))) }
         try await store.saveCards(id, data.cards)

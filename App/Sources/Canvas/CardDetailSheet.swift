@@ -1,5 +1,6 @@
 import EnjinKit
 import SwiftUI
+import UIKit
 
 struct IdentifiedString: Identifiable {
     let id: String
@@ -12,15 +13,19 @@ struct CardDetailSheet: View {
     let card: StoredCard
     let onSave: (String, String, String?) -> Void
     let onDive: (() -> Void)?
+    var loadImage: ((CardImage) async -> UIImage?)?
+    @State private var picture: UIImage?
 
     @State private var title: String
     @State private var summary: String
     @State private var bodyText: String
 
-    init(card: StoredCard, onSave: @escaping (String, String, String?) -> Void, onDive: (() -> Void)?) {
+    init(card: StoredCard, onSave: @escaping (String, String, String?) -> Void, onDive: (() -> Void)?,
+         loadImage: ((CardImage) async -> UIImage?)? = nil) {
         self.card = card
         self.onSave = onSave
         self.onDive = onDive
+        self.loadImage = loadImage
         _title = State(initialValue: card.title)
         _summary = State(initialValue: card.summary)
         _bodyText = State(initialValue: card.body ?? "")
@@ -36,6 +41,23 @@ struct CardDetailSheet: View {
     var body: some View {
         NavigationStack {
             Form {
+                if let picture {
+                    Section {
+                        Image(uiImage: picture)
+                            .resizable()
+                            .scaledToFit()
+                            .frame(maxWidth: .infinity, maxHeight: 320)
+                            .clipShape(.rect(cornerRadius: 12))
+                            .accessibilityLabel("Picture for \(card.title)")
+                        if let credit = card.image?.credit {
+                            Text("Picture: \(credit)").font(.caption).foregroundStyle(.secondary)
+                        }
+                        if let url = card.image?.sourceURL.flatMap(URL.init(string:)) {
+                            Link("About this picture", destination: url).font(.caption)
+                        }
+                    }
+                    .listRowBackground(Color.clear)
+                }
                 if editable {
                     TextField("Title", text: $title)
                         .font(.title2.weight(.semibold))
@@ -50,6 +72,13 @@ struct CardDetailSheet: View {
                         if let body = card.body, !body.isEmpty { Text(body) }
                     }
                 }
+                if let sources = card.sources, !sources.isEmpty {
+                    Section("Sources") {
+                        ForEach(sources, id: \.url) { s in
+                            if let url = URL(string: s.url) { Link(s.title, destination: url) } else { Text(s.title) }
+                        }
+                    }
+                }
                 Section("Where this came from") {
                     LabeledContent("Made by", value: card.createdBy == .kid ? "You" : "Enjin")
                     LabeledContent("Created", value: card.createdAt.formatted(date: .abbreviated, time: .shortened))
@@ -62,6 +91,9 @@ struct CardDetailSheet: View {
                         Button("Dive in", systemImage: "arrow.down.right.circle", action: onDive)
                     }
                 }
+            }
+            .task {
+                if let image = card.image, let loadImage { picture = await loadImage(image) }
             }
             .navigationTitle(card.type == .note ? "Note" : "Card")
             .navigationBarTitleDisplayMode(.inline)

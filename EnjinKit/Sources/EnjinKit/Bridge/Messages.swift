@@ -10,6 +10,13 @@ public let bridgeProtocolVersion = 1
 public enum CardType: String, Codable, Sendable { case topic, source, image, note }
 public enum CardState: String, Codable, Sendable { case stub, filling, filled, error }
 
+public struct CardImageRef: Codable, Equatable, Sendable {
+    public var fileId: String
+    public var width: Int
+    public var height: Int
+    public init(fileId: String, width: Int, height: Int) { self.fileId = fileId; self.width = width; self.height = height }
+}
+
 public struct Card: Codable, Equatable, Sendable, Identifiable {
     public var id: String
     public var type: CardType
@@ -17,10 +24,23 @@ public struct Card: Codable, Equatable, Sendable, Identifiable {
     public var summary: String
     public var state: CardState
     public var childCount: Int
+    public var image: CardImageRef?
+    /// Reserve room for a picture that's still being found.
+    public var imagePending: Bool?
 
-    public init(id: String, type: CardType, title: String, summary: String, state: CardState, childCount: Int) {
+    public init(id: String, type: CardType, title: String, summary: String, state: CardState, childCount: Int,
+                image: CardImageRef? = nil, imagePending: Bool? = nil) {
         self.id = id; self.type = type; self.title = title; self.summary = summary; self.state = state; self.childCount = childCount
+        self.image = image; self.imagePending = imagePending
     }
+}
+
+/// An image file for the canvas, as a data URL (Excalidraw's BinaryFileData).
+public struct BridgeFile: Codable, Equatable, Sendable {
+    public var id: String
+    public var mimeType: String
+    public var dataURL: String
+    public init(id: String, mimeType: String, dataURL: String) { self.id = id; self.mimeType = mimeType; self.dataURL = dataURL }
 }
 
 public struct Crumb: Codable, Equatable, Sendable, Hashable {
@@ -34,6 +54,8 @@ public struct PortalScene: Codable, Equatable, Sendable {
     public var path: [Crumb]
     public var cards: [Card]
     public var elements: [JSONValue]
+    /// Images the cards in this portal use.
+    public var files: [BridgeFile]?
 }
 
 public enum Transition: String, Codable, Sendable { case dive, exit, jump }
@@ -116,6 +138,11 @@ public enum NativeMethod {
 
     public struct ApplyOpsResult: Codable, Sendable {
         public var placed: [PlacedCard]
+    }
+
+    public struct AddFiles: Codable, Sendable {
+        public var files: [BridgeFile]
+        public init(files: [BridgeFile]) { self.files = files }
     }
 
     public struct CanvasFrame: Codable, Sendable {

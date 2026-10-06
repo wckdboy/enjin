@@ -18,6 +18,22 @@ public struct Source: Codable, Equatable, Sendable, Hashable {
     public init(title: String, url: String) { self.title = title; self.url = url }
 }
 
+/// A picture on a card. Bytes live in the notebook's files/ folder.
+public struct CardImage: Codable, Equatable, Sendable {
+    public var fileId: String
+    public var mimeType: String
+    public var width: Int
+    public var height: Int
+    /// Attribution shown in the card's detail sheet, e.g. "Jane Doe · CC BY-SA 4.0".
+    public var credit: String?
+    /// Where the picture came from (its Wikimedia Commons page).
+    public var sourceURL: String?
+
+    public init(fileId: String, mimeType: String, width: Int, height: Int, credit: String? = nil, sourceURL: String? = nil) {
+        self.fileId = fileId; self.mimeType = mimeType; self.width = width; self.height = height; self.credit = credit; self.sourceURL = sourceURL
+    }
+}
+
 /// Native source of truth for a card's meaning. Geometry lives in the portal's scene.
 public struct StoredCard: Codable, Equatable, Sendable, Identifiable {
     public var id: String
@@ -38,6 +54,9 @@ public struct StoredCard: Codable, Equatable, Sendable, Identifiable {
     /// Removed on purpose (undo of an agent turn). Unlike a canvas delete, a
     /// late canvas save that still shows the card must not bring it back.
     public var removed: Bool?
+    public var image: CardImage?
+    /// A picture is being looked for with this phrase; cleared when found or given up.
+    public var imageQuery: String?
 
     public var isActive: Bool { deletedAt == nil }
 

@@ -32,15 +32,28 @@
           "title": "Why Rome won so much",
           "summary": "Organisation.",
           "state": "filled",
-          "childCount": 3
+          "childCount": 3,
+          "image": {
+            "fileId": "img-1",
+            "width": 800,
+            "height": 533
+          }
         },
         {
           "id": "c-equipment",
           "type": "topic",
           "title": "Equipment",
           "summary": "Gladius, pilum.",
-          "state": "stub",
-          "childCount": 0
+          "state": "filling",
+          "childCount": 0,
+          "imagePending": true
+        }
+      ],
+      "files": [
+        {
+          "id": "img-1",
+          "mimeType": "image/png",
+          "dataURL": "data:image/png;base64,iVBORw0KGgo="
         }
       ],
       "elements": [

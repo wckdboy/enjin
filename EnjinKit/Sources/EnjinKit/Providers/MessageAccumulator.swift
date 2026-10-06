@@ -5,6 +5,8 @@ public enum ProviderEvent: Equatable, Sendable {
     case textDelta(String)
     /// A client tool call, complete and parsed. `input` is nil if the JSON was invalid.
     case toolUse(id: String, name: String, input: JSONValue?, raw: String)
+    /// A client tool's input so far, while it streams (raw partial JSON).
+    case toolInputProgress(id: String, name: String, partial: String)
     case serverToolUse(name: String, input: JSONValue)
     case webSearchResults([WebResult])
     case webSearchError(String)
@@ -66,6 +68,9 @@ public struct MessageAccumulator: Sendable {
                 out.append(.textDelta(t))
             case "input_json_delta":
                 partialJSON[index, default: ""] += delta["partial_json"]?.stringValue ?? ""
+                if block["type"]?.stringValue == "tool_use" {
+                    out.append(.toolInputProgress(id: block["id"]?.stringValue ?? "", name: block["name"]?.stringValue ?? "", partial: partialJSON[index] ?? ""))
+                }
             case "thinking_delta":
                 block["thinking"] = .string((block["thinking"]?.stringValue ?? "") + (delta["thinking"]?.stringValue ?? ""))
             case "signature_delta":

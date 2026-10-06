@@ -61,8 +61,10 @@ final class ScriptedBackend: AgentBackend, @unchecked Sendable {
 final class FakeCanvas: CanvasSink {
     var ops: [(String, [CardOp])] = []
     var flashed: [String] = []
+    var files: [BridgeFile] = []
     func apply(portalId: String, ops: [CardOp]) async { self.ops.append((portalId, ops)) }
     func flash(cardId: String) async { flashed.append(cardId) }
+    func addFiles(_ files: [BridgeFile]) async { self.files += files }
 }
 
 func card(_ title: String, stub: Bool = false, sources: [String]? = nil) -> JSONValue {

@@ -106,6 +106,16 @@ public actor NotebookStore {
         try write(elements, key: "elements", to: sceneURL(id, portalId))
     }
 
+    // MARK: - Binary files (card images)
+
+    public func saveFile(_ id: String, fileId: String, data: Data) throws {
+        try Self.atomicWrite(data, to: dir(id).appendingPathComponent("files", isDirectory: true).appendingPathComponent(fileId))
+    }
+
+    public func file(_ id: String, fileId: String) -> Data? {
+        try? Data(contentsOf: dir(id).appendingPathComponent("files", isDirectory: true).appendingPathComponent(fileId))
+    }
+
     // MARK: - Files
 
     private func dir(_ id: String) -> URL { root.appendingPathComponent(id, isDirectory: true) }
