@@ -99,3 +99,38 @@ export function nearestToCenter<T extends { rect: Rect }>(items: T[], vp: Viewpo
 export function containsPoint(rect: Rect, x: number, y: number): boolean {
   return x >= rect.x && x <= rect.x + rect.width && y >= rect.y && y <= rect.y + rect.height;
 }
+
+// ---------- dive geometry ----------
+//
+// Diving zooms the camera into a "window" inside the card (a rect with the
+// screen's aspect ratio). The child portal's framed view is drawn into that
+// window, so when the window fills the screen the child scene can be swapped
+// in at exactly the same pixels: no fade, no pop.
+
+/** Largest rect with `aspect` (w/h) centered inside `card`, inset by `margin` x its short side. */
+export function windowIn(card: Rect, aspect: number, margin = 0.06): Rect {
+  const inset = Math.min(card.width, card.height) * margin;
+  const inner = { x: card.x + inset, y: card.y + inset, width: card.width - 2 * inset, height: card.height - 2 * inset };
+  const w = inner.width / inner.height > aspect ? inner.height * aspect : inner.width;
+  const h = w / aspect;
+  return { x: inner.x + (inner.width - w) / 2, y: inner.y + (inner.height - h) / 2, width: w, height: h };
+}
+
+/** The scene rect visible when `content` is framed by fitZoom in a viewW x viewH view. */
+export function framedRect(content: Rect, viewW: number, viewH: number, padding = 0.08): Rect {
+  const z = fitZoom(content, viewW, viewH, padding);
+  const w = viewW / z;
+  const h = viewH / z;
+  return { x: content.x + content.width / 2 - w / 2, y: content.y + content.height / 2 - h / 2, width: w, height: h };
+}
+
+/** Map `r` from the `from` rect's space into the `to` rect's space (uniform scale; same aspect). */
+export function mapRect(r: Rect, from: Rect, to: Rect): Rect {
+  const s = to.width / from.width;
+  return { x: to.x + (r.x - from.x) * s, y: to.y + (r.y - from.y) * s, width: r.width * s, height: r.height * s };
+}
+
+/** The scene rect currently on screen. */
+export function visibleRect(vp: Viewport): Rect {
+  return { x: -vp.scrollX, y: -vp.scrollY, width: vp.width / vp.zoom, height: vp.height / vp.zoom };
+}

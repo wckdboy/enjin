@@ -2,3 +2,6 @@ html, body, #root { margin: 0; height: 100%; overflow: hidden; overscroll-behavi
 body { background: #fffdf8; -webkit-user-select: none; user-select: none; -webkit-touch-callout: none; }
 .stage { position: fixed; inset: 0; transform-origin: 50% 50%; will-change: transform, opacity; }
 .fatal { padding: 48px; font: 18px -apple-system, system-ui, sans-serif; color: #c92a2a; }
+
+/* Cards are styled by Enjin, not by hand: no style panel when only cards are selected. */
+[data-card-selection] .excalidraw .selected-shape-actions { display: none !important; }

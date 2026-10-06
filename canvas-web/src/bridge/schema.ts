@@ -118,6 +118,11 @@ export const webToNative = {
     }),
     result: Null,
   },
+  "card.open": {
+    /** Kid tapped the card's Open action: show its detail sheet. */
+    params: z.object({ cardId: z.string() }),
+    result: Null,
+  },
   "selection.changed": {
     /** Cards whose frame is selected (a card is selected as a group). */
     params: z.object({ portalId: z.string(), cardIds: z.array(z.string()) }),

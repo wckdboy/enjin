@@ -14,6 +14,8 @@ final class CanvasController: NSObject {
     private(set) var focusedCardId: String?
     /// The single selected card, if exactly one is selected.
     private(set) var selectedCardId: String?
+    /// Card whose detail sheet should be showing (set by the card's Open action).
+    var openCardId: String?
     /// Last ink handoff time (stroke end -> rendered on canvas), for the spike HUD.
     var lastInkHandoffMs: Double?
 
@@ -150,7 +152,8 @@ final class CanvasController: NSObject {
                 path = scene.path
                 selectedCardId = nil
                 didEnter(scene, via: cardId)
-                try await call("portal.load", NativeMethod.PortalLoad(scene: scene, transition: .dive))
+                // focusCardId tells the canvas which card to zoom through.
+                try await call("portal.load", NativeMethod.PortalLoad(scene: scene, transition: .dive, focusCardId: cardId))
             } catch {
                 log.error("dive failed: \(error)")
             }
@@ -212,6 +215,10 @@ final class CanvasController: NSObject {
                 focusedCardId = p.cardId
                 focusChanged(to: p.cardId)
             }
+            return Empty()
+        }
+        router.on("card.open", WebMethod.CardOpen.self) { [weak self] p in
+            self?.openCardId = p.cardId
             return Empty()
         }
         router.on("selection.changed", WebMethod.SelectionChanged.self) { [weak self] p in

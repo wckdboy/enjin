@@ -299,3 +299,49 @@ test("canvas.frame eases onto a card without diving", async ({ page }) => {
   const after = await page.evaluate(() => (window as unknown as { __enjinDebug: Debug }).__enjinDebug.api.getAppState().zoom.value);
   expect(after).toBeLessThanOrEqual(before * 1.2 + 1e-6);
 });
+
+test("selecting a card shows Open and Dive in right on the card", async ({ page }) => {
+  await ready(page);
+  const p = await cardCenter(page, "c-legions");
+  await page.touchscreen.tap(p.x, p.y);
+  const pill = page.locator("[data-enjin=card-actions]");
+  await expect(pill).toBeVisible();
+  const box = (await pill.boundingBox())!;
+  expect(Math.abs(box.x + box.width / 2 - p.x)).toBeLessThan(200); // over the card, not somewhere else
+
+  await pill.getByRole("button", { name: "Open" }).dispatchEvent("pointerup");
+  await expect
+    .poll(() => page.evaluate(() => (window as unknown as { __devLog: { method: string; params: { cardId?: string } }[] }).__devLog.filter((r) => r.method === "card.open").map((r) => r.params.cardId)))
+    .toEqual(["c-legions"]);
+
+  await pill.getByRole("button", { name: "Dive in" }).dispatchEvent("pointerup");
+  await expect.poll(() => portalId(page)).toBe("p-legions");
+  await expect(pill).toBeHidden();
+});
+
+test("notes get Open but no Dive in", async ({ page }) => {
+  await ready(page);
+  await call(page, "canvas.applyOps", { portalId: "p-root", ops: [{ op: "upsert", card: { id: "c-note", type: "note", title: "My note", summary: "hi", state: "filled", childCount: 0 } }] });
+  const p = await cardCenter(page, "c-note");
+  await page.touchscreen.tap(p.x, p.y);
+  const pill = page.locator("[data-enjin=card-actions]");
+  await expect(pill.getByRole("button", { name: "Open" })).toBeVisible();
+  await expect(pill.getByRole("button", { name: "Dive in" })).toBeHidden();
+});
+
+test("selecting a card doesn't open Excalidraw's style panel; selecting a drawing does", async ({ page }) => {
+  await ready(page);
+  const p = await cardCenter(page, "c-roads");
+  await page.touchscreen.tap(p.x, p.y);
+  await expect(page.locator("[data-enjin=card-actions]")).toBeVisible();
+  await expect(page.getByText("Sloppiness")).toBeHidden();
+
+  await call(page, "ink.commit", { strokeId: "s", tool: "pen", color: "#000", width: 3, points: [[300, 1100], [420, 1150]], pressures: [] });
+  await page.evaluate(() => {
+    const { api } = (window as unknown as { __enjinDebug: { api: { getSceneElements(): { id: string; type: string }[]; updateScene(u: unknown): void } } }).__enjinDebug;
+    const ink = api.getSceneElements().find((e) => e.type === "freedraw")!;
+    api.updateScene({ appState: { selectedElementIds: { [ink.id]: true } } });
+  });
+  await expect(page.locator("[data-enjin=card-actions]")).toBeHidden();
+  await expect(page.getByText("Stroke").first()).toBeVisible();
+});

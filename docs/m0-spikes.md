@@ -40,6 +40,15 @@ Fallback if these fail: Excalidraw's built-in freedraw with Pencil pointer event
 
 ## 3. Portals — ⏳ needs a kid's opinion
 
+**Update (2026-10-06):** the fade-and-pop transition read as changing pages. It has been replaced by a continuous zoom:
+- The camera flies into a window inside the card (with the screen's aspect ratio). The child portal, pre-rendered with `exportToCanvas` into exactly its framed view, fades in inside that window. When the window fills the screen, the real scene swaps in at the same pixels (measured mean difference 0.34/255).
+- Exit is the reverse: the current child view shrinks back into the card's window while the parent pulls into view.
+- Camera flights are anchored on the card. Its screen position moves in a straight line while zoom changes geometrically, so it never swings around.
+- The preview sits between Excalidraw's canvases and its UI, so toolbars never blink.
+- Selecting a card shows a small "Dive in / Open" pill on the card itself, instead of a floating button and Excalidraw's style panel.
+
+Original notes:
+
 Built: three nested portals (Roman Empire › Legions › Why Rome won so much › Logistics).
 - Dive in by pinching a topic card until it fills about 80% of the screen (you must also be zoomed in at least 1.3× past the fitted view), or by double-tapping it.
 - Pinching out below 55% of the fitted zoom exits to the parent portal.

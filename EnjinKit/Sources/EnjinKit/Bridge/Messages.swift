@@ -159,6 +159,10 @@ public enum WebMethod {
         public var visibleCardIds: [String]
     }
 
+    public struct CardOpen: Codable, Sendable {
+        public var cardId: String
+    }
+
     public struct SelectionChanged: Codable, Sendable {
         public var portalId: String
         public var cardIds: [String]

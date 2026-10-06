@@ -31,3 +31,37 @@ describe("viewport math", () => {
     expect(viewCoverage({ x: -50, y: 0, width: 100, height: 100 }, vp)).toBeCloseTo(0.5);
   });
 });
+
+import { framedRect, mapRect, visibleRect, windowIn } from "../src/cards/layout";
+
+describe("dive geometry", () => {
+  const card = { x: 100, y: 200, width: 320, height: 180 };
+  it("windowIn keeps the screen aspect and stays inside the card", () => {
+    for (const aspect of [834 / 1194, 1194 / 834, 1]) {
+      const w = windowIn(card, aspect);
+      expect(w.width / w.height).toBeCloseTo(aspect);
+      expect(w.x).toBeGreaterThanOrEqual(card.x);
+      expect(w.y).toBeGreaterThanOrEqual(card.y);
+      expect(w.x + w.width).toBeLessThanOrEqual(card.x + card.width + 1e-9);
+      expect(w.y + w.height).toBeLessThanOrEqual(card.y + card.height + 1e-9);
+    }
+  });
+  it("framedRect is exactly what centerOn+fitZoom shows", () => {
+    const content = { x: 0, y: 0, width: 1100, height: 600 };
+    const f = framedRect(content, 834, 1194);
+    const z = 834 / f.width;
+    const vp = { ...centerOn(content, z, 834, 1194), width: 834, height: 1194 };
+    const v = visibleRect(vp);
+    expect(v.x).toBeCloseTo(f.x);
+    expect(v.y).toBeCloseTo(f.y);
+    expect(v.width).toBeCloseTo(f.width);
+    expect(v.height).toBeCloseTo(f.height);
+  });
+  it("mapRect maps the whole source onto the target", () => {
+    const from = { x: -50, y: -100, width: 1000, height: 1432 };
+    const to = windowIn(card, 1000 / 1432);
+    expect(mapRect(from, from, to)).toEqual(to);
+    const inner = mapRect({ x: 450, y: 616, width: 0, height: 0 }, from, to);
+    expect(inner.x).toBeCloseTo(to.x + to.width / 2);
+  });
+});

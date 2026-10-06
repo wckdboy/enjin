@@ -9,7 +9,6 @@ struct CanvasScreen: View {
     @State private var showAgentSpike = false
     @State private var showMap = false
     @State private var showNewCard = false
-    @State private var openCardId: String?
     @State private var showSettings = false
 
     var body: some View {
@@ -47,15 +46,6 @@ struct CanvasScreen: View {
                     // The canvas runs under the home indicator; the keyboard must not resize it.
                     .ignoresSafeArea(.all, edges: .bottom)
                 VStack(spacing: 10) {
-                    if let id = controller.selectedCardId, let card = controller.session.card(id) {
-                        Button { openCardId = id } label: {
-                            Label("Open “\(card.title)”", systemImage: "rectangle.portrait.and.arrow.forward")
-                                .lineLimit(1)
-                        }
-                        .buttonStyle(.borderedProminent)
-                        .controlSize(.large)
-                        .transition(.move(edge: .bottom).combined(with: .opacity))
-                    }
                     if controller.status == .ready {
                         AgentDock(agent: controller.agent, onAsk: controller.ask, onGoToSuggestion: controller.goToSuggestion)
                     }
@@ -86,12 +76,11 @@ struct CanvasScreen: View {
                 controller.jump(to: portalId)
             }
         }
-        .animation(.snappy, value: controller.selectedCardId)
-        .sheet(item: Binding(get: { openCardId.map(IdentifiedString.init) }, set: { openCardId = $0?.id })) { item in
+        .sheet(item: Binding(get: { controller.openCardId.map(IdentifiedString.init) }, set: { controller.openCardId = $0?.id })) { item in
             if let card = controller.session.card(item.id) {
                 CardDetailSheet(card: card,
                                 onSave: { t, s, b in Task { await controller.updateCard(card.id, title: t, summary: s, body: b) } },
-                                onDive: card.type == .topic ? { openCardId = nil; controller.dive(into: card.id) } : nil)
+                                onDive: card.type == .topic ? { controller.openCardId = nil; controller.dive(into: card.id) } : nil)
             }
         }
         .sheet(isPresented: $showNewCard) {

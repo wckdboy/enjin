@@ -42,6 +42,7 @@ export const examples: Record<string, { direction: "nativeToWeb" | "webToNative"
   "canvas.ready": { direction: "webToNative", params: { protocolVersion: PROTOCOL_VERSION, excalidrawVersion: "0.18.1" }, result: { accepted: true } },
   "canvas.changed": { direction: "webToNative", params: { portalId: "p-legions", elements: scene.elements }, result: null },
   "focus.changed": { direction: "webToNative", params: { portalId: "p-legions", cardId: null, zoom: 1.25, visibleCardIds: ["c-why-won"] }, result: null },
+  "card.open": { direction: "webToNative", params: { cardId: "c-why-won" }, result: null },
   "selection.changed": { direction: "webToNative", params: { portalId: "p-legions", cardIds: ["c-why-won"] }, result: null },
   "portal.enter": { direction: "webToNative", params: { portalId: "p-root", cardId: "c-legions" }, result: scene },
   "portal.exit": { direction: "webToNative", params: { portalId: "p-legions" }, result: { scene, focusCardId: "c-legions" } },

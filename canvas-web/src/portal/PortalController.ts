@@ -1,18 +1,24 @@
-import { CaptureUpdateAction, getSceneVersion, newElementWith, restoreElements, viewportCoordsToSceneCoords } from "@excalidraw/excalidraw";
+import { CaptureUpdateAction, exportToCanvas, getSceneVersion, newElementWith, restoreElements, viewportCoordsToSceneCoords } from "@excalidraw/excalidraw";
 import type { ExcalidrawElement, NonDeletedExcalidrawElement } from "@excalidraw/excalidraw/element/types";
 import type { ExcalidrawImperativeAPI } from "@excalidraw/excalidraw/types";
 import type { Bridge } from "../bridge/client";
 import type { Card, Params, NativeToWeb, PortalScene, Result } from "../bridge/schema";
 import { buildPortalElements, cardRects, renderCards } from "../cards/render";
-import { type Rect, type Viewport, centerOn, containsPoint, fitZoom, nearestToCenter, toView, union } from "../cards/layout";
+import { type Rect, type Viewport, centerOn, containsPoint, fitZoom, framedRect, mapRect, nearestToCenter, toView, union, visibleRect, windowIn } from "../cards/layout";
 import type { InputGate } from "../inputGate";
 import { cssTransition, nextPaint, setStyleNow, tween } from "./animate";
+import { CardActions } from "./CardActions";
+import { PreviewOverlay } from "./PreviewOverlay";
 
 /** A card this big on screen (fraction of view width or height) dives in. */
 const DIVE_AT = 0.8;
 /** Zooming out below this fraction of the portal's fitted zoom exits to the parent. */
 const EXIT_AT = 0.55;
 const DOUBLE_TAP_MS = 300;
+/** Dive/exit camera flight. Long enough to read as a zoom, short enough to feel instant. */
+const DIVE_MS = 620;
+const EXIT_MS = 620;
+const BACKGROUND = "#fffdf8";
 const DOUBLE_TAP_PX = 30;
 
 type Zoom = { value: number };
@@ -30,6 +36,12 @@ export class PortalController {
   private focusTimer: number | undefined;
   private lastTap: { t: number; x: number; y: number } | null = null;
   private unsubs: (() => void)[] = [];
+  private overlay = new PreviewOverlay();
+  private actions = new CardActions({
+    open: (cardId) => this.bridge.notify("card.open", { cardId }),
+    dive: (cardId) => void this.requestDive(cardId),
+  });
+  private selectedCardId: string | null = null;
 
   constructor(
     private api: ExcalidrawImperativeAPI,
@@ -62,15 +74,15 @@ export class PortalController {
     this.flushChanges();
     this.transitioning = true;
     this.gate.block("transition");
+    this.positionActions();
     try {
-      await this.loadingInto(scene.portalId, async () => {
-        if (transition === "dive") await this.diveIn(scene);
-        else if (transition === "exit") await this.exitTo(scene, focusCardId);
-        else await this.jumpTo(scene, focusCardId);
-      });
+      if (transition === "dive" && focusCardId && this.scene) await this.diveThrough(focusCardId, Promise.resolve(scene));
+      else if (transition === "exit" && this.scene) await this.exitThrough(scene, focusCardId);
+      else await this.loadingInto(scene.portalId, () => this.fadeTo(scene, focusCardId));
     } finally {
       this.transitioning = false;
       this.gate.unblock("transition");
+      this.positionActions();
     }
   }
 
@@ -92,7 +104,7 @@ export class PortalController {
     const vp = this.viewport();
     // Fit the card comfortably, but never zoom in far enough to trigger a dive.
     const z = Math.min(fitZoom(c.rect, vp.width, vp.height, 0.3), this.fittedZoom * 1.2);
-    void this.flyTo(c.rect, z, 450);
+    void this.flyToRect(c.rect, z, 450);
     return { framed: true };
   }
 
@@ -148,36 +160,56 @@ export class PortalController {
     });
   }
 
-  /** Animate the camera so `rect` is centered at `zoom`. Interpolates in scene space so the motion feels like a camera move. */
-  private async flyTo(rect: Rect, zoom: number, ms: number): Promise<void> {
+  /**
+   * Animate the camera to `target`. Zoom is interpolated geometrically (equal
+   * ratios per frame read as constant speed) and `anchor` (a scene point, the
+   * thing the eye is on) moves in a straight line on screen from where it is
+   * now to where it ends up. Anchoring on the card you're entering or leaving
+   * keeps it under your eye instead of swinging around.
+   */
+  private async flyTo(target: { scrollX: number; scrollY: number; zoom: number }, anchor: { x: number; y: number }, ms: number,
+                      onStep?: (t: number, vp: Viewport) => void): Promise<void> {
     const vp = this.viewport();
-    const fromCx = vp.width / (2 * vp.zoom) - vp.scrollX;
-    const fromCy = vp.height / (2 * vp.zoom) - vp.scrollY;
-    const toCx = rect.x + rect.width / 2;
-    const toCy = rect.y + rect.height / 2;
-    // Interpolate zoom geometrically: equal ratios per frame feel linear to the eye.
+    const s0 = { x: (anchor.x + vp.scrollX) * vp.zoom, y: (anchor.y + vp.scrollY) * vp.zoom };
+    const s1 = { x: (anchor.x + target.scrollX) * target.zoom, y: (anchor.y + target.scrollY) * target.zoom };
     const lz0 = Math.log(vp.zoom);
-    const lz1 = Math.log(zoom);
+    const lz1 = Math.log(target.zoom);
     await tween(ms, (t) => {
       const z = Math.exp(lz0 + (lz1 - lz0) * t);
-      const c = { x: fromCx + (toCx - fromCx) * t, y: fromCy + (toCy - fromCy) * t, width: 0, height: 0 };
-      this.setViewport(centerOn(c, z, vp.width, vp.height));
+      const sx = s0.x + (s1.x - s0.x) * t;
+      const sy = s0.y + (s1.y - s0.y) * t;
+      const next = { zoom: z, scrollX: sx / z - anchor.x, scrollY: sy / z - anchor.y };
+      this.setViewport(next);
+      onStep?.(t, { ...next, width: vp.width, height: vp.height });
     });
   }
 
+  /** Fly so `rect` ends centered at `zoom`, anchored on its center. */
+  private flyToRect(rect: Rect, zoom: number, ms: number, onStep?: (t: number, vp: Viewport) => void): Promise<void> {
+    const vp = this.viewport();
+    return this.flyTo(centerOn(rect, zoom, vp.width, vp.height), center(rect), ms, onStep);
+  }
+
+  private static bounds(els: readonly ExcalidrawElement[]): Rect {
+    return union(els.filter((e) => !e.isDeleted).map((e) => ({ x: e.x, y: e.y, width: e.width, height: e.height }))) ?? { x: 0, y: 0, width: 800, height: 600 };
+  }
+
   private contentRect(): Rect {
-    const els = this.api.getSceneElements();
-    return union(els.map((e) => ({ x: e.x, y: e.y, width: e.width, height: e.height }))) ?? { x: 0, y: 0, width: 800, height: 600 };
+    return PortalController.bounds(this.api.getSceneElements());
+  }
+
+  private buildElements(scene: PortalScene): ExcalidrawElement[] {
+    return buildPortalElements(scene.title, scene.cards, restoreElements(scene.elements as never, null));
   }
 
   /** Swap scene contents (no animation). Clears undo so Cmd-Z can't reach across portals. */
-  private install(scene: PortalScene): void {
+  private install(scene: PortalScene, elements = this.buildElements(scene)): void {
     this.scene = scene;
-    const persisted = restoreElements(scene.elements as never, null);
-    const elements = buildPortalElements(scene.title, scene.cards, persisted);
     this.api.updateScene({ elements, captureUpdate: CaptureUpdateAction.NEVER });
     this.api.history.clear();
     this.lastSceneVersion = getSceneVersion(elements as never);
+    this.api.updateScene({ appState: { selectedElementIds: {}, selectedGroupIds: {} }, captureUpdate: CaptureUpdateAction.NEVER });
+    this.selectedCardId = null;
   }
 
   private frameAll(): { scrollX: number; scrollY: number; zoom: number } {
@@ -188,35 +220,126 @@ export class PortalController {
     return centerOn(r, z, vp.width, vp.height);
   }
 
-  private async diveIn(scene: PortalScene): Promise<void> {
-    // Old scene: keep pushing into the card while fading out.
-    await cssTransition(this.stage, { transform: "scale(1.6)", opacity: "0" }, 180);
-    this.install(scene);
-    this.setViewport(this.frameAll());
-    // New scene grows from small, as if we came through the card.
-    setStyleNow(this.stage, { transform: "scale(0.7)", opacity: "0" });
-    await nextPaint();
-    await cssTransition(this.stage, { transform: "scale(1)", opacity: "1" }, 260);
+  /** Render `elements` exactly as they'd look on screen when the view shows `region`. */
+  private async renderRegion(elements: readonly ExcalidrawElement[], region: Rect): Promise<HTMLCanvasElement> {
+    const vp = this.viewport();
+    const dpr = window.devicePixelRatio || 1;
+    // An invisible rect spanning the region pins the export bounds to it exactly.
+    const [marker] = restoreElements(
+      [{ type: "rectangle", id: "__region", x: region.x, y: region.y, width: region.width, height: region.height,
+         strokeColor: "transparent", backgroundColor: "transparent", strokeWidth: 0 } as never],
+      null,
+    );
+    return exportToCanvas({
+      elements: [...elements.filter((e) => !e.isDeleted), marker!] as never,
+      appState: { exportBackground: true, viewBackgroundColor: BACKGROUND },
+      files: this.api.getFiles(),
+      exportPadding: 0,
+      getDimensions: () => ({ width: Math.round(vp.width * dpr), height: Math.round(vp.height * dpr), scale: (vp.width * dpr) / region.width }),
+    });
   }
 
-  private async exitTo(scene: PortalScene, focusCardId?: string): Promise<void> {
-    await cssTransition(this.stage, { transform: "scale(0.6)", opacity: "0" }, 180);
+  /**
+   * Dive: fly into a window inside the card while the child portal, already
+   * rendered into that window, fades in over the card's own text. When the
+   * window fills the screen it *is* the child's framed view, so the real scene
+   * swaps in underneath with nothing visibly changing.
+   */
+  private async diveThrough(cardId: string, nextScene: Promise<PortalScene | null>): Promise<PortalScene | null> {
+    const card = cardRects(this.api.getSceneElements()).find((c) => c.cardId === cardId);
+    if (!card) {
+      const scene = await nextScene;
+      if (scene) await this.loadingInto(scene.portalId, () => this.fadeTo(scene));
+      return scene;
+    }
+    const vp = this.viewport();
+    const win = windowIn(card.rect, vp.width / vp.height);
+
+    // Prepare the child (scene from native, elements, preview) during the flight.
+    const prepared = nextScene.then(async (scene) => {
+      if (!scene) return null;
+      const elements = this.buildElements(scene);
+      const region = framedRect(PortalController.bounds(elements), vp.width, vp.height);
+      const preview = await this.renderRegion(elements, region).catch(() => null);
+      return { scene, elements, preview };
+    });
+    let ready: Awaited<typeof prepared> = null;
+    void prepared.then((r) => (ready = r));
+
+    await this.flyToRect(win, vp.width / win.width, DIVE_MS, (t, v) => {
+      if (!ready?.preview) return;
+      this.overlay.show(ready.preview, toView(win, v), smooth((t - 0.2) / 0.45));
+    });
+    const child = await prepared;
+    if (!child) {
+      // Not divable after all: ease back out.
+      this.overlay.hide();
+      await this.flyTo(this.frameAll(), center(card.rect), 300);
+      return null;
+    }
+    await this.loadingInto(child.scene.portalId, async () => {
+      if (child.preview) this.overlay.show(child.preview, { x: 0, y: 0, width: vp.width, height: vp.height }, 1);
+      this.install(child.scene, child.elements);
+      this.setViewport(this.frameAll());
+      await nextPaint();
+      await this.overlay.fadeOut(90);
+    });
+    return child.scene;
+  }
+
+  /**
+   * Exit: the reverse. The child view (as it is right now) is drawn into the
+   * card's window in the parent, the parent swaps in around it, and the camera
+   * pulls back while the card's own face fades back in.
+   */
+  private async exitThrough(parent: PortalScene, focusCardId: string | undefined): Promise<void> {
+    const vp = this.viewport();
+    const childEls = this.api.getSceneElements();
+    const parentEls = this.buildElements(parent);
+    const card = cardRects(parentEls).find((c) => c.cardId === focusCardId);
+    // Only a direct parent has the card we came through.
+    const direct = card && this.scene?.path.at(-2)?.portalId === parent.portalId;
+    if (!card || !direct) {
+      await this.loadingInto(parent.portalId, () => this.fallbackExit(parent, focusCardId));
+      return;
+    }
+    const win = windowIn(card.rect, vp.width / vp.height);
+    const framed = framedRect(PortalController.bounds(childEls), vp.width, vp.height);
+    const preview = await this.renderRegion(childEls, framed).catch(() => null);
+    // Where the current child view sits in the parent's coordinates.
+    const start = mapRect(visibleRect(vp), framed, win);
+
+    await this.loadingInto(parent.portalId, async () => {
+      const startVp = { ...centerOn(start, vp.width / start.width, vp.width, vp.height), width: vp.width, height: vp.height };
+      if (preview) this.overlay.show(preview, toView(win, startVp), 1);
+      this.install(parent, parentEls);
+      const target = this.frameAll();
+      this.setViewport(startVp);
+      await nextPaint();
+      await this.flyTo(target, center(win), EXIT_MS, (t, v) => {
+        if (preview) this.overlay.show(preview, toView(win, v), 1 - smooth((t - 0.15) / 0.5));
+      });
+      this.overlay.hide();
+    });
+  }
+
+  /** Multi-level breadcrumb jumps: start zoomed into the card that leads back down, pull out. */
+  private async fallbackExit(scene: PortalScene, focusCardId?: string): Promise<void> {
     this.install(scene);
     const target = this.frameAll();
     const vp = this.viewport();
     const from = cardRects(this.api.getSceneElements()).find((c) => c.cardId === focusCardId);
-    // Start zoomed into the card we came from, then pull back to the whole portal.
-    if (from) this.setViewport(centerOn(from.rect, fitZoom(from.rect, vp.width, vp.height, 0), vp.width, vp.height));
-    else this.setViewport(target);
-    setStyleNow(this.stage, { transform: "scale(1)", opacity: "1" });
-    await nextPaint();
-    if (from) {
-      const r = this.contentRect();
-      await this.flyTo(r, target.zoom, 420);
+    if (!from) {
+      this.setViewport(target);
+      return;
     }
+    this.setViewport(centerOn(from.rect, fitZoom(from.rect, vp.width, vp.height, 0), vp.width, vp.height));
+    await nextPaint();
+    await this.flyTo(target, center(from.rect), EXIT_MS);
   }
 
-  private async jumpTo(scene: PortalScene, focusCardId?: string): Promise<void> {
+  /** Unrelated portals (map jumps, first load): a quick cross-fade. */
+  private async fadeTo(scene: PortalScene, focusCardId?: string): Promise<void> {
     if (this.scene) await cssTransition(this.stage, { opacity: "0" }, 120);
     this.install(scene);
     this.setViewport(this.frameAll());
@@ -224,7 +347,7 @@ export class PortalController {
       const c = cardRects(this.api.getSceneElements()).find((c) => c.cardId === focusCardId);
       if (c) this.setViewport(centerOn(c.rect, this.fittedZoom, this.viewport().width, this.viewport().height));
     }
-    setStyleNow(this.stage, { transform: "scale(1)" });
+    setStyleNow(this.stage, { transform: "none" });
     await cssTransition(this.stage, { opacity: "1" }, 160);
   }
 
@@ -238,19 +361,16 @@ export class PortalController {
     this.transitioning = true;
     this.gate.block("transition");
     try {
-      const rect = cardRects(this.api.getSceneElements()).find((c) => c.cardId === cardId)?.rect;
-      const vp = this.viewport();
-      // Fly into the card while native fetches the next scene, hiding the round-trip.
-      const [next] = await Promise.all([
-        this.bridge.request("portal.enter", { portalId: this.scene.portalId, cardId }),
-        rect ? this.flyTo(rect, fitZoom(rect, vp.width, vp.height, 0.02), 160) : Promise.resolve(),
-      ]);
-      if (next) await this.loadingInto(next.portalId, () => this.diveIn(next));
+      this.positionActions();
+      // The flight starts immediately; native's answer arrives during it.
+      await this.diveThrough(cardId, this.bridge.request("portal.enter", { portalId: this.scene.portalId, cardId }));
     } catch (e) {
+      this.overlay.hide();
       this.bridge.notify("log.event", { level: "error", message: `dive failed: ${String(e)}` });
     } finally {
       this.transitioning = false;
       this.gate.unblock("transition");
+      this.positionActions();
     }
     this.emitFocus();
   }
@@ -260,14 +380,17 @@ export class PortalController {
     this.flushChanges();
     this.transitioning = true;
     this.gate.block("transition");
+    this.positionActions();
     try {
       const res = await this.bridge.request("portal.exit", { portalId: this.scene.portalId });
-      if (res) await this.loadingInto(res.scene.portalId, () => this.exitTo(res.scene, res.focusCardId));
+      if (res) await this.exitThrough(res.scene, res.focusCardId);
     } catch (e) {
+      this.overlay.hide();
       this.bridge.notify("log.event", { level: "error", message: `exit failed: ${String(e)}` });
     } finally {
       this.transitioning = false;
       this.gate.unblock("transition");
+      this.positionActions();
     }
     this.emitFocus();
   }
@@ -275,6 +398,7 @@ export class PortalController {
   // ---------- observers ----------
 
   private onViewportChanged(): void {
+    this.positionActions();
     if (this.transitioning || !this.scene) return;
     const vp = this.viewport();
 
@@ -322,10 +446,28 @@ export class PortalController {
     const cardIds = cardRects(this.api.getSceneElements())
       .filter((c) => selected[`${c.cardId}:frame`])
       .map((c) => c.cardId);
+    this.selectedCardId = cardIds.length === 1 ? cardIds[0]! : null;
+    // Excalidraw's style panel (stroke, sloppiness, fonts) is for the kid's own
+    // drawings; for cards it's noise. Hide it when only cards are selected.
+    const ids = Object.keys(selected).filter((k) => selected[k]);
+    const els = this.api.getSceneElements();
+    const onlyCards = ids.length > 0 && ids.every((id) => els.find((e) => e.id === id)?.customData?.cardId);
+    document.documentElement.toggleAttribute("data-card-selection", onlyCards);
+    this.positionActions();
     const key = `${this.scene.portalId}|${cardIds.join(",")}`;
     if (key === this.lastSelection) return;
     this.lastSelection = key;
     this.bridge.notify("selection.changed", { portalId: this.scene.portalId, cardIds });
+  }
+
+  /** Keep the selected card's actions pinned to it (or hidden mid-transition/drag). */
+  private positionActions(): void {
+    const id = this.selectedCardId;
+    const state = this.api.getAppState();
+    const busy = this.transitioning || state.selectedElementsAreBeingDragged || state.resizingElement != null;
+    const c = id && !busy ? cardRects(this.api.getSceneElements()).find((r) => r.cardId === id) : undefined;
+    const card = c && this.scene?.cards.find((x) => x.id === c.cardId);
+    this.actions.update(c ? c.cardId : null, c ? toView(c.rect, this.viewport()) : null, card?.type === "topic");
   }
 
   private onElementsChanged(elements: readonly ExcalidrawElement[]): void {
@@ -392,4 +534,14 @@ export class PortalController {
   cards(): Card[] {
     return this.scene?.cards ?? [];
   }
+}
+
+/** 0..1 clamp with smoothstep easing, for fades keyed to animation progress. */
+function smooth(x: number): number {
+  const t = Math.min(1, Math.max(0, x));
+  return t * t * (3 - 2 * t);
+}
+
+function center(r: Rect): { x: number; y: number } {
+  return { x: r.x + r.width / 2, y: r.y + r.height / 2 };
 }
