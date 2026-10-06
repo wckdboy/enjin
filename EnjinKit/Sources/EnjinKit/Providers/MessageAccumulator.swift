@@ -33,6 +33,7 @@ public struct MessageAccumulator: Sendable {
         public var outputTokens = 0
         public var cacheReadInputTokens = 0
         public var cacheCreationInputTokens = 0
+        public init() {}
     }
 
     public init() {}

@@ -9,6 +9,30 @@ public final class NotebookSession {
     private var scenes: [String: [JSONValue]] = [:]
     private let clock: @Sendable () -> Date
 
+    /// What the kid did since the agent last looked (plan §5.2 #4). Capped; the agent drains it.
+    public private(set) var changeLog: [KidChange] = []
+    public static let changeLogCap = 10
+
+    public struct KidChange: Equatable, Sendable {
+        public enum Kind: Equatable, Sendable {
+            case createdCard(title: String)
+            case editedCard(title: String)
+            case deletedCard(title: String, byAgent: Bool)
+            case restoredCard(title: String)
+            case drew(strokes: Int)
+            case wroteNote(String)
+        }
+        public var portalId: String
+        public var kind: Kind
+    }
+
+    /// Kid marks on a portal's canvas that aren't cards, for the scene summary.
+    public struct Marks: Equatable, Sendable {
+        public var inkStrokes = 0
+        public var notes: [String] = []
+        public var shapes = 0
+    }
+
     public var id: String { data.meta.id }
     public var title: String { data.meta.title }
     public var rootPortalId: String { data.meta.rootPortalId }
@@ -51,6 +75,38 @@ public final class NotebookSession {
         return path
     }
 
+    public func childPortal(of cardId: String) -> Portal? {
+        data.portals.first { $0.ownerCardId == cardId }
+    }
+
+    public func marks(in portalId: String) -> Marks {
+        Self.marks(scenes[portalId] ?? [])
+    }
+
+    static func marks(_ elements: [JSONValue]) -> Marks {
+        var m = Marks()
+        for e in elements where e["isDeleted"] != .bool(true) && e["customData"]?["role"] == nil {
+            switch e["type"]?.stringValue {
+            case "freedraw": m.inkStrokes += 1
+            case "text": if let t = e["text"]?.stringValue, !t.isEmpty { m.notes.append(t) }
+            case "rectangle", "ellipse", "diamond", "arrow", "line": m.shapes += 1
+            default: break
+            }
+        }
+        return m
+    }
+
+    /// Hand the agent what changed and start a fresh log.
+    public func drainChangeLog() -> [KidChange] {
+        defer { changeLog = [] }
+        return changeLog
+    }
+
+    private func logChange(_ c: KidChange) {
+        changeLog.append(c)
+        if changeLog.count > Self.changeLogCap { changeLog.removeFirst(changeLog.count - Self.changeLogCap) }
+    }
+
     public func bridgeCard(_ c: StoredCard) -> Card {
         let childCount = data.portals.first { $0.ownerCardId == c.id }.map { activeCards(in: $0.portalId).count } ?? 0
         return Card(id: c.id, type: c.type, title: c.title, summary: c.summary, state: c.state, childCount: childCount)
@@ -73,15 +129,19 @@ public final class NotebookSession {
 
     /// Dive into a topic card. The first dive creates the card's portal.
     public func enter(cardId: String) async throws -> PortalScene? {
+        guard let portal = try await ensurePortal(for: cardId) else { return nil }
+        return try await scene(for: portal.portalId)
+    }
+
+    /// The portal inside a topic card, created on first use.
+    public func ensurePortal(for cardId: String) async throws -> Portal? {
         guard let card = card(cardId), card.isActive, card.type == .topic else { return nil }
-        if let existing = data.portals.first(where: { $0.ownerCardId == cardId }) {
-            return try await scene(for: existing.portalId)
-        }
+        if let existing = childPortal(of: cardId) { return existing }
         let portal = Portal(title: card.title, ownerCardId: card.id, parentPortalId: card.portalId)
         data.portals.append(portal)
         try await store.savePortals(id, data.portals)
         try await touch()
-        return try await scene(for: portal.portalId)
+        return portal
     }
 
     public func exit(from portalId: String) async throws -> (scene: PortalScene, focusCardId: String)? {
@@ -97,7 +157,13 @@ public final class NotebookSession {
     /// Returns ids of cards whose deleted state changed.
     @discardableResult
     public func saveElements(portalId: String, elements: [JSONValue]) async throws -> [String] {
+        let before = scenes[portalId].map(Self.marks)
         scenes[portalId] = elements
+        if let before {
+            let after = Self.marks(elements)
+            if after.inkStrokes > before.inkStrokes { logChange(.init(portalId: portalId, kind: .drew(strokes: after.inkStrokes - before.inkStrokes))) }
+            for note in after.notes where !before.notes.contains(note) { logChange(.init(portalId: portalId, kind: .wroteNote(note))) }
+        }
         try await store.saveScene(id, portalId: portalId, elements: elements)
 
         let framed = Set(elements.compactMap { e -> String? in
@@ -111,9 +177,11 @@ public final class NotebookSession {
             if data.cards[i].isActive && !present {
                 data.cards[i].deletedAt = now
                 changed.append(data.cards[i].id)
-            } else if !data.cards[i].isActive && present {
+                logChange(.init(portalId: portalId, kind: .deletedCard(title: data.cards[i].title, byAgent: data.cards[i].createdBy == .agent)))
+            } else if !data.cards[i].isActive && present && data.cards[i].removed != true {
                 data.cards[i].deletedAt = nil
                 changed.append(data.cards[i].id)
+                logChange(.init(portalId: portalId, kind: .restoredCard(title: data.cards[i].title)))
             }
         }
         if !changed.isEmpty { try await store.saveCards(id, data.cards) }
@@ -121,19 +189,22 @@ public final class NotebookSession {
         return changed
     }
 
-    public func createCard(in portalId: String, type: CardType, title: String, summary: String,
-                           state: CardState = .filled, author: Author, turnId: String? = nil) async throws -> StoredCard {
-        let card = StoredCard(portalId: portalId, type: type, title: title, summary: summary, state: state,
+    public func createCard(in portalId: String, type: CardType, title: String, summary: String, body: String? = nil,
+                           state: CardState = .filled, author: Author, turnId: String? = nil, sources: [Source]? = nil) async throws -> StoredCard {
+        var card = StoredCard(portalId: portalId, type: type, title: title, summary: summary, body: body, state: state,
                               createdBy: author, createdByTurnId: turnId, now: clock())
+        card.sources = sources
         data.cards.append(card)
+        if author == .kid { logChange(.init(portalId: portalId, kind: .createdCard(title: title))) }
         try await store.saveCards(id, data.cards)
         try await touch()
         return card
     }
 
-    public func updateCard(_ cardId: String, _ change: (inout StoredCard) -> Void) async throws -> StoredCard? {
+    public func updateCard(_ cardId: String, by author: Author = .kid, _ change: (inout StoredCard) -> Void) async throws -> StoredCard? {
         guard let i = data.cards.firstIndex(where: { $0.id == cardId }) else { return nil }
         change(&data.cards[i])
+        if author == .kid { logChange(.init(portalId: data.cards[i].portalId, kind: .editedCard(title: data.cards[i].title))) }
         data.cards[i].updatedAt = clock()
         // Keep a portal's title in step with the card it belongs to.
         if let p = data.portals.firstIndex(where: { $0.ownerCardId == cardId }), data.portals[p].title != data.cards[i].title {
@@ -143,6 +214,25 @@ public final class NotebookSession {
         try await store.saveCards(id, data.cards)
         try await touch()
         return data.cards[i]
+    }
+
+    /// Soft-delete (agent undo). The canvas is told separately via applyOps.
+    public func deleteCard(_ cardId: String) async throws {
+        guard let i = data.cards.firstIndex(where: { $0.id == cardId }) else { return }
+        data.cards[i].deletedAt = clock()
+        data.cards[i].removed = true
+        try await store.saveCards(id, data.cards)
+        try await touch()
+    }
+
+    /// Put back an exact earlier version of a card (agent undo of an update).
+    public func restore(_ card: StoredCard) async throws {
+        guard let i = data.cards.firstIndex(where: { $0.id == card.id }) else { return }
+        data.cards[i] = card
+        if let p = data.portals.firstIndex(where: { $0.ownerCardId == card.id }) { data.portals[p].title = card.title }
+        try await store.saveCards(id, data.cards)
+        try await store.savePortals(id, data.portals)
+        try await touch()
     }
 
     public func rename(_ title: String) async throws {

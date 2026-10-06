@@ -3,12 +3,17 @@ import SwiftUI
 
 struct LibraryView: View {
     @State private var library: Library
+    let settings: AppSettings
+    let telemetry: Telemetry
+    @State private var showSettings = false
     @State private var open: [String] = []
     @State private var newTitle = ""
     @State private var askingTitle = false
 
-    init(store: NotebookStore) {
+    init(store: NotebookStore, settings: AppSettings, telemetry: Telemetry) {
         _library = State(initialValue: Library(store: store))
+        self.settings = settings
+        self.telemetry = telemetry
     }
 
     var body: some View {
@@ -36,8 +41,10 @@ struct LibraryView: View {
             }
             .navigationTitle("Enjin")
             .toolbar {
+                Button { showSettings = true } label: { Label("Settings", systemImage: "gearshape") }
                 Button { askingTitle = true } label: { Label("New notebook", systemImage: "plus") }
             }
+            .sheet(isPresented: $showSettings) { SettingsView(settings: settings, telemetry: telemetry) }
             .alert("What do you want to explore?", isPresented: $askingTitle) {
                 TextField("e.g. Roman Empire", text: $newTitle)
                 Button("Create") {
@@ -48,7 +55,7 @@ struct LibraryView: View {
                 Button("Cancel", role: .cancel) { newTitle = "" }
             }
             .navigationDestination(for: String.self) { id in
-                NotebookScreen(notebookId: id, store: library.store)
+                NotebookScreen(notebookId: id, store: library.store, settings: settings, telemetry: telemetry)
                     .onDisappear { Task { await library.refresh() } }
             }
             .task { await library.load() }
@@ -60,6 +67,8 @@ struct LibraryView: View {
 struct NotebookScreen: View {
     let notebookId: String
     let store: NotebookStore
+    let settings: AppSettings
+    let telemetry: Telemetry
     @State private var controller: CanvasController?
     @State private var error: String?
 
@@ -76,7 +85,8 @@ struct NotebookScreen: View {
         .toolbar(.hidden, for: .navigationBar)
         .task {
             do {
-                controller = CanvasController(session: try await NotebookSession.open(notebookId, store: store))
+                controller = CanvasController(session: try await NotebookSession.open(notebookId, store: store),
+                                              settings: settings, telemetry: telemetry)
             } catch {
                 self.error = error.localizedDescription
             }

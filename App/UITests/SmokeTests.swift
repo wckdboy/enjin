@@ -8,7 +8,7 @@ final class SmokeTests: XCTestCase {
     override func setUp() async throws {
         continueAfterFailure = false
         app = XCUIApplication()
-        app.launchArguments = ["-uiTestingFreshStore"]
+        app.launchArguments = ["-uiTestingFreshStore", "-uiTestingFakeAgent"]
         app.launch()
     }
 
@@ -48,5 +48,37 @@ final class SmokeTests: XCTestCase {
         let again = app.buttons["map:Roman Empire"]
         XCTAssertTrue(again.waitForExistence(timeout: 5))
         XCTAssertEqual(again.value as? String, "5 cards", "new card persisted across reopen")
+    }
+
+    private func snap(_ name: String) {
+        let a = XCTAttachment(screenshot: app.screenshot())
+        a.name = name
+        a.lifetime = .keepAlways
+        add(a)
+    }
+
+    func testAskTheAgentThenUndo() {
+        app.staticTexts["Roman Empire"].firstMatch.tap()
+        let ask = app.textFields["Ask Enjin anything…"]
+        XCTAssertTrue(ask.waitForExistence(timeout: 15), "agent dock appears once the canvas is ready")
+        ask.tap()
+        ask.typeText("what did they eat?\n")
+
+        XCTAssertTrue(app.staticTexts["Here are two cards from the test agent."].waitForExistence(timeout: 10))
+        app.buttons["Map"].tap()
+        let root = app.buttons["map:Roman Empire"]
+        XCTAssertTrue(root.waitForExistence(timeout: 5))
+        XCTAssertEqual(root.value as? String, "6 cards", "agent added two cards")
+        app.buttons["Done"].tap()
+
+        let undo = app.buttons["Undo Enjin's last change"]
+        XCTAssertTrue(undo.waitForExistence(timeout: 5))
+        undo.tap()
+        snap("after-undo")
+        XCTAssertTrue(app.staticTexts["Here are two cards from the test agent."].waitForNonExistence(timeout: 5), "undo clears the reply")
+        app.buttons["Map"].tap()
+        snap("map-after-undo")
+        XCTAssertTrue(root.waitForExistence(timeout: 5))
+        XCTAssertEqual(root.value as? String, "4 cards", "undo removed them")
     }
 }

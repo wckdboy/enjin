@@ -266,3 +266,36 @@ test("selecting a card tells native which card it is", async ({ page }) => {
     )
     .toContain("c-roads");
 });
+
+test("ops for the portal being dived into are applied once it lands", async ({ page }) => {
+  await ready(page);
+  const scene = await page.evaluate(() => (window as unknown as { __devScene(id: string): unknown }).__devScene("p-legions"));
+  // Start the dive and send ops for the destination while it's still animating.
+  const [, ops] = await Promise.all([
+    call(page, "portal.load", { scene, transition: "dive" }),
+    (async () => {
+      await page.waitForTimeout(50);
+      return call(page, "canvas.applyOps", {
+        portalId: "p-legions",
+        ops: [{ op: "upsert", card: { id: "c-early", type: "topic", title: "Arrived early", summary: "x", state: "stub", childCount: 0 } }],
+      });
+    })(),
+  ]);
+  expect((ops as { result: { placed: { cardId: string }[] } }).result.placed.map((p) => p.cardId)).toEqual(["c-early"]);
+  expect((await frames(page)).some((c) => c.cardId === "c-early")).toBe(true);
+});
+
+test("canvas.frame eases onto a card without diving", async ({ page }) => {
+  await ready(page);
+  const before = await page.evaluate(() => (window as unknown as { __enjinDebug: Debug }).__enjinDebug.api.getAppState().zoom.value);
+  const res = (await call(page, "canvas.frame", { cardId: "c-fall" })) as { result: { framed: boolean } };
+  expect(res.result.framed).toBe(true);
+  await page.waitForTimeout(600);
+  const c = await cardCenter(page, "c-fall");
+  const vp = page.viewportSize()!;
+  expect(Math.abs(c.x - vp.width / 2)).toBeLessThan(5);
+  expect(Math.abs(c.y - vp.height / 2)).toBeLessThan(5);
+  expect(await portalId(page)).toBe("p-root");
+  const after = await page.evaluate(() => (window as unknown as { __enjinDebug: Debug }).__enjinDebug.api.getAppState().zoom.value);
+  expect(after).toBeLessThanOrEqual(before * 1.2 + 1e-6);
+});

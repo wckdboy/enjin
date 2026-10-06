@@ -1,0 +1,29 @@
+<canvas notebook="Roman Empire">
+The kid is looking at: Roman Empire › Legions
+This portal is inside the card c-legions "Legions": Rome's professional heavy infantry: ~5,000 citizen soldiers per legion.
+Cards here:
+- c-why-won · topic · filled · "Why Rome won so much": Not better weapons — better organisation, and refusing to quit. (3 cards inside)
+- c-equipment · topic · stub · "Equipment"
+Closest to the center of their screen: c-why-won "Why Rome won so much"
+The kid's own marks here: 1 pencil stroke; notes: "testudo??"
+</canvas>
+
+<around>
+One level up, "Roman Empire" has: Legions (here), Roads, Emperors, Why did it fall?
+</around>
+
+<elsewhere>
+Why Rome won so much: 3 cards; Logistics: 2 cards
+</elsewhere>
+
+<since_last_time>
+- drew 1 pencil stroke
+- wrote "testudo??"
+- deleted your card "A soldier's life"
+</since_last_time>
+
+<earlier_elsewhere>
+- In "Roads" the kid said "how long were they"; you made: Via Appia
+</earlier_elsewhere>
+
+The kid says: why did they always win?

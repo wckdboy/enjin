@@ -4,6 +4,8 @@ import SwiftUI
 @main
 struct EnjinApp: App {
     private let store = NotebookStore(root: EnjinApp.storeRoot())
+    @State private var settings = AppSettings()
+    private let telemetry = Telemetry(url: EnjinApp.storeRoot().deletingLastPathComponent().appendingPathComponent("telemetry.jsonl"))
 
     private static func storeRoot() -> URL {
         // UI tests get a fresh, throwaway store on every launch.
@@ -15,7 +17,8 @@ struct EnjinApp: App {
 
     var body: some Scene {
         WindowGroup {
-            LibraryView(store: store)
+            LibraryView(store: store, settings: settings, telemetry: telemetry)
+                .task { await telemetry.record("app_open") }
         }
     }
 }

@@ -3,12 +3,13 @@
 iPad canvas for curious kids: an Excalidraw canvas in a WKWebView, a PencilKit
 ink layer, and a Claude agent that grows the canvas into nested "portals" you
 dive into. Plan: [docs/plan.md](docs/plan.md). Status: M0 spikes waiting on device
-tests ([docs/m0-spikes.md](docs/m0-spikes.md)); M1 (static canvas loop) mostly done:
-file store, notebook library, movable cards, card ops, map, card detail, 300-card perf test.
+tests ([docs/m0-spikes.md](docs/m0-spikes.md)); M1 (static canvas loop) done;
+M2 (agent on canvas) built and tested against a scripted model, waiting on a real key run.
 
 ```
 canvas-web/   React + Excalidraw (pinned 0.18.1), bridge client, portals, ink commit
-EnjinKit/     Swift package: bridge types/router, demo notebook, Anthropic client + agent loop
+EnjinKit/     Swift package: bridge, file store, notebook session, agent (prompt composer,
+              tools, AgentSession), Anthropic + Apple on-device backends, telemetry
 App/          SwiftUI shell: WKWebView over enjin://, PencilKit overlay, breadcrumb, agent spike
 shared/       bridge fixtures (generated) + demo notebook, read by both sides
 ```

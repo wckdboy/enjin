@@ -7,6 +7,6 @@ let package = Package(
     products: [.library(name: "EnjinKit", targets: ["EnjinKit"])],
     targets: [
         .target(name: "EnjinKit"),
-        .testTarget(name: "EnjinKitTests", dependencies: ["EnjinKit"]),
+        .testTarget(name: "EnjinKitTests", dependencies: ["EnjinKit"], exclude: ["Golden"]),
     ]
 )

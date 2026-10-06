@@ -3,6 +3,7 @@ import SwiftUI
 
 /// "See the whole map": every portal in the notebook as a tree (plan §3.2).
 struct MapView: View {
+    @Environment(\.dismiss) private var dismiss
     let session: NotebookSession
     let current: String?
     let onSelect: (String) -> Void
@@ -43,6 +44,7 @@ struct MapView: View {
             }
             .navigationTitle("Map")
             .navigationBarTitleDisplayMode(.inline)
+            .toolbar { Button("Done") { dismiss() } }
         }
     }
 }

@@ -37,6 +37,10 @@ public struct AgentTurnResult: Sendable {
     /// Time from request start to the first streamed event.
     public var firstEventMs: Double?
     public var totalMs: Double
+
+    public init(stop: AgentStop, rounds: Int, usage: MessageAccumulator.Usage, firstEventMs: Double?, totalMs: Double) {
+        self.stop = stop; self.rounds = rounds; self.usage = usage; self.firstEventMs = firstEventMs; self.totalMs = totalMs
+    }
 }
 
 /// Manual tool-use loop: model turn -> run client tools -> feed results -> repeat.

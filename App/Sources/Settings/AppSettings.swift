@@ -1,0 +1,86 @@
+import EnjinKit
+import Foundation
+import Observation
+
+/// Parent-controlled settings. The API key lives in the Keychain; the rest in UserDefaults.
+@MainActor
+@Observable
+final class AppSettings {
+    enum Provider: String, CaseIterable, Identifiable {
+        /// Anthropic when a key is set up, otherwise the on-device model.
+        case auto
+        case anthropic
+        case onDevice
+        var id: String { rawValue }
+        var label: String {
+            switch self {
+            case .auto: "Automatic"
+            case .anthropic: "Claude (needs key)"
+            case .onDevice: "On-device only"
+            }
+        }
+    }
+
+    private let defaults: UserDefaults
+    private static let keyAccount = "anthropic"
+
+    var provider: Provider { didSet { defaults.set(provider.rawValue, forKey: "provider") } }
+    var modelId: String { didSet { defaults.set(modelId, forKey: "modelId") } }
+    var dailyCapUSD: Double { didSet { defaults.set(dailyCapUSD, forKey: "dailyCapUSD") } }
+    /// A parent read and accepted the data/cost notice (plan §7) before any key is used.
+    var consentGiven: Bool { didSet { defaults.set(consentGiven, forKey: "consentGiven") } }
+    private(set) var hasKey: Bool
+
+    init(defaults: UserDefaults = .standard) {
+        self.defaults = defaults
+        provider = Provider(rawValue: defaults.string(forKey: "provider") ?? "") ?? .auto
+        modelId = defaults.string(forKey: "modelId") ?? AnthropicModel.opus55.id
+        dailyCapUSD = defaults.object(forKey: "dailyCapUSD") as? Double ?? 2
+        consentGiven = defaults.bool(forKey: "consentGiven")
+        hasKey = Keychain.read(Self.keyAccount)?.isEmpty == false
+    }
+
+    var model: AnthropicModel { AnthropicModel.all.first { $0.id == modelId } ?? .opus55 }
+
+    func saveKey(_ key: String) {
+        let k = key.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !k.isEmpty else { return }
+        Keychain.write(k, account: Self.keyAccount)
+        hasKey = true
+    }
+
+    func removeKey() {
+        Keychain.delete(Self.keyAccount)
+        hasKey = false
+    }
+
+    var onDeviceUnavailableReason: String? {
+        if #available(iOS 26.0, *) { return AppleFMBackend.unavailableReason }
+        return "Needs iPadOS 26."
+    }
+
+    func makeBackend() -> AgentBackend? {
+        #if DEBUG
+        if ProcessInfo.processInfo.arguments.contains("-uiTestingFakeAgent") { return UITestBackend() }
+        #endif
+        let key = consentGiven ? Keychain.read(Self.keyAccount) : nil
+        let claude = key.flatMap { $0.isEmpty ? nil : AnthropicBackend(apiKey: $0, model: model) }
+        let onDevice: AgentBackend? = {
+            if #available(iOS 26.0, *), AppleFMBackend.unavailableReason == nil { return AppleFMBackend() }
+            return nil
+        }()
+        switch provider {
+        case .anthropic: return claude
+        case .onDevice: return onDevice
+        case .auto: return claude ?? onDevice
+        }
+    }
+
+    /// One line for the parent: what Enjin will actually use right now.
+    var activeDescription: String {
+        guard let b = makeBackend() else {
+            return provider == .onDevice ? (onDeviceUnavailableReason ?? "Unavailable") : "Not set up: add a key, or use an iPad with Apple Intelligence."
+        }
+        return b.isReduced ? "Apple on-device model (no web search, simpler answers)" : "Claude \(model.label) with web search"
+    }
+}

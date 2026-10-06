@@ -19,15 +19,25 @@ final class CanvasController: NSObject {
 
     let webView: WKWebView
     @ObservationIgnored let session: NotebookSession
+    let agent: AgentSession
+    @ObservationIgnored let settings: AppSettings
+    @ObservationIgnored let telemetry: Telemetry
+    @ObservationIgnored private var prefetchTimer: Task<Void, Never>?
+    /// Linger this long on a stub before filling it in the background (plan §3.3).
+    static let prefetchDelay: Duration = .milliseconds(1500)
     @ObservationIgnored private let router = BridgeRouter()
     @ObservationIgnored private var seq = 0
     @ObservationIgnored private let log = Logger(subsystem: "cc.wckd.enjin", category: "canvas")
 
     static let expectedExcalidrawVersion = "0.18.1"
 
-    init(session: NotebookSession) {
+    init(session: NotebookSession, settings: AppSettings, telemetry: Telemetry) {
         let bundle = Bundle.main
         self.session = session
+        self.settings = settings
+        self.telemetry = telemetry
+        agent = AgentSession(session: session, backend: settings.makeBackend(), telemetry: telemetry)
+        agent.dailyCapUSD = settings.dailyCapUSD
 
         let config = WKWebViewConfiguration()
         config.setURLSchemeHandler(SchemeHandler(root: bundle.resourceURL!.appendingPathComponent("canvas-web")), forURLScheme: SchemeHandler.scheme)
@@ -44,6 +54,7 @@ final class CanvasController: NSObject {
         webView.scrollView.bounces = false
         webView.scrollView.contentInsetAdjustmentBehavior = .never
 
+        agent.canvas = self
         registerHandlers()
         webView.load(URLRequest(url: SchemeHandler.indexURL))
     }
@@ -78,6 +89,42 @@ final class CanvasController: NSObject {
         }
     }
 
+    /// Re-read settings (key, model, cap) after the parent changed them.
+    func refreshAgent() {
+        agent.backend = settings.makeBackend()
+        agent.dailyCapUSD = settings.dailyCapUSD
+    }
+
+    func ask(_ text: String) {
+        guard let portalId = currentPortalId else { return }
+        agent.ask(text, portalId: portalId, focusCardId: selectedCardId ?? focusedCardId)
+    }
+
+    func goToSuggestion() {
+        guard let s = agent.suggestion else { return }
+        agent.clearSuggestion()
+        Task { _ = try? await call("canvas.frame", NativeMethod.CanvasFrame(cardId: s.cardId), returning: NativeMethod.CanvasFrameResult.self) }
+    }
+
+    /// Diving into a stub asks the agent to fill it; cards stream into the new portal.
+    private func didEnter(_ scene: PortalScene, via cardId: String) {
+        prefetchTimer?.cancel()
+        Task { await telemetry.record("portal_enter", ["depth": .number(Double(scene.path.count - 1))]) }
+        if let card = session.card(cardId), card.state == .stub || card.state == .error {
+            agent.fill(cardId: cardId)
+        }
+    }
+
+    private func focusChanged(to cardId: String?) {
+        prefetchTimer?.cancel()
+        guard let cardId, let card = session.card(cardId), card.type == .topic, card.state == .stub else { return }
+        prefetchTimer = Task { [weak self] in
+            try? await Task.sleep(for: Self.prefetchDelay)
+            guard !Task.isCancelled, let self, self.focusedCardId == cardId else { return }
+            self.agent.prefetch(cardId: cardId)
+        }
+    }
+
     /// Edit a card's text and re-render it in place.
     func updateCard(_ id: String, title: String, summary: String, body: String?) async {
         do {
@@ -102,6 +149,7 @@ final class CanvasController: NSObject {
                 guard let scene = try await session.enter(cardId: cardId) else { return }
                 path = scene.path
                 selectedCardId = nil
+                didEnter(scene, via: cardId)
                 try await call("portal.load", NativeMethod.PortalLoad(scene: scene, transition: .dive))
             } catch {
                 log.error("dive failed: \(error)")
@@ -114,6 +162,7 @@ final class CanvasController: NSObject {
         guard let portalId = currentPortalId else { return }
         do {
             let card = try await session.createCard(in: portalId, type: type, title: title, summary: summary, author: .kid)
+            await telemetry.record("card_created", ["by": .string("kid")])
             try await call("canvas.applyOps",
                            NativeMethod.ApplyOps(portalId: portalId, ops: [.upsert(session.bridgeCard(card))]),
                            returning: NativeMethod.ApplyOpsResult.self)
@@ -144,6 +193,7 @@ final class CanvasController: NSObject {
             self?.selectedCardId = nil
             guard let self, let scene = try await session.enter(cardId: p.cardId) else { return PortalScene?.none }
             path = scene.path
+            didEnter(scene, via: p.cardId)
             return scene
         }
         router.on("portal.exit", WebMethod.PortalExit.self) { [weak self] p in
@@ -157,7 +207,11 @@ final class CanvasController: NSObject {
             return Empty()
         }
         router.on("focus.changed", WebMethod.FocusChanged.self) { [weak self] p in
-            self?.focusedCardId = p.cardId
+            guard let self else { return Empty() }
+            if focusedCardId != p.cardId {
+                focusedCardId = p.cardId
+                focusChanged(to: p.cardId)
+            }
             return Empty()
         }
         router.on("selection.changed", WebMethod.SelectionChanged.self) { [weak self] p in
@@ -209,5 +263,19 @@ extension CanvasController: WKNavigationDelegate {
         log.error("web content process terminated; reloading")
         status = .loading
         webView.load(URLRequest(url: SchemeHandler.indexURL))
+    }
+}
+
+extension CanvasController: CanvasSink {
+    func apply(portalId: String, ops: [CardOp]) async {
+        do {
+            try await call("canvas.applyOps", NativeMethod.ApplyOps(portalId: portalId, ops: ops), returning: NativeMethod.ApplyOpsResult.self)
+        } catch {
+            log.error("applyOps failed: \(error)")
+        }
+    }
+
+    func flash(cardId: String) async {
+        _ = try? await call("canvas.flash", NativeMethod.CanvasFlash(cardId: cardId))
     }
 }

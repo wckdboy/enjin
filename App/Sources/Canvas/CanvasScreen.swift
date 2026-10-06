@@ -10,6 +10,7 @@ struct CanvasScreen: View {
     @State private var showMap = false
     @State private var showNewCard = false
     @State private var openCardId: String?
+    @State private var showSettings = false
 
     var body: some View {
         VStack(spacing: 0) {
@@ -28,6 +29,7 @@ struct CanvasScreen: View {
                     Picker("Pencil routing", selection: $routing) {
                         ForEach(InkRouting.allCases) { Text($0.rawValue).tag($0) }
                     }
+                    Button("Settings…") { showSettings = true }
                     Button("Agent spike…") { showAgentSpike = true }
                     if let ms = controller.lastInkHandoffMs {
                         Text(String(format: "Last ink handoff: %.1f ms", ms))
@@ -42,16 +44,24 @@ struct CanvasScreen: View {
 
             ZStack(alignment: .bottom) {
                 CanvasRepresentable(controller: controller, tool: tool, routing: routing)
-                if let id = controller.selectedCardId, let card = controller.session.card(id) {
-                    Button { openCardId = id } label: {
-                        Label("Open “\(card.title)”", systemImage: "rectangle.portrait.and.arrow.forward")
-                            .lineLimit(1)
+                    // The canvas runs under the home indicator; the keyboard must not resize it.
+                    .ignoresSafeArea(.all, edges: .bottom)
+                VStack(spacing: 10) {
+                    if let id = controller.selectedCardId, let card = controller.session.card(id) {
+                        Button { openCardId = id } label: {
+                            Label("Open “\(card.title)”", systemImage: "rectangle.portrait.and.arrow.forward")
+                                .lineLimit(1)
+                        }
+                        .buttonStyle(.borderedProminent)
+                        .controlSize(.large)
+                        .transition(.move(edge: .bottom).combined(with: .opacity))
                     }
-                    .buttonStyle(.borderedProminent)
-                    .controlSize(.large)
-                    .padding(.bottom, 96)
-                    .transition(.move(edge: .bottom).combined(with: .opacity))
+                    if controller.status == .ready {
+                        AgentDock(agent: controller.agent, onAsk: controller.ask, onGoToSuggestion: controller.goToSuggestion)
+                    }
                 }
+                .padding(.bottom, 76)
+                .padding(.horizontal, 16)
                 switch controller.status {
                 case .loading: ProgressView()
                 case .ready: EmptyView()
@@ -61,8 +71,15 @@ struct CanvasScreen: View {
                 }
             }
         }
-        .ignoresSafeArea(edges: .bottom)
+        // Only the container area: the agent dock still rides above the keyboard.
+        .ignoresSafeArea(.container, edges: .bottom)
         .sheet(isPresented: $showAgentSpike) { AgentSpikeView() }
+        .sheet(isPresented: $showSettings, onDismiss: controller.refreshAgent) {
+            SettingsView(settings: controller.settings, telemetry: controller.telemetry)
+        }
+        .onChange(of: showMap) { _, open in
+            if open { Task { await controller.telemetry.record("map_opened") } }
+        }
         .sheet(isPresented: $showMap) {
             MapView(session: controller.session, current: controller.currentPortalId) { portalId in
                 showMap = false

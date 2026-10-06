@@ -11,6 +11,13 @@ extension Date {
     }
 }
 
+/// A web page a card's claims came from (from the agent's web search).
+public struct Source: Codable, Equatable, Sendable, Hashable {
+    public var title: String
+    public var url: String
+    public init(title: String, url: String) { self.title = title; self.url = url }
+}
+
 /// Native source of truth for a card's meaning. Geometry lives in the portal's scene.
 public struct StoredCard: Codable, Equatable, Sendable, Identifiable {
     public var id: String
@@ -26,6 +33,11 @@ public struct StoredCard: Codable, Equatable, Sendable, Identifiable {
     public var updatedAt: Date
     /// Soft delete: set when the card's frame disappears from the canvas, cleared if it comes back (undo).
     public var deletedAt: Date?
+    /// Optional so older files (without the key) still decode.
+    public var sources: [Source]?
+    /// Removed on purpose (undo of an agent turn). Unlike a canvas delete, a
+    /// late canvas save that still shows the card must not bring it back.
+    public var removed: Bool?
 
     public var isActive: Bool { deletedAt == nil }
 

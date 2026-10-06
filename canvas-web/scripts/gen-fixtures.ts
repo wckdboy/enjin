@@ -37,6 +37,7 @@ export const examples: Record<string, { direction: "nativeToWeb" | "webToNative"
     },
     result: { placed: [{ cardId: "c-new", x: 368, y: 110, width: 320, height: 180 }] },
   },
+  "canvas.frame": { direction: "nativeToWeb", params: { cardId: "c-why-won" }, result: { framed: true } },
   "canvas.flash": { direction: "nativeToWeb", params: { cardId: "c-why-won" }, result: null },
   "canvas.ready": { direction: "webToNative", params: { protocolVersion: PROTOCOL_VERSION, excalidrawVersion: "0.18.1" }, result: { accepted: true } },
   "canvas.changed": { direction: "webToNative", params: { portalId: "p-legions", elements: scene.elements }, result: null },

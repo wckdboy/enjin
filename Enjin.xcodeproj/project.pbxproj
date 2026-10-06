@@ -14,8 +14,12 @@
 		39894EAC037A27888974D57A /* LibraryView.swift in Sources */ = {isa = PBXBuildFile; fileRef = F685A102603C08F6455FC835 /* LibraryView.swift */; };
 		3B277B7E7B91236DB9A852B3 /* CardDetailSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = 45E482B3B4467BAB837CBA81 /* CardDetailSheet.swift */; };
 		3C76EA3FDB16774AF37634EC /* MapView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 33AF9CC7D9145A77A59FF119 /* MapView.swift */; };
+		4212EC07E3335CFE5504A7B1 /* SettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2C61AE85BA8BC51497310158 /* SettingsView.swift */; };
 		431106171A4CE89700E476B5 /* AgentSpikeView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0682FAD4E167B1DE422DF1AD /* AgentSpikeView.swift */; };
+		60432232E6FF47FCF7499A61 /* UITestBackend.swift in Sources */ = {isa = PBXBuildFile; fileRef = F7B8FED4FFF1EDF10FC0E58B /* UITestBackend.swift */; };
 		617B6447E0CB0A19F2009832 /* Library.swift in Sources */ = {isa = PBXBuildFile; fileRef = F7533C79DD18DCBADCDFE713 /* Library.swift */; };
+		70377B5A35A91DF9999B4D6E /* AppSettings.swift in Sources */ = {isa = PBXBuildFile; fileRef = DB313F315AC80EDD43B0D992 /* AppSettings.swift */; };
+		9B5FD5D7E51A09A5B1802CD5 /* AgentDock.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8B7EAFE44EECEDCA640A7AF7 /* AgentDock.swift */; };
 		9C9EE11893FC7881F489E0B9 /* canvas-web in Resources */ = {isa = PBXBuildFile; fileRef = 1440DF5DF049F0826D2B1902 /* canvas-web */; };
 		B49F4B023D0899EA6386BB8C /* CanvasScreen.swift in Sources */ = {isa = PBXBuildFile; fileRef = 572660002A38184E8C3BADFA /* CanvasScreen.swift */; };
 		E267715E0613AD83E9A6E19E /* InkLayer.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4622555AC39839C46052D44F /* InkLayer.swift */; };
@@ -37,6 +41,7 @@
 		04DFDB9639551640B5AA8568 /* EnjinKit */ = {isa = PBXFileReference; lastKnownFileType = folder; name = EnjinKit; path = EnjinKit; sourceTree = SOURCE_ROOT; };
 		0682FAD4E167B1DE422DF1AD /* AgentSpikeView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AgentSpikeView.swift; sourceTree = "<group>"; };
 		1440DF5DF049F0826D2B1902 /* canvas-web */ = {isa = PBXFileReference; lastKnownFileType = folder; name = "canvas-web"; path = "App/Resources/canvas-web"; sourceTree = SOURCE_ROOT; };
+		2C61AE85BA8BC51497310158 /* SettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsView.swift; sourceTree = "<group>"; };
 		33AF9CC7D9145A77A59FF119 /* MapView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MapView.swift; sourceTree = "<group>"; };
 		45E482B3B4467BAB837CBA81 /* CardDetailSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CardDetailSheet.swift; sourceTree = "<group>"; };
 		4622555AC39839C46052D44F /* InkLayer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = InkLayer.swift; sourceTree = "<group>"; };
@@ -44,13 +49,16 @@
 		572660002A38184E8C3BADFA /* CanvasScreen.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CanvasScreen.swift; sourceTree = "<group>"; };
 		64B67552DCD5949B3BC2F70D /* EnjinApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EnjinApp.swift; sourceTree = "<group>"; };
 		6A294F6F430A7C20694CAB29 /* SmokeTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SmokeTests.swift; sourceTree = "<group>"; };
+		8B7EAFE44EECEDCA640A7AF7 /* AgentDock.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AgentDock.swift; sourceTree = "<group>"; };
 		91D87DDA95FA18B171AB889A /* CanvasController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CanvasController.swift; sourceTree = "<group>"; };
 		DA6117F0186B6135D735DCA7 /* EnjinUITests.xctest */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.cfbundle; path = EnjinUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+		DB313F315AC80EDD43B0D992 /* AppSettings.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppSettings.swift; sourceTree = "<group>"; };
 		E5D9D8E170A4841732046796 /* Base.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = Base.xcconfig; sourceTree = "<group>"; };
 		F4F35BDB12CA703EB35A0213 /* SchemeHandler.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SchemeHandler.swift; sourceTree = "<group>"; };
 		F568033F43CC69352E8396FA /* demo-notebook.json */ = {isa = PBXFileReference; lastKnownFileType = text.json; path = "demo-notebook.json"; sourceTree = "<group>"; };
 		F685A102603C08F6455FC835 /* LibraryView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LibraryView.swift; sourceTree = "<group>"; };
 		F7533C79DD18DCBADCDFE713 /* Library.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Library.swift; sourceTree = "<group>"; };
+		F7B8FED4FFF1EDF10FC0E58B /* UITestBackend.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UITestBackend.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -103,6 +111,15 @@
 			path = Canvas;
 			sourceTree = "<group>";
 		};
+		A377514BAF49699CB1070D0E /* Settings */ = {
+			isa = PBXGroup;
+			children = (
+				DB313F315AC80EDD43B0D992 /* AppSettings.swift */,
+				2C61AE85BA8BC51497310158 /* SettingsView.swift */,
+			);
+			path = Settings;
+			sourceTree = "<group>";
+		};
 		AB2718F984D7453BEA3518AF /* UITests */ = {
 			isa = PBXGroup;
 			children = (
@@ -123,7 +140,9 @@
 		BCA8941AA8F55E1B24BE51EC /* Agent */ = {
 			isa = PBXGroup;
 			children = (
+				8B7EAFE44EECEDCA640A7AF7 /* AgentDock.swift */,
 				0682FAD4E167B1DE422DF1AD /* AgentSpikeView.swift */,
+				F7B8FED4FFF1EDF10FC0E58B /* UITestBackend.swift */,
 			);
 			path = Agent;
 			sourceTree = "<group>";
@@ -145,6 +164,7 @@
 				BCA8941AA8F55E1B24BE51EC /* Agent */,
 				9AB09C8F1EDD0D7DABF525AB /* Canvas */,
 				7DF9D4DAE49ABA410699C6E5 /* Library */,
+				A377514BAF49699CB1070D0E /* Settings */,
 			);
 			path = Sources;
 			sourceTree = "<group>";
@@ -298,7 +318,9 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				9B5FD5D7E51A09A5B1802CD5 /* AgentDock.swift in Sources */,
 				431106171A4CE89700E476B5 /* AgentSpikeView.swift in Sources */,
+				70377B5A35A91DF9999B4D6E /* AppSettings.swift in Sources */,
 				298F151BB991BE9C7CF81380 /* CanvasController.swift in Sources */,
 				B49F4B023D0899EA6386BB8C /* CanvasScreen.swift in Sources */,
 				3B277B7E7B91236DB9A852B3 /* CardDetailSheet.swift in Sources */,
@@ -308,6 +330,8 @@
 				39894EAC037A27888974D57A /* LibraryView.swift in Sources */,
 				3C76EA3FDB16774AF37634EC /* MapView.swift in Sources */,
 				FD51CB226F27CFF5D8371497 /* SchemeHandler.swift in Sources */,
+				4212EC07E3335CFE5504A7B1 /* SettingsView.swift in Sources */,
+				60432232E6FF47FCF7499A61 /* UITestBackend.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

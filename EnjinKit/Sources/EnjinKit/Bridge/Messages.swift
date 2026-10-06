@@ -118,6 +118,15 @@ public enum NativeMethod {
         public var placed: [PlacedCard]
     }
 
+    public struct CanvasFrame: Codable, Sendable {
+        public var cardId: String
+        public init(cardId: String) { self.cardId = cardId }
+    }
+
+    public struct CanvasFrameResult: Codable, Sendable {
+        public var framed: Bool
+    }
+
     public struct CanvasFlash: Codable, Sendable {
         public var cardId: String
         public init(cardId: String) { self.cardId = cardId }

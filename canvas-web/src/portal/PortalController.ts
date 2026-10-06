@@ -25,6 +25,8 @@ export class PortalController {
   private changeTimer: number | undefined;
   private pendingFlush: (() => void) | null = null;
   private lastSelection = "";
+  /** Portal being transitioned to, and a promise that settles once it's installed. */
+  private loading: { portalId: string; done: Promise<void> } | null = null;
   private focusTimer: number | undefined;
   private lastTap: { t: number; x: number; y: number } | null = null;
   private unsubs: (() => void)[] = [];
@@ -61,13 +63,37 @@ export class PortalController {
     this.transitioning = true;
     this.gate.block("transition");
     try {
-      if (transition === "dive") await this.diveIn(scene);
-      else if (transition === "exit") await this.exitTo(scene, focusCardId);
-      else await this.jumpTo(scene, focusCardId);
+      await this.loadingInto(scene.portalId, async () => {
+        if (transition === "dive") await this.diveIn(scene);
+        else if (transition === "exit") await this.exitTo(scene, focusCardId);
+        else await this.jumpTo(scene, focusCardId);
+      });
     } finally {
       this.transitioning = false;
       this.gate.unblock("transition");
     }
+  }
+
+  /** Mark `portalId` as arriving so ops for it wait instead of being dropped. */
+  private async loadingInto<T>(portalId: string, work: () => Promise<T>): Promise<T> {
+    let settle!: () => void;
+    this.loading = { portalId, done: new Promise<void>((r) => (settle = r)) };
+    try {
+      return await work();
+    } finally {
+      settle();
+      this.loading = null;
+    }
+  }
+
+  frame(cardId: string): { framed: boolean } {
+    const c = cardRects(this.api.getSceneElements()).find((r) => r.cardId === cardId);
+    if (!c || this.transitioning) return { framed: false };
+    const vp = this.viewport();
+    // Fit the card comfortably, but never zoom in far enough to trigger a dive.
+    const z = Math.min(fitZoom(c.rect, vp.width, vp.height, 0.3), this.fittedZoom * 1.2);
+    void this.flyTo(c.rect, z, 450);
+    return { framed: true };
   }
 
   async flash(cardId: string): Promise<void> {
@@ -86,7 +112,13 @@ export class PortalController {
     }
   }
 
-  applyOps({ portalId, ops }: Params<NativeToWeb, "canvas.applyOps">): Result<NativeToWeb, "canvas.applyOps"> {
+  async applyOps(p: Params<NativeToWeb, "canvas.applyOps">): Promise<Result<NativeToWeb, "canvas.applyOps">> {
+    // Ops for the portal we're diving into land once it's on screen, not never.
+    if (this.loading?.portalId === p.portalId) await this.loading.done;
+    return this.applyOpsNow(p);
+  }
+
+  private applyOpsNow({ portalId, ops }: Params<NativeToWeb, "canvas.applyOps">): Result<NativeToWeb, "canvas.applyOps"> {
     if (!this.scene || this.scene.portalId !== portalId) return { placed: [] };
     const upserts = ops.flatMap((o) => (o.op === "upsert" ? [o.card] : []));
     const deletes = ops.flatMap((o) => (o.op === "delete" ? [o.cardId] : []));
@@ -213,7 +245,7 @@ export class PortalController {
         this.bridge.request("portal.enter", { portalId: this.scene.portalId, cardId }),
         rect ? this.flyTo(rect, fitZoom(rect, vp.width, vp.height, 0.02), 160) : Promise.resolve(),
       ]);
-      if (next) await this.diveIn(next);
+      if (next) await this.loadingInto(next.portalId, () => this.diveIn(next));
     } catch (e) {
       this.bridge.notify("log.event", { level: "error", message: `dive failed: ${String(e)}` });
     } finally {
@@ -230,7 +262,7 @@ export class PortalController {
     this.gate.block("transition");
     try {
       const res = await this.bridge.request("portal.exit", { portalId: this.scene.portalId });
-      if (res) await this.exitTo(res.scene, res.focusCardId);
+      if (res) await this.loadingInto(res.scene.portalId, () => this.exitTo(res.scene, res.focusCardId));
     } catch (e) {
       this.bridge.notify("log.event", { level: "error", message: `exit failed: ${String(e)}` });
     } finally {

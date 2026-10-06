@@ -86,6 +86,11 @@ export const nativeToWeb = {
     /** Where each upserted card ended up (empty if the portal isn't current). */
     result: z.object({ placed: z.array(PlacedCard) }),
   },
+  "canvas.frame": {
+    /** Kid asked to go to a card (e.g. tapped a suggestion): ease the camera onto it. */
+    params: z.object({ cardId: z.string() }),
+    result: z.object({ framed: z.boolean() }),
+  },
   "canvas.flash": {
     params: z.object({ cardId: z.string() }),
     result: Null,
