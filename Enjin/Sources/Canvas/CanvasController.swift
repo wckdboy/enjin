@@ -15,7 +15,10 @@ final class CanvasController: NSObject {
     /// The single selected card, if exactly one is selected.
     private(set) var selectedCardId: String?
     /// Card whose detail sheet should be showing (set by the card's Open action).
-    var openCardId: String?
+    var openCardId: String? {
+        // Opening a card is when its body gets written, if Enjin hasn't yet (just in time).
+        didSet { if let id = openCardId, id != oldValue { agent.writeBody(for: id) } }
+    }
     /// The tool rail's choice.
     private(set) var tool: EnjinTool = .pen
     /// The world (default) or the classic card canvas, fixed when the notebook opens.
@@ -53,6 +56,7 @@ final class CanvasController: NSObject {
         // In the world, Pencil touches the world like a finger (sketch panels come later).
         if isWorld { tool = .select }
         agent = AgentSession(session: session, backend: settings.makeBackend(), telemetry: telemetry)
+        agent.lightBackend = settings.makeLightBackend()
         agent.dailyCapUSD = settings.dailyCapUSD
         agent.imageFinder = settings.makeImageFinder()
         agent.imageGenerator = settings.makeIllustrator()
@@ -123,6 +127,7 @@ final class CanvasController: NSObject {
     /// Re-read settings (key, model, cap) after the parent changed them.
     func refreshAgent() {
         agent.backend = settings.makeBackend()
+        agent.lightBackend = settings.makeLightBackend()
         agent.dailyCapUSD = settings.dailyCapUSD
         agent.imageFinder = settings.makeImageFinder()
         agent.imageGenerator = settings.makeIllustrator()

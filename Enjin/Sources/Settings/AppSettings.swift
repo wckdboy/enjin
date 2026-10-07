@@ -128,6 +128,17 @@ final class AppSettings {
         }
     }
 
+    /// The small, cheap model for small jobs (the companion, writing a card on demand): Haiku, on the same
+    /// key, whenever Claude is in use. Nil otherwise (they fall back to the main backend).
+    func makeLightBackend() -> AgentBackend? {
+        #if DEBUG
+        if ProcessInfo.processInfo.arguments.contains("-uiTestingFakeAgent") { return nil }
+        #endif
+        guard let main = makeBackend() as? AnthropicBackend, main.model != .haiku45,
+              let key = Keychain.read(Self.keyAccount), !key.isEmpty else { return nil }
+        return AnthropicBackend(apiKey: key, workspaceId: workspaceId, model: .haiku45, effort: nil)
+    }
+
     /// One line for the parent: what Enjin will actually use right now.
     var activeDescription: LocalizedStringKey {
         guard let b = makeBackend() else {

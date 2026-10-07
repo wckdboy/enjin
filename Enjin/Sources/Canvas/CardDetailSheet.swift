@@ -16,6 +16,8 @@ struct CardDetailSheet: View {
     /// The full sandboxed page for a live figure (3D model, diorama, widget, live code).
     var loadLive: (() async -> String?)?
     var loadImage: ((CardImage) async -> UIImage?)?
+    /// Enjin is writing this card's body right now (just in time, on open).
+    var writing = false
     @State private var picture: UIImage?
     @State private var liveDocument: String?
 
@@ -24,8 +26,9 @@ struct CardDetailSheet: View {
     @State private var bodyText: String
 
     init(card: StoredCard, onSave: @escaping (String, String, String?) -> Void, onDive: (() -> Void)?,
-         loadLive: (() async -> String?)? = nil, loadImage: ((CardImage) async -> UIImage?)? = nil) {
+         loadLive: (() async -> String?)? = nil, writing: Bool = false, loadImage: ((CardImage) async -> UIImage?)? = nil) {
         self.card = card
+        self.writing = writing
         self.onSave = onSave
         self.onDive = onDive
         self.loadLive = loadLive
@@ -86,6 +89,12 @@ struct CardDetailSheet: View {
                         Text(card.summary).font(Theme.body(20)).foregroundStyle(Theme.ink)
                         if let body = card.body, !body.isEmpty {
                             Text(body).font(Theme.body(18)).foregroundStyle(Theme.inkSoft)
+                                .transition(.opacity)
+                        } else if writing {
+                            HStack(spacing: 10) {
+                                Activity(size: 16, working: true)
+                                Text("Enjin is writing this for you…").font(Theme.body(17)).foregroundStyle(Theme.fgSoft)
+                            }
                         }
                     }
 

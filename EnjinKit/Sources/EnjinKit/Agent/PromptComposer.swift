@@ -151,14 +151,14 @@ public enum PromptComposer {
             Nobody asked: you noticed something, as their partner. \(observation) \
             Respond only if it helps, the way a friend learning alongside them would: one short line (under 25 words) that \
             notices what they're doing, adds the one thing that makes it click, or asks what they think (askLearner, with \
-            choices). If a picture or a widget would help right there, add ONE card next to it with createCards. If they \
-            seem to be in flow, reply with nothing and make no calls. If this tells you something lasting about how they \
-            learn, rememberAboutLearner. Never repeat what's already on the canvas.
+            choices). If showing something new would help, offer it with askLearner. If they seem to be in flow, reply \
+            with nothing and make no calls. If this tells you something lasting about how they learn, \
+            rememberAboutLearner. Never repeat what's already on the canvas.
             """
         case .begin:
             return """
             The explorer just started a new notebook about "\(session.title)". Open it up: one short, excited sentence, \
-            then createCards with 3-4 filled topic cards that show how this really works (each with a body and an image \
+            then createCards with 3-4 filled topic cards that show how this really works (the key one with a body; each with an image \
             phrase), one note card with a visual (the key process, parts, numbers or formula), and 2 stubs (with image \
             phrases) as doors to explore. Concrete, accurate, surprising.
             """
@@ -178,7 +178,7 @@ public enum PromptComposer {
             return """
             The explorer dived into \(cardId) "\(c?.title ?? "")"\(c.map { $0.summary.isEmpty ? "" : " (\($0.summary))" } ?? ""), \
             and it's empty inside. Build the next level down: createCards with parentCardId \(cardId) (4-5 cards that go deeper \
-            than the card itself: the mechanism, the parts, real numbers, an example; filled cards with bodies, at least one with \
+            than the card itself: the mechanism, the parts, real numbers, an example; filled cards (a body only on the key one), at least one with \
             a visual, and 2 stubs). Don't change the card itself. Keep your reply to one short sentence.
             """
         case .fill(let cardId):
@@ -186,7 +186,7 @@ public enum PromptComposer {
             return """
             The explorer dived into the stub card \(cardId) "\(c?.title ?? "")"\(c.map { $0.summary.isEmpty ? "" : " (\($0.summary))" } ?? ""). \
             Fill it: updateCard \(cardId) with a real summary, a body and state "filled", then createCards with parentCardId \(cardId) \
-            (3-5 cards: filled cards with bodies, at least one with a visual, and 2 stubs). Keep your reply to one short sentence.
+            (3-5 cards: filled cards (a body only on the key one), at least one with a visual, and 2 stubs). Keep your reply to one short sentence.
             """
         }
     }

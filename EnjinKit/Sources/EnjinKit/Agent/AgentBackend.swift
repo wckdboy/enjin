@@ -12,7 +12,25 @@ public protocol AgentBackend: Sendable {
              execute: @escaping @Sendable (_ name: String, _ input: JSONValue) async -> ToolOutcome) async throws -> AgentTurnResult
 }
 
-public struct AnthropicBackend: AgentBackend {
+/// What a turn may cost at most: output tokens (and web search, where there is any).
+public struct TurnBudget: Sendable, Equatable {
+    public var maxTokens: Int
+    public var webSearch: Bool
+    public init(maxTokens: Int, webSearch: Bool) { self.maxTokens = maxTokens; self.webSearch = webSearch }
+    /// Building a world: cards with figures and module specs.
+    public static let build = TurnBudget(maxTokens: 12_000, webSearch: true)
+    /// A line, a question, a note to self.
+    public static let small = TurnBudget(maxTokens: 900, webSearch: false)
+}
+
+/// Backends that can be held to a budget per turn.
+public protocol BudgetedBackend: AgentBackend {
+    func run(thread: inout [JSONValue], system: String, tools: [JSONValue], budget: TurnBudget,
+             onEvent: @escaping @Sendable (ProviderEvent) -> Void,
+             execute: @escaping @Sendable (_ name: String, _ input: JSONValue) async -> ToolOutcome) async throws -> AgentTurnResult
+}
+
+public struct AnthropicBackend: BudgetedBackend {
     public var client: AnthropicClient
     public var model: AnthropicModel
     public var effort: String?
@@ -39,7 +57,15 @@ public struct AnthropicBackend: AgentBackend {
     public func run(thread: inout [JSONValue], system: String, tools: [JSONValue],
                     onEvent: @escaping @Sendable (ProviderEvent) -> Void,
                     execute: @escaping @Sendable (String, JSONValue) async -> ToolOutcome) async throws -> AgentTurnResult {
-        var config = AgentConfig(model: model, system: system, tools: tools, effort: effort)
+        try await run(thread: &thread, system: system, tools: tools, budget: .build, onEvent: onEvent, execute: execute)
+    }
+
+    public func run(thread: inout [JSONValue], system: String, tools: [JSONValue], budget: TurnBudget,
+                    onEvent: @escaping @Sendable (ProviderEvent) -> Void,
+                    execute: @escaping @Sendable (String, JSONValue) async -> ToolOutcome) async throws -> AgentTurnResult {
+        var config = AgentConfig(model: model, system: system, tools: tools, effort: model.supportsEffort ? effort : nil)
+        config.maxTokens = budget.maxTokens
+        config.webSearch = budget.webSearch
         config.blockedDomains = blockedDomains
         config.endAfterClientTools = true
         // Search results are big (input tokens) and slow; one per turn is plenty for a kid's question.

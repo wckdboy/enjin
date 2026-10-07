@@ -184,6 +184,8 @@ public enum AgentTools {
     ])
 
     public static let all = [createCards, updateCard, suggestFocus, askLearner, rememberAboutLearner]
+    /// The companion's small turns: talk, ask, remember, point. No card-making (that's a real turn).
+    public static let light = [askLearner, rememberAboutLearner, suggestFocus]
     /// The on-device model gets the minimum (plan §5.4).
     public static let reduced = [createCards, updateCard]
 

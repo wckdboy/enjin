@@ -12,6 +12,9 @@ public struct AgentConfig: Sendable {
     public var blockedDomains: [String] = []
     public var maxRounds = 5
     public var maxTokens = 16_000
+    /// Keep the static prefix (tools + system) cached for an hour, not five minutes: explorers
+    /// pause to read and play, and every expired prefix is paid for again at the write price.
+    public var longCache = true
     /// End the turn as soon as the model's client tool calls all succeed, instead
     /// of sending the results back for another round just to say "done". The
     /// results are returned as `pendingToolResults` and must open the next user
@@ -77,7 +80,9 @@ public struct AgentLoop: Sendable {
         var body: [String: JSONValue] = [
             "model": .string(config.model.id),
             "max_tokens": .number(Double(config.maxTokens)),
-            "system": .array([.object(["type": .string("text"), "text": .string(config.system)])]),
+            "system": .array([.object(config.longCache
+                ? ["type": .string("text"), "text": .string(config.system), "cache_control": .object(["type": .string("ephemeral"), "ttl": .string("1h")])]
+                : ["type": .string("text"), "text": .string(config.system)])]),
             "tools": .array(tools),
             "messages": .array(messages),
             // Auto-places a cache breakpoint on the last cacheable block each turn.

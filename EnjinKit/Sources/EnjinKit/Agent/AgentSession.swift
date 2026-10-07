@@ -74,6 +74,9 @@ public final class AgentSession {
     public private(set) var prefetchingCardId: String?
 
     @ObservationIgnored public var backend: AgentBackend?
+    /// A small, cheap model for small jobs: the companion's nudges, writing a card's body on demand.
+    /// Without one, those use `backend`.
+    @ObservationIgnored public var lightBackend: AgentBackend?
     /// Real photos (Wikipedia). With `imageGenerator` nil too, pictures are off.
     @ObservationIgnored public var imageFinder: ImageFinder?
     /// On-device illustrations (Image Playground).
@@ -109,7 +112,10 @@ public final class AgentSession {
 
     /// Start a fresh thread after this many kid turns, rather than editing history
     /// (edited history invalidates thinking blocks; the canvas summary carries context).
-    public static let maxThreadTurns = 8
+    public static let maxThreadTurns = 6
+    /// ...or once the thread is this big (characters): model specs and live code pile up, and every
+    /// turn re-reads the whole thread. The canvas summary carries what matters into the fresh one.
+    public static let maxThreadChars = 60_000
 
     /// What a turn changed, for undo.
     struct TurnRecord {
@@ -255,8 +261,10 @@ public final class AgentSession {
         defer {
             if kind == .prefetch { prefetchingCardId = nil }
         }
-        guard let backend else {
-            if kind != .prefetch { status = .failed(strings.needsKey) }
+        // A nudge is small: the light model, a fresh context of its own, no card-making.
+        let light = kind == .nudge
+        guard let backend = (light ? lightBackend : nil) ?? backend else {
+            if kind != .prefetch && kind != .nudge { status = .failed(strings.needsKey) }
             return
         }
         let spent = await telemetry?.spentToday() ?? 0
@@ -299,9 +307,9 @@ public final class AgentSession {
                                               compact: backend.isReduced, language: language,
                                               learner: learner?.promptText,
                                               attention: attention?.summary(since: since) { [session] id in session.card(id)?.title })
-        var thread = threads[portalId] ?? []
-        var owed = pendingResults[portalId] ?? []
-        if Self.kidTurns(thread) >= Self.maxThreadTurns {
+        var thread = light ? [] : threads[portalId] ?? []
+        var owed = light ? [] : pendingResults[portalId] ?? []
+        if Self.kidTurns(thread) >= Self.maxThreadTurns || Self.size(thread) > Self.maxThreadChars {
             thread = []
             owed = []
         }
@@ -309,15 +317,17 @@ public final class AgentSession {
         thread.append(.object(["role": .string("user"), "content": owed.isEmpty
                 ? .string(userText) : .array(owed + [.object(["type": .string("text"), "text": .string(userText)])])]))
 
-        let tools = backend.isReduced ? AgentTools.reduced : AgentTools.all
-        let executor = ToolExecutor(agent: self, portalId: portalId, turnId: turnId, cardLimit: kind == .nudge ? 1 : AgentTools.maxCardsPerTurn)
+        let tools = light ? AgentTools.light : backend.isReduced ? AgentTools.reduced : AgentTools.all
+        let system = light ? Persona.companion : Persona.system
+        let budget: TurnBudget = light ? .small : .build
+        let executor = ToolExecutor(agent: self, portalId: portalId, turnId: turnId, cardLimit: light ? 0 : AgentTools.maxCardsPerTurn)
         defer { Task { await executor.discardUnusedDrafts() } }
         let foreground = kind != .prefetch
         let started = Date()
         var made: [String] = []
 
         do {
-            let result = try await backend.run(thread: &thread, system: Persona.system, tools: tools, onEvent: { [weak self, executor] e in
+            let onEvent: @Sendable (ProviderEvent) -> Void = { [weak self, executor] e in
                 Task { @MainActor in
                     executor.observe(e)
                     if case .toolInputProgress(let id, let name, let partial) = e, name == "createCards" {
@@ -334,13 +344,20 @@ public final class AgentSession {
                     default: break
                     }
                 }
-            }, execute: { [executor] name, input in
-                await executor.execute(name, input)
-            })
+            }
+            let execute: @Sendable (String, JSONValue) async -> ToolOutcome = { [executor] name, input in await executor.execute(name, input) }
+            let result = if let budgeted = backend as? BudgetedBackend {
+                try await budgeted.run(thread: &thread, system: system, tools: tools, budget: budget, onEvent: onEvent, execute: execute)
+            } else {
+                try await backend.run(thread: &thread, system: system, tools: tools, onEvent: onEvent, execute: execute)
+            }
             try Task.checkCancellation()
 
-            threads[portalId] = thread
-            pendingResults[portalId] = result.pendingToolResults
+            // A nudge's little context is thrown away; the portal's thread is the real conversation.
+            if !light {
+                threads[portalId] = thread
+                pendingResults[portalId] = result.pendingToolResults
+            }
             record.created = executor.created
             record.previous.merge(executor.previous) { first, _ in first }
             made = executor.created.compactMap { session.card($0)?.title }
@@ -386,6 +403,11 @@ public final class AgentSession {
                 "total_ms": .number(Date().timeIntervalSince(started) * 1000), "error": .string(cancelled ? "cancelled" : "\(error)"),
             ])
         }
+    }
+
+    /// Rough size of a thread, in characters of JSON.
+    static func size(_ thread: [JSONValue]) -> Int {
+        thread.reduce(0) { $0 + ((try? JSONEncoder().encode($1))?.count ?? 0) }
     }
 
     /// Kid/request turns in a thread (user messages carrying text, not just tool results).
@@ -438,6 +460,50 @@ public final class AgentSession {
 
     public func clearNextSteps() {
         nextSteps = []
+    }
+
+    /// A card being written on demand (its body), if any.
+    public private(set) var writingBodyFor: String?
+
+    /// Bodies are written just in time: when the explorer opens a card that has none, Enjin writes it
+    /// now, with the light model and a tiny prompt (no canvas, no tools). Cheap, and only for cards they read.
+    public func writeBody(for cardId: String) {
+        guard writingBodyFor == nil, let card = session.card(cardId), card.isActive, card.createdBy == .agent,
+              card.state == .filled, card.body?.isEmpty ?? true, let backend = lightBackend ?? backend, !backend.isReduced else { return }
+        writingBodyFor = cardId
+        Task {
+            defer { writingBodyFor = nil }
+            let path = session.path(to: card.portalId).map(\.title).joined(separator: " › ")
+            var prompt = """
+            Notebook: \(session.title). Where: \(path).
+            The card: "\(card.title)": \(card.summary)
+            \(PromptComposer.levelText(session.data.meta.level ?? .student))
+            """
+            if let learner { prompt += "\n<learner>\n\(learner.promptText)</learner>" }
+            if language != .en { prompt += "\nWrite in \(language.promptName)." }
+            var thread: [JSONValue] = [.object(["role": .string("user"), "content": .string(prompt)])]
+            let text = TextBox()
+            let onEvent: @Sendable (ProviderEvent) -> Void = { e in if case .textDelta(let t) = e { Task { @MainActor in text.value += t } } }
+            let none: @Sendable (String, JSONValue) async -> ToolOutcome = { _, _ in .error("no tools here") }
+            do {
+                let result = if let b = backend as? BudgetedBackend {
+                    try await b.run(thread: &thread, system: Persona.writer, tools: [], budget: .small, onEvent: onEvent, execute: none)
+                } else {
+                    try await backend.run(thread: &thread, system: Persona.writer, tools: [], onEvent: onEvent, execute: none)
+                }
+                await Task.yield()
+                let body = AgentTools.clip(text.value, AgentTools.bodyLimit)
+                guard !body.isEmpty, let updated = try await session.updateCard(cardId, by: .agent, { if $0.body?.isEmpty ?? true { $0.body = body } })
+                else { return }
+                await canvas?.apply(portalId: updated.portalId, ops: [.upsert(session.bridgeCard(updated))])
+                await telemetry?.record("agent_turn", [
+                    "kind": .string("body"), "model": .string(backend.modelId),
+                    "cost": .number((Pricing.of(backend.modelId).cost(result.usage) * 10_000).rounded() / 10_000),
+                ])
+            } catch {
+                log.error("writing a body failed: \(error.localizedDescription)")
+            }
+        }
     }
 
     /// Give a card a picture: uses its phrase, asks the on-device model for one
@@ -528,6 +594,10 @@ public final class AgentSession {
         await canvas?.flash(cardId: s.cardId)
     }
 }
+
+/// Text collected from a stream.
+@MainActor
+final class TextBox { var value = "" }
 
 /// A mutable bit shared with a turn's event handler.
 @MainActor

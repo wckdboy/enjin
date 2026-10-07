@@ -170,10 +170,37 @@ struct PartnerTests {
         #expect(backend.prompts.last?.contains("Turns every 3D model around before reading") == true)
     }
 
-    @Test func aNudgeAddsAtMostOneCard() async throws {
-        let (agent, _, _) = try await make([.init(calls: [createCards([card("One"), card("Two"), card("Three")])], text: "Here.")])
+    // MARK: - Cost
+
+    @Test func nudgesRunOnTheLightModelInTheirOwnSmallContext() async throws {
+        let (agent, main, _) = try await make([])
+        let light = ScriptedBackend([.init(calls: [createCards([card("Nope")])], text: "See the overlap?")])
+        agent.lightBackend = light
         agent.nudge("They've been looking at \"Legions\" for 12 seconds.", portalId: "p-root", focusCardId: "c-legions")
         await waitIdle(agent)
-        #expect(agent.session.activeCards(in: "p-root").filter { $0.createdByTurnId != nil }.map(\.title) == ["One"])
+        #expect(main.prompts.isEmpty, "the main model isn't used for a nudge")
+        #expect(light.prompts.count == 1)
+        #expect(light.threadLengths == [1], "a fresh one-message context, not the portal's thread")
+        #expect(agent.reply == "See the overlap?")
+        // A nudge can't build; making cards is a real turn.
+        #expect(agent.session.activeCards(in: "p-root").filter { $0.createdByTurnId != nil }.isEmpty)
+    }
+
+    @Test func aCardsBodyIsWrittenWhenItsOpenedOnTheLightModel() async throws {
+        let (agent, main, canvas) = try await make([])
+        let light = ScriptedBackend([.init(text: "Legions marched 30 km a day, building a fortified camp every night.")])
+        agent.lightBackend = light
+        let card = try await agent.session.createCard(in: "p-root", type: .topic, title: "Marching camps", summary: "A fort every night.", author: .agent)
+        agent.writeBody(for: card.id)
+        for _ in 0..<200 where agent.session.card(card.id)?.body == nil { try await Task.sleep(for: .milliseconds(5)) }
+        #expect(agent.session.card(card.id)?.body == "Legions marched 30 km a day, building a fortified camp every night.")
+        #expect(main.prompts.isEmpty)
+        #expect(light.prompts.first?.contains("\"Marching camps\": A fort every night.") == true)
+        for _ in 0..<200 where canvas.ops.isEmpty { try await Task.sleep(for: .milliseconds(5)) }
+        #expect(canvas.ops.last?.0 == "p-root")
+        // Only once, and never over a body that's there.
+        agent.writeBody(for: card.id)
+        try await Task.sleep(for: .milliseconds(50))
+        #expect(light.prompts.count == 1)
     }
 }
