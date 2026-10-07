@@ -205,6 +205,29 @@ public final class NotebookSession {
         return portal
     }
 
+    /// What's inside a topic, without going in (nil if it has never been opened).
+    public func peek(cardId: String) async throws -> PortalScene? {
+        guard let portal = childPortal(of: cardId) else { return nil }
+        return try await scene(for: portal.portalId)
+    }
+
+    /// Go inside something the explorer zoomed into: a topic card as it is, anything else
+    /// (a part of a model, a panel) as a topic of its own, found by title or made as a stub to fill.
+    public func zoomInto(portalId: String, title: String, detail: String?, cardId: String?) async throws -> (scene: PortalScene, cardId: String)? {
+        if let cardId, let c = card(cardId), c.isActive, c.type == .topic, let scene = try await enter(cardId: cardId) {
+            return (scene, cardId)
+        }
+        let name = String(title.trimmingCharacters(in: .whitespacesAndNewlines).prefix(80))
+        guard !name.isEmpty, portal(portalId) != nil else { return nil }
+        let existing = activeCards(in: portalId).first { $0.type == .topic && $0.title.caseInsensitiveCompare(name) == .orderedSame }
+        let topic: StoredCard
+        if let existing { topic = existing } else {
+            topic = try await createCard(in: portalId, type: .topic, title: name, summary: detail ?? "", state: .stub, author: .kid)
+        }
+        guard let scene = try await enter(cardId: topic.id) else { return nil }
+        return (scene, topic.id)
+    }
+
     public func exit(from portalId: String) async throws -> (scene: PortalScene, focusCardId: String)? {
         guard let p = portal(portalId), let parent = p.parentPortalId, let owner = p.ownerCardId,
               let scene = try await scene(for: parent) else { return nil }

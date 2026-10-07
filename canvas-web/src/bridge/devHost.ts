@@ -97,6 +97,19 @@ function cardsIn(p: DemoPortal): Card[] {
   });
 }
 
+/** The portal inside a topic card, made on first use (as native does). */
+function portalInside(cardId: string): DemoPortal | null {
+  const card = data.cards.find((c) => c.id === cardId);
+  if (!card || card.type !== "topic") return null;
+  let p = portals.find((q) => q.ownerCardId === cardId);
+  if (!p) {
+    const parent = portals.find((q) => q.cardIds.includes(cardId));
+    p = { portalId: `p-${cardId}`, title: card.title, parentPortalId: parent?.portalId ?? null, ownerCardId: cardId, cardIds: [] } as unknown as DemoPortal;
+    portals.push(p);
+  }
+  return p;
+}
+
 export function sceneFor(portalId: string): PortalScene {
   const path: { portalId: string; title: string }[] = [];
   for (let p = portals.find((q) => q.portalId === portalId); p; p = portals.find((q) => q.portalId === p!.parentPortalId)) {
@@ -120,8 +133,26 @@ export function devHost(getBridge: () => Bridge): NativeTransport {
           setTimeout(() => getBridge().handle({ v: PROTOCOL_VERSION, id: "n1", method: "portal.load", params: { scene: sceneFor(data.rootPortalId), transition: "jump" } }));
           return ok(req, { accepted: true });
         case "portal.enter": {
+          const p = portalInside(params.cardId!);
+          return ok(req, p ? sceneFor(p.portalId) : null);
+        }
+        case "portal.peek": {
           const p = portals.find((q) => q.ownerCardId === params.cardId);
           return ok(req, p ? sceneFor(p.portalId) : null);
+        }
+        case "portal.zoomInto": {
+          // Like native: a topic is entered; anything else becomes a stub topic (by title) first.
+          const from = portals.find((q) => q.portalId === params.portalId);
+          if (!from) return ok(req, null);
+          const given = data.cards.find((c) => c.id === params.cardId && c.type === "topic");
+          let topic = given ?? data.cards.find((c) => from.cardIds.includes(c.id) && c.type === "topic" && c.title.toLowerCase() === params.title!.toLowerCase());
+          if (!topic) {
+            topic = { id: `c-zoom-${data.cards.length}`, type: "topic", title: params.title!, summary: params.detail ?? "", state: "stub", childCount: 0 } as Card;
+            data.cards.push(topic);
+            from.cardIds.push(topic.id);
+          }
+          const p = portalInside(topic.id);
+          return ok(req, p ? { scene: sceneFor(p.portalId), cardId: topic.id } : null);
         }
         case "portal.exit": {
           const p = portals.find((q) => q.portalId === params.portalId);

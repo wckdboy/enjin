@@ -261,6 +261,22 @@ export const webToNative = {
     /** null = cannot dive (e.g. not a topic card). */
     result: PortalScene.nullable(),
   },
+  "portal.peek": {
+    /** A look inside a topic, to show its world in the door before you go in. No side effects. */
+    params: z.object({ cardId: z.string() }),
+    /** null = nothing inside yet. */
+    result: PortalScene.nullable(),
+  },
+  "portal.zoomInto": {
+    /**
+     * The explorer kept zooming into something (a part of a model, a panel): go inside it.
+     * A topic card is entered; anything else becomes a topic of its own (found by title, or
+     * made as a stub that Enjin fills), then entered.
+     */
+    params: z.object({ portalId: z.string(), title: z.string(), detail: z.string().optional(), cardId: z.string().optional() }),
+    /** cardId: the topic now entered. null = can't go inside. */
+    result: z.object({ scene: PortalScene, cardId: z.string() }).nullable(),
+  },
   "portal.exit": {
     params: z.object({ portalId: z.string() }),
     /** null = already at root. */

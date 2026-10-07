@@ -1,46 +1,41 @@
 import * as THREE from "three";
 import { RoomEnvironment } from "three/examples/jsm/environments/RoomEnvironment.js";
 
-/** Things drawn in colour but left out of the ink pass (contact shadows, panel holes). */
+/** Things drawn in colour but left out of the ink pass (contact shadows). */
 export const COLOR_ONLY = 1;
 
 /**
- * ENJIN's look in 3D: a white studio (soft room light, a shadow catcher, a
- * pale gradient, soft contact shadows), matte whites and greys, real glass, and ink: every
- * silhouette and crease gets a fine black line, found from depth and normal
- * edges in a second pass. A touch of grain, like the print shader on pictures.
+ * ENJIN's look in 3D: soft studio light (each model carries its own), real
+ * glass, matte whites and greys, and ink: every silhouette and crease gets a
+ * fine black line, found from depth and normal edges in a second pass. A touch
+ * of grain, like the print shader on pictures.
  *
- * Per frame: colour pass (MSAA) -> normal+depth pass -> composite to screen.
+ * One transparent canvas over the plane draws every model on screen into its
+ * own rectangle (wherever the plane has put it, at any zoom), then inks them
+ * all at once: colour pass (MSAA) -> normal+depth pass -> composite.
  */
 export class Look {
   readonly renderer: THREE.WebGLRenderer;
+  readonly environment: THREE.Texture;
   private color: THREE.WebGLRenderTarget;
   private normals: THREE.WebGLRenderTarget;
   private normalMaterial = new THREE.MeshNormalMaterial();
   private quad: THREE.Mesh<THREE.PlaneGeometry, THREE.ShaderMaterial>;
   private post = new THREE.Scene();
   private postCam = new THREE.OrthographicCamera(-1, 1, 1, -1, 0, 1);
+  private size = { w: 1, h: 1 };
 
-  constructor(private canvas: HTMLCanvasElement, scene: THREE.Scene) {
-    // Transparent: the backdrop and the glass panels (CSS, under this canvas) show through,
-    // and 3D things in front of a panel still cover it (see Panels' holes).
+  constructor(canvas: HTMLCanvasElement) {
     this.renderer = new THREE.WebGLRenderer({ canvas, antialias: false, alpha: true, powerPreference: "high-performance" });
     this.renderer.setClearColor(0x000000, 0);
     this.renderer.setPixelRatio(Math.min(2, devicePixelRatio || 1));
     this.renderer.outputColorSpace = THREE.SRGBColorSpace;
     this.renderer.toneMapping = THREE.ACESFilmicToneMapping;
     this.renderer.toneMappingExposure = 1.05;
-
-    // Studio light: a soft room for reflections, a key light, a gentle fill. No shadow maps:
-    // contact shadows (WorldView) are steadier across GPUs and cheaper on the battery.
+    this.renderer.autoClear = false;
+    // A soft room for reflections, shared by every model.
     const pmrem = new THREE.PMREMGenerator(this.renderer);
-    scene.environment = pmrem.fromScene(new RoomEnvironment(), 0.04).texture;
-    scene.environmentIntensity = 0.85;
-    const key = new THREE.DirectionalLight(0xffffff, 1.6);
-    key.position.set(-6, 12, 8);
-    scene.add(key, new THREE.HemisphereLight(0xffffff, 0xe7e7e3, 0.6));
-
-    // The pale backdrop is CSS, behind everything (world.css).
+    this.environment = pmrem.fromScene(new RoomEnvironment(), 0.04).texture;
 
     this.color = new THREE.WebGLRenderTarget(1, 1, { samples: 4, type: THREE.HalfFloatType });
     this.normals = new THREE.WebGLRenderTarget(1, 1, { depthTexture: new THREE.DepthTexture(1, 1) });
@@ -81,6 +76,7 @@ export class Look {
   }
 
   resize(w: number, h: number): void {
+    this.size = { w, h };
     const pr = this.renderer.getPixelRatio();
     this.renderer.setSize(w, h, false);
     this.color.setSize(Math.round(w * pr), Math.round(h * pr));
@@ -88,30 +84,57 @@ export class Look {
     this.quad.material.uniforms.texel!.value.set(1 / (w * pr), 1 / (h * pr));
   }
 
-  render(scene: THREE.Scene, camera: THREE.PerspectiveCamera, t: number): void {
+  /**
+   * Draw these models, each into its screen rectangle (CSS px; it may reach
+   * past the screen when zoomed in: only the visible part is drawn).
+   */
+  render(views: { scene: THREE.Scene; camera: THREE.PerspectiveCamera; rect: { x: number; y: number; w: number; h: number } }[], t: number): void {
     const r = this.renderer;
+    const { w: W, h: H } = this.size;
     const u = this.quad.material.uniforms;
-    u.near!.value = camera.near; u.far!.value = camera.far; u.time!.value = t % 10;
-    // 1. colour (tone mapped later on screen; keep linear here).
-    camera.layers.enable(COLOR_ONLY);
+    u.time!.value = t % 10;
+    const visible = views.flatMap((v) => {
+      const x0 = Math.max(0, v.rect.x), y0 = Math.max(0, v.rect.y);
+      const x1 = Math.min(W, v.rect.x + v.rect.w), y1 = Math.min(H, v.rect.y + v.rect.h);
+      return x1 - x0 >= 2 && y1 - y0 >= 2 ? [{ ...v, vis: { x: x0, y: y0, w: x1 - x0, h: y1 - y0 } }] : [];
+    });
+    const pr = r.getPixelRatio();
+    const pass = (target: THREE.WebGLRenderTarget, override: THREE.Material | null) => {
+      target.viewport.set(0, 0, target.width, target.height);
+      r.setRenderTarget(target);
+      r.setClearColor(0x000000, 0);
+      r.clear();
+      for (const v of visible) {
+        const c = v.camera;
+        // The whole model is rect-sized; draw just the part on screen. The viewport lives on the
+        // target (physical px), so three's glass (transmission) pass, which re-binds it, keeps it.
+        // No scissor: it would also clip the MSAA resolve, leaving stale pixels outside it.
+        c.setViewOffset(v.rect.w, v.rect.h, v.vis.x - v.rect.x, v.vis.y - v.rect.y, v.vis.w, v.vis.h);
+        c.updateProjectionMatrix();
+        if (override) c.layers.disable(COLOR_ONLY);
+        else c.layers.enable(COLOR_ONLY);
+        const x = Math.round(v.vis.x * pr), y = Math.round((H - v.vis.y - v.vis.h) * pr);
+        const w = Math.round(v.vis.w * pr), h = Math.round(v.vis.h * pr);
+        target.viewport.set(x, y, w, h);
+        r.setRenderTarget(target);
+        v.scene.overrideMaterial = override;
+        r.render(v.scene, c);
+        v.scene.overrideMaterial = null;
+        c.clearViewOffset();
+      }
+      target.viewport.set(0, 0, target.width, target.height);
+    };
+    if (visible[0]) { u.near!.value = visible[0].camera.near; u.far!.value = visible[0].camera.far; }
+    // 1. colour (tone mapped later on screen; keep linear here). 2. normals + depth for the ink.
     r.toneMapping = THREE.NoToneMapping;
-    r.setRenderTarget(this.color);
-    r.setClearColor(0x000000, 0);
-    r.clear();
-    r.render(scene, camera);
-    // 2. normals + depth for the ink, without the colour-only things.
-    camera.layers.disable(COLOR_ONLY);
-    scene.overrideMaterial = this.normalMaterial;
-    r.setRenderTarget(this.normals);
-    r.setClearColor(0x000000, 0);
-    r.clear();
-    r.render(scene, camera);
-    scene.overrideMaterial = null;
+    pass(this.color, null);
+    pass(this.normals, this.normalMaterial);
     // 3. composite to the screen, tone mapped.
     r.toneMapping = THREE.ACESFilmicToneMapping;
     r.setRenderTarget(null);
+    r.setViewport(0, 0, W, H);
     r.setClearColor(0x000000, 0);
     r.clear();
-    r.render(this.post, this.postCam);
+    if (visible.length) r.render(this.post, this.postCam);
   }
 }

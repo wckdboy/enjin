@@ -1,0 +1,125 @@
+{
+  "direction": "webToNative",
+  "request": {
+    "v": 1,
+    "id": "fx-1",
+    "method": "portal.peek",
+    "params": {
+      "cardId": "c-legions"
+    }
+  },
+  "response": {
+    "v": 1,
+    "id": "fx-1",
+    "result": {
+      "portalId": "p-legions",
+      "title": "Legions",
+      "path": [
+        {
+          "portalId": "p-root",
+          "title": "Roman Empire"
+        },
+        {
+          "portalId": "p-legions",
+          "title": "Legions"
+        }
+      ],
+      "cards": [
+        {
+          "id": "c-why-won",
+          "type": "topic",
+          "title": "Why Rome won so much",
+          "summary": "Organisation.",
+          "state": "filled",
+          "childCount": 3,
+          "image": {
+            "fileId": "img-1",
+            "width": 800,
+            "height": 533
+          }
+        },
+        {
+          "id": "c-equipment",
+          "type": "topic",
+          "title": "Equipment",
+          "summary": "Gladius, pilum.",
+          "state": "filling",
+          "childCount": 0,
+          "imagePending": true
+        },
+        {
+          "id": "c-march",
+          "type": "note",
+          "title": "A day's march",
+          "summary": "Up before dawn, camp built by dusk.",
+          "state": "filled",
+          "childCount": 0,
+          "visual": {
+            "kind": "flow",
+            "items": [
+              {
+                "label": "Break camp",
+                "detail": "at dawn"
+              },
+              {
+                "label": "March",
+                "detail": "about 30 km"
+              },
+              {
+                "label": "Build camp",
+                "detail": "ditch and wall"
+              }
+            ]
+          }
+        },
+        {
+          "id": "c-pace",
+          "type": "note",
+          "title": "Marching pace",
+          "summary": "With 30 kg on their backs.",
+          "state": "filled",
+          "childCount": 0,
+          "visual": {
+            "kind": "stat",
+            "value": "30",
+            "unit": "km/day"
+          }
+        }
+      ],
+      "files": [
+        {
+          "id": "img-1",
+          "mimeType": "image/png",
+          "dataURL": "data:image/png;base64,iVBORw0KGgo="
+        }
+      ],
+      "hero": {
+        "fileId": "img-1",
+        "width": 800,
+        "height": 533
+      },
+      "subtitle": "Rome's professional heavy infantry.",
+      "elements": [
+        {
+          "id": "ink:s1:1",
+          "type": "freedraw",
+          "x": 10,
+          "y": 20,
+          "points": [
+            [
+              0,
+              0
+            ],
+            [
+              5,
+              5
+            ]
+          ],
+          "customData": {
+            "role": "ink"
+          }
+        }
+      ]
+    }
+  }
+}

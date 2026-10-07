@@ -432,6 +432,23 @@ public enum WebMethod {
         public var cardId: String
     }
 
+    public struct PortalPeek: Codable, Sendable {
+        public var cardId: String
+    }
+
+    public struct PortalZoomInto: Codable, Sendable {
+        public var portalId: String
+        public var title: String
+        public var detail: String?
+        public var cardId: String?
+    }
+
+    public struct PortalZoomIntoResult: Codable, Sendable {
+        public var scene: PortalScene
+        public var cardId: String
+        public init(scene: PortalScene, cardId: String) { self.scene = scene; self.cardId = cardId }
+    }
+
     public struct PortalExit: Codable, Sendable {
         public var portalId: String
     }

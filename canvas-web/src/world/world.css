@@ -1,44 +1,69 @@
 /* The world: white, black and glass (same tokens as Theme.swift / palette.ts). */
 html, body { background: #f2f2f0; }
-/* The backdrop: a pale vertical light. Everything else is layered over it. */
 #world { position: fixed; inset: 0; overflow: hidden; touch-action: none; -webkit-user-select: none; user-select: none;
-  background: linear-gradient(#fbfbfa, #f2f2f0 60%, #e6e6e2); }
-#world canvas { position: absolute; inset: 0; width: 100%; height: 100%; display: block; pointer-events: none; }
-.wtitle { font: 700 54px/1.05 Inter, -apple-system, sans-serif; letter-spacing: -1.6px; color: #0b0b0c; text-align: center; max-width: 900px; pointer-events: none; }
+  background: radial-gradient(120% 90% at 50% 40%, #fbfbfa, #f2f2f0 55%, #e8e8e4); }
+#world > canvas { position: absolute; inset: 0; width: 100%; height: 100%; display: block; pointer-events: none; z-index: 2; }
+.stage { position: absolute; inset: 0; z-index: 1; }
+.labels { position: absolute; inset: 0; z-index: 3; pointer-events: none; }
 
-/* Cards as frosted glass panels in space. */
-.panel { position: relative; border-radius: 22px; pointer-events: auto; -webkit-backface-visibility: hidden; backface-visibility: hidden; background: rgba(255, 255, 255, 0.55);
+/* A world on the plane. Its origin is the centre of its centrepiece; children are placed in plane px. */
+.plane { position: absolute; left: 0; top: 0; width: 0; height: 0; transform-origin: 0 0;
+  transition: clip-path 0.55s cubic-bezier(0.3, 0, 0.2, 1), opacity 0.45s ease; }
+.plane > * { position: absolute; box-sizing: border-box; }
+.plane.arriving { opacity: 0 !important; }
+.plane.leaving { opacity: 0 !important; }
+.plane.nested .panel, .plane.nested .wtitle { pointer-events: none; }
+
+/* The title over the centrepiece. */
+.wtitle { display: flex; flex-direction: column; justify-content: flex-end; align-items: center; text-align: center; pointer-events: none; color: #0b0b0c; }
+.wtitle h1 { margin: 0; font: 700 76px/1.02 Inter, -apple-system, sans-serif; letter-spacing: -2.4px; }
+.wtitle p { margin: 14px 0 0; max-width: 1100px; font: 400 26px/1.35 Inter, -apple-system, sans-serif; color: #55555a; }
+
+/* Cards on frosted glass. */
+.panel { border-radius: 22px; pointer-events: auto; background: rgba(255, 255, 255, 0.62);
   -webkit-backdrop-filter: blur(18px) saturate(150%); backdrop-filter: blur(18px) saturate(150%);
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.95), 0 0 0 0.75px rgba(0, 0, 0, 0.08), 0 30px 60px rgba(0, 0, 0, 0.12);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.95), 0 0 0 0.75px rgba(0, 0, 0, 0.08), 0 30px 60px rgba(0, 0, 0, 0.1);
   transition: box-shadow 0.25s; }
-.panel.on { box-shadow: inset 0 1px 0 #fff, 0 0 0 1.5px #0b0b0c, 0 30px 70px rgba(0, 0, 0, 0.18); }
+.panel.on { box-shadow: inset 0 1px 0 #fff, 0 0 0 1.5px #0b0b0c, 0 30px 70px rgba(0, 0, 0, 0.16); }
+.panel .open { position: absolute; right: 14px; top: -18px; display: none; font: 600 14px Inter, -apple-system, sans-serif; border: 0; border-radius: 999px;
+  padding: 8px 16px; color: #fff; background: #0b0b0c; box-shadow: 0 6px 14px rgba(0, 0, 0, 0.18); pointer-events: auto; }
+.panel.on .open { display: block; }
 
-/* Labels on parts and doors. */
-.plabel, .dlabel { transition: opacity 0.25s; }
-.plabel { font: 600 13px Inter, -apple-system, sans-serif; color: #0b0b0c; padding: 5px 11px; border-radius: 999px; pointer-events: auto;
-  background: rgba(255, 255, 255, 0.82); box-shadow: inset 0 1px 0 #fff, 0 0 0 0.75px rgba(0, 0, 0, 0.1), 0 6px 14px rgba(0, 0, 0, 0.08); white-space: nowrap; }
+/* Doors: round glass windows onto the world inside a topic. */
+.door { border-radius: 50%; pointer-events: auto; background: radial-gradient(circle at 50% 35%, rgba(255, 255, 255, 0.9), rgba(242, 242, 240, 0.7));
+  box-shadow: inset 0 0 0 7px #0b0b0c, inset 0 2px 0 9px rgba(255, 255, 255, 0.6), 0 24px 50px rgba(0, 0, 0, 0.14); overflow: hidden; }
+.door.stub { box-shadow: inset 0 0 0 4px #a6a6ab, inset 0 2px 0 6px rgba(255, 255, 255, 0.6), 0 18px 40px rgba(0, 0, 0, 0.08); }
+.door .peek { position: absolute; inset: 7px; border-radius: 50%; display: flex; align-items: center; justify-content: center; padding: 34px;
+  text-align: center; background-size: cover; background-position: center; transition: opacity 0.4s; }
+.door .peek b { font: 700 30px/1.1 Inter, -apple-system, sans-serif; letter-spacing: -0.6px; color: #0b0b0c; }
+.door.stub .peek b { color: #3a3a3e; }
+.door.peeked .peek { opacity: 0; }
+.dlabel { display: flex; flex-direction: column; align-items: center; gap: 6px; pointer-events: auto; text-align: center; }
+.dlabel b { font: 700 26px/1.15 Inter, -apple-system, sans-serif; color: #0b0b0c; letter-spacing: -0.4px; }
+.dlabel span { font: 600 15px ui-monospace, Menlo, monospace; letter-spacing: 1.6px; color: #66666b; }
+
+/* Labels on the parts of the model (screen space, over the 3D). */
+.plabel { position: absolute; left: 0; top: 0; font: 600 13px Inter, -apple-system, sans-serif; color: #0b0b0c; padding: 5px 11px; border-radius: 999px;
+  pointer-events: auto; white-space: nowrap; background: rgba(255, 255, 255, 0.85); transition: opacity 0.25s;
+  box-shadow: inset 0 1px 0 #fff, 0 0 0 0.75px rgba(0, 0, 0, 0.1), 0 6px 14px rgba(0, 0, 0, 0.08); }
 .plabel.on { background: #0b0b0c; color: #fff; }
-.dlabel { display: flex; flex-direction: column; align-items: center; gap: 3px; pointer-events: auto; text-align: center; max-width: 220px; }
-.dlabel b { font: 700 17px Inter, -apple-system, sans-serif; color: #0b0b0c; letter-spacing: -0.2px; }
-.dlabel span { font: 600 10.5px ui-monospace, Menlo, monospace; letter-spacing: 1.3px; color: #66666b; }
-.dlabel.stub b { color: #3a3a3e; }
 
 /* The HUD lives inside the space the native chrome leaves free. */
 .hud { position: absolute; inset: 0; pointer-events: none; z-index: 4; }
-.hud .info { position: absolute; right: 16px; bottom: 16px; max-width: 360px; padding: 12px 16px; border-radius: 16px; pointer-events: auto;
-  font: 15px/1.4 Inter, -apple-system, sans-serif; color: #0b0b0c; background: rgba(255, 255, 255, 0.82);
-  -webkit-backdrop-filter: blur(16px); backdrop-filter: blur(16px); box-shadow: inset 0 1px 0 #fff, 0 0 0 0.75px rgba(0, 0, 0, 0.08), 0 12px 28px rgba(0, 0, 0, 0.1);
-  transition: opacity 0.2s, transform 0.2s; }
+.glass-pill, .hud .info, .hud .busy, .hud .hint, .hud .explode { background: rgba(255, 255, 255, 0.84); -webkit-backdrop-filter: blur(16px); backdrop-filter: blur(16px);
+  box-shadow: inset 0 1px 0 #fff, 0 0 0 0.75px rgba(0, 0, 0, 0.08), 0 10px 24px rgba(0, 0, 0, 0.1); }
+.hud .info { position: absolute; right: 16px; bottom: 16px; max-width: 360px; padding: 14px 18px; border-radius: 18px; pointer-events: auto;
+  font: 15px/1.4 Inter, -apple-system, sans-serif; color: #0b0b0c; transition: opacity 0.2s, transform 0.2s; }
 .hud .info b { display: block; margin-bottom: 2px; }
+.hud .info button { display: block; margin-top: 10px; font: 600 14px Inter, -apple-system, sans-serif; border: 0; border-radius: 999px; padding: 8px 15px;
+  color: #fff; background: #0b0b0c; }
 .hud .info.off { opacity: 0; transform: translateY(8px); pointer-events: none; }
 .hud .explode { position: absolute; right: 16px; top: 12px; pointer-events: auto; font: 600 14px Inter, -apple-system, sans-serif; border: 0; border-radius: 999px;
-  padding: 9px 16px; color: #0b0b0c; background: rgba(255, 255, 255, 0.8); box-shadow: inset 0 1px 0 #fff, 0 0 0 0.75px rgba(0, 0, 0, 0.1), 0 6px 14px rgba(0, 0, 0, 0.08); }
+  padding: 9px 16px; color: #0b0b0c; }
 .hud .explode.on { background: #0b0b0c; color: #fff; }
 .hud .busy { position: absolute; left: 50%; top: 24px; transform: translateX(-50%); display: flex; align-items: center; gap: 10px; padding: 10px 18px;
-  border-radius: 999px; font: 600 15px Inter, -apple-system, sans-serif; color: #0b0b0c; background: rgba(255, 255, 255, 0.8);
-  -webkit-backdrop-filter: blur(16px); backdrop-filter: blur(16px); box-shadow: inset 0 1px 0 #fff, 0 0 0 0.75px rgba(0, 0, 0, 0.08), 0 10px 24px rgba(0, 0, 0, 0.1); transition: opacity 0.2s; }
-.hud .busy.off { opacity: 0; }
+  border-radius: 999px; font: 600 15px Inter, -apple-system, sans-serif; color: #0b0b0c; transition: opacity 0.2s; }
+.hud .busy.off, .hud .hint.off { opacity: 0; }
 .hud .busy .activity { width: 18px; height: 18px; border-radius: 50%; border: 2.5px solid rgba(11, 11, 12, 0.12); border-top-color: #0b0b0c; animation: enjin-turn 0.9s linear infinite; }
-
-/* The white you pass through when diving. */
-.veil { position: absolute; inset: 0; z-index: 5; background: #f7f7f5; opacity: 0; pointer-events: none; }
+.hud .hint { position: absolute; left: 50%; bottom: 20px; transform: translateX(-50%); padding: 10px 18px; border-radius: 999px; white-space: nowrap;
+  font: 600 15px Inter, -apple-system, sans-serif; color: #0b0b0c; transition: opacity 0.2s; }

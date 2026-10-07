@@ -67,6 +67,12 @@ export const examples: Record<string, { direction: "nativeToWeb" | "webToNative"
   },
   "selection.changed": { direction: "webToNative", params: { portalId: "p-legions", cardIds: ["c-why-won"] }, result: null },
   "portal.enter": { direction: "webToNative", params: { portalId: "p-root", cardId: "c-legions" }, result: scene },
+  "portal.peek": { direction: "webToNative", params: { cardId: "c-legions" }, result: scene },
+  "portal.zoomInto": {
+    direction: "webToNative",
+    params: { portalId: "p-root", title: "Shield wall", detail: "Overlapping shields", cardId: "c-legions" },
+    result: { scene, cardId: "c-legions" },
+  },
   "portal.exit": { direction: "webToNative", params: { portalId: "p-legions" }, result: { scene, focusCardId: "c-legions" } },
   "log.event": { direction: "webToNative", params: { level: "warn", message: "hello", data: { n: 1 } }, result: null },
 };

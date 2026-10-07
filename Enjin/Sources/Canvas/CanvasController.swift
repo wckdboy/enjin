@@ -249,6 +249,18 @@ final class CanvasController: NSObject {
             didEnter(scene, via: p.cardId)
             return scene
         }
+        router.on("portal.peek", WebMethod.PortalPeek.self) { [weak self] p in
+            guard let self else { return PortalScene?.none }
+            return try await session.peek(cardId: p.cardId)
+        }
+        router.on("portal.zoomInto", WebMethod.PortalZoomInto.self) { [weak self] p in
+            self?.selectedCardId = nil
+            guard let self, let into = try await session.zoomInto(portalId: p.portalId, title: p.title, detail: p.detail, cardId: p.cardId)
+            else { return WebMethod.PortalZoomIntoResult?.none }
+            path = into.scene.path
+            didEnter(into.scene, via: into.cardId)
+            return WebMethod.PortalZoomIntoResult(scene: into.scene, cardId: into.cardId)
+        }
         router.on("portal.exit", WebMethod.PortalExit.self) { [weak self] p in
             self?.selectedCardId = nil
             guard let self, let out = try await session.exit(from: p.portalId) else { return WebMethod.PortalExitResult?.none }

@@ -1,11 +1,11 @@
 import type { Card, PortalScene } from "../bridge/schema";
 
 /**
- * A world: what one portal looks like as a place. Phase 1 builds it from the
+ * A world: what one portal looks like as a place on the plane. Built from the
  * portal's cards, so every notebook (old or new) is already a world:
- * - the centrepiece: the portal's first 3D model (a model3d figure), at full size;
- * - doors: its topic cards, glass portals you fly into;
- * - panels: everything else (notes, figures, widgets, live models), glass in space.
+ * - the centrepiece: the portal's first 3D model (a model3d figure);
+ * - doors: its topic cards, round windows you zoom through into their worlds;
+ * - panels: everything else (notes, figures, widgets, live models), on glass.
  */
 export interface WorldSpec {
   portalId: string;
@@ -29,25 +29,86 @@ export function worldFromScene(scene: Pick<PortalScene, "portalId" | "title" | "
   };
 }
 
+export interface Rect { x: number; y: number; w: number; h: number }
+
+/** Plane units are CSS px at zoom 1. The centrepiece sits on the origin. */
+export const MODEL = { w: 960, h: 720 };
+export const DOOR = 280;
+const GAP = 56;
+const DOOR_STEP = 340;
+/** Rows of three fit under the centrepiece, so the panels beside it never meet them. */
+const DOORS_PER_ROW = 3;
+
+export interface Layout {
+  model: Rect;
+  title: Rect;
+  doors: Rect[];
+  /** The door's label sits under it. */
+  doorLabels: Rect[];
+  panels: Rect[];
+  bounds: Rect;
+  /** Title, centrepiece and doors: what a narrow (portrait) view frames first. */
+  core: Rect;
+}
+
 /**
- * Where things go, around a centrepiece at the origin, seen first from the front
- * (+z). The front stays open between you and the centrepiece; doors stand around
- * the sides and back; panels hang higher, in a gallery ring behind them. Pure, so
- * it's unit-testable. Angles are measured round from the front (+z).
+ * Where things go on the plane: the title over the centrepiece, panels in
+ * columns either side of it (each to the shorter one), doors in rows beneath.
+ * Pure and deterministic, so cards streaming in only ever add to the picture.
  */
-export function layoutWorld(doors: number, panels: number): { doors: { x: number; y: number; z: number }[]; panels: { x: number; y: number; z: number }[] } {
-  const at = (az: number, r: number, y: number) => ({ x: Math.sin(az) * r, y, z: Math.cos(az) * r });
-  const spread = (n: number, from: number, to: number) =>
-    Array.from({ length: n }, (_, i) => (n === 1 ? (from + to) / 2 : from + ((to - from) * i) / (n - 1)));
-  const deg = Math.PI / 180;
-  // Doors: from the right side round the back to the left (70°..290°), alternating heights.
-  const doorAz = spread(doors, doors > 2 ? 70 * deg : 120 * deg, doors > 2 ? 290 * deg : 240 * deg);
-  // Panels: centred behind, ~30° apart, as wide as they need (never into the front 100°).
-  const step = 38 * deg;
-  const half = Math.min(((panels - 1) * step) / 2, 130 * deg);
-  const panelAz = spread(panels, Math.PI - half, Math.PI + half);
+export function layoutPlane(panelSizes: { w: number; h: number }[], doors: number): Layout {
+  const model: Rect = { x: -MODEL.w / 2, y: -MODEL.h / 2, w: MODEL.w, h: MODEL.h };
+  const title: Rect = { x: -800, y: model.y - 250, w: 1600, h: 200 };
+
+  // Doors: rows of up to three under the centrepiece, centred.
+  const doorRects: Rect[] = [];
+  const doorLabels: Rect[] = [];
+  for (let i = 0; i < doors; i++) {
+    const row = Math.floor(i / DOORS_PER_ROW);
+    const inRow = Math.min(DOORS_PER_ROW, doors - row * DOORS_PER_ROW);
+    const col = i % DOORS_PER_ROW;
+    const cx = (col - (inRow - 1) / 2) * DOOR_STEP;
+    const y = model.y + model.h + 110 + row * (DOOR + 170);
+    doorRects.push({ x: cx - DOOR / 2, y, w: DOOR, h: DOOR });
+    doorLabels.push({ x: cx - 160, y: y + DOOR + 18, w: 320, h: 80 });
+  }
+
+  // Panels: columns left and right of the centrepiece, from its top edge down.
+  // A column that would grow past the doors starts a new one further out.
+  const maxH = Math.max(1500, (doorRects.at(-1)?.y ?? 0) + DOOR + 120 - model.y);
+  type Column = { side: -1 | 1; edge: number; y: number; width: number };
+  const columns: Column[] = [
+    { side: -1, edge: model.x - GAP * 1.5, y: model.y, width: 0 },
+    { side: 1, edge: model.x + model.w + GAP * 1.5, y: model.y, width: 0 },
+  ];
+  const panels: Rect[] = panelSizes.map(({ w, h }) => {
+    // The shorter of the two outermost columns (one per side).
+    const outer = (side: -1 | 1) => columns.filter((c) => c.side === side).at(-1)!;
+    let col = [outer(-1), outer(1)].sort((a, b) => a.y - b.y || a.side - b.side)[0]!;
+    if (col.y > model.y && col.y + h - model.y > maxH) {
+      col = { side: col.side, edge: col.edge + col.side * (col.width + GAP), y: model.y, width: 0 };
+      columns.push(col);
+    }
+    const x = col.side === 1 ? col.edge : col.edge - w;
+    const r = { x, y: col.y, w, h };
+    col.y += h + GAP;
+    col.width = Math.max(col.width, w);
+    return r;
+  });
+
+  const union = (rs: Rect[], m: number): Rect => {
+    const x0 = Math.min(...rs.map((r) => r.x)), y0 = Math.min(...rs.map((r) => r.y));
+    const x1 = Math.max(...rs.map((r) => r.x + r.w)), y1 = Math.max(...rs.map((r) => r.y + r.h));
+    return { x: x0 - m, y: y0 - m, w: x1 - x0 + 2 * m, h: y1 - y0 + 2 * m };
+  };
   return {
-    doors: doorAz.map((a, i) => at(a, 6.5, 0.2 + (i % 2 ? 0.7 : -0.2))),
-    panels: panelAz.map((a) => at(a, 13.5, 3.1)),
+    model, title, doors: doorRects, doorLabels, panels,
+    bounds: union([model, title, ...doorRects, ...doorLabels, ...panels], 100),
+    core: union([model, { ...title, x: model.x, w: model.w }, ...doorRects, ...doorLabels], 60),
   };
 }
+
+/** How big a world is drawn inside its door: its centrepiece fills most of the circle. */
+export const DOOR_SCALE = (DOOR * 0.78) / MODEL.w;
+
+export const overlaps = (a: Rect, b: Rect) => a.x < b.x + b.w && b.x < a.x + a.w && a.y < b.y + b.h && b.y < a.y + a.h;
