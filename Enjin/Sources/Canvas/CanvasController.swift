@@ -10,7 +10,12 @@ final class CanvasController: NSObject {
     enum Status: Equatable { case loading, ready, failed(String) }
 
     private(set) var status: Status = .loading
-    private(set) var path: [Crumb] = []
+    private(set) var path: [Crumb] = [] {
+        // Remembered for "jump back in" on the home screen.
+        didSet { if let id = path.last?.portalId, id != oldValue.last?.portalId { Task { await session.remember(portalId: id) } } }
+    }
+    /// Where to open (a portal), when the home screen asked for one.
+    @ObservationIgnored var startPortalId: String?
     private(set) var focusedCardId: String?
     /// The single selected card, if exactly one is selected.
     private(set) var selectedCardId: String?
@@ -445,7 +450,7 @@ final class CanvasController: NSObject {
 
     private func loadInitialPortal() async {
         // After a web process crash, come back to where the kid was.
-        let portalId = path.last?.portalId ?? session.rootPortalId
+        let portalId = path.last?.portalId ?? startPortalId.flatMap { session.portal($0)?.portalId } ?? session.rootPortalId
         _ = try? await call("canvas.setLanguage", NativeMethod.SetLanguage(language: settings.language))
         // Keep cards clear of the floating chrome: top bar, tool rail, dock.
         _ = try? await call("canvas.setInsets", NativeMethod.SetInsets(top: 84, left: 96, bottom: 150, right: 24))

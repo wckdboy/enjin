@@ -356,6 +356,14 @@ public final class NotebookSession {
         try await touch()
     }
 
+    /// Where the explorer is now, for "jump back in" on the home screen.
+    public func remember(portalId: String) async {
+        guard portal(portalId) != nil, data.meta.lastPortalId != portalId || data.meta.openedAt == nil else { return }
+        data.meta.lastPortalId = portalId
+        data.meta.openedAt = clock()
+        try? await store.saveMeta(data.meta)
+    }
+
     private func touch() async throws {
         data.meta.updatedAt = clock()
         try await store.saveMeta(data.meta)

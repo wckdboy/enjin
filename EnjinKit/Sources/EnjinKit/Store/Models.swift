@@ -101,6 +101,14 @@ public struct NotebookMeta: Codable, Equatable, Sendable, Identifiable {
     public var cover: CardImage?
     /// How deep the explorer wants to go; every turn is pitched at it (nil in older notebooks: student).
     public var level: ExplorerLevel?
+    /// The explorer's own shelf for it on the home screen ("Physics", "School project").
+    public var collection: String?
+    /// Kept at the front of the home screen.
+    public var pinned: Bool?
+    /// Where they were last (a portal), so "jump back in" lands there.
+    public var lastPortalId: String?
+    /// When they last opened it.
+    public var openedAt: Date?
 }
 
 /// How deep and technical Enjin goes, chosen by the explorer for each notebook.

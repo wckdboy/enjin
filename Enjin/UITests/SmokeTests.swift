@@ -91,6 +91,40 @@ final class SmokeTests: XCTestCase {
         add(a)
     }
 
+    /// Home keeps worlds in order: shelves, and your own notes from every world, one tap from where they live.
+    func testOrganizeWorldsOnShelvesAndFindYourNotes() {
+        let world = app.buttons["notebook:Electric motors"].firstMatch
+        XCTAssertTrue(world.waitForExistence(timeout: 10))
+        world.press(forDuration: 1.0)
+        app.buttons["New shelf…"].tap()
+        let name = app.alerts.textFields.firstMatch
+        XCTAssertTrue(name.waitForExistence(timeout: 5))
+        name.typeText("Physics")
+        app.alerts.buttons["Make it"].tap()
+        XCTAssertTrue(app.buttons["Physics, 1"].waitForExistence(timeout: 5) || app.buttons.matching(NSPredicate(format: "label BEGINSWITH 'Physics'")).firstMatch.exists,
+                      "the new shelf shows, with the world on it")
+
+        // A note of your own, in the world...
+        world.tap()
+        let newCard = app.buttons["New card"]
+        XCTAssertTrue(newCard.waitForExistence(timeout: 15))
+        expectation(for: NSPredicate(format: "isEnabled == true"), evaluatedWith: newCard)
+        waitForExpectations(timeout: 15)
+        newCard.tap()
+        let title = app.textFields["cardTitle"]
+        XCTAssertTrue(title.waitForExistence(timeout: 5))
+        title.tap()
+        title.typeText("My winding idea")
+        app.buttons["Add"].tap()
+        app.buttons["Notebooks"].tap()
+        // ...shows on the home screen, and takes you back to it.
+        let note = app.buttons["note:My winding idea"]
+        XCTAssertTrue(note.waitForExistence(timeout: 10), "your notes from every world are on the home screen")
+        snap("home-organized")
+        note.tap()
+        XCTAssertTrue(app.buttons["New card"].waitForExistence(timeout: 15), "the note opens its world")
+    }
+
     /// Enjin as a partner: it asks with tappable answers, hears the answer, and keeps notes in User.md.
     func testEnjinAsksAndRemembersHowYouLearn() {
         app.buttons["notebook:Electric motors"].firstMatch.tap()
