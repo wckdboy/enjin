@@ -30,6 +30,7 @@
 		86F6F858054781CAE4715C6F /* PlaygroundIllustrator.swift in Sources */ = {isa = PBXBuildFile; fileRef = 703372B7F7246463E75EEB3D /* PlaygroundIllustrator.swift */; };
 		99D4060B77798F310A30CA6C /* UITestBackend.swift in Sources */ = {isa = PBXBuildFile; fileRef = 09A9754A8A157ADFA4338A7B /* UITestBackend.swift */; };
 		AA127ED7D7C764B33BF06D23 /* CanvasController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 28A725197BCD991374E0C890 /* CanvasController.swift */; };
+		AD605B8DDCD56C57523BFB01 /* HandwritingReader.swift in Sources */ = {isa = PBXBuildFile; fileRef = 368FD46E74A866A64AFB69EA /* HandwritingReader.swift */; };
 		AF6BAAFF249FE3106450116C /* MapView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 428BC768F710EFA3C2711881 /* MapView.swift */; };
 		B3D839D222FFF7811F741D12 /* canvas-web in Resources */ = {isa = PBXBuildFile; fileRef = D8409464C6112C14BEF87BB6 /* canvas-web */; };
 		B7891786098A15327A3C4DAB /* PrivacyInfo.xcprivacy in Resources */ = {isa = PBXBuildFile; fileRef = 371F03DB5F3106C281550DF4 /* PrivacyInfo.xcprivacy */; };
@@ -64,6 +65,7 @@
 		28C216755406DB14E52F5A67 /* sample-motors.json */ = {isa = PBXFileReference; lastKnownFileType = text.json; path = "sample-motors.json"; sourceTree = "<group>"; };
 		2F66FDFD491D84B29FDE26BC /* LearnerProfileView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LearnerProfileView.swift; sourceTree = "<group>"; };
 		335196AD4E7A4D9D71C15B4B /* SettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsView.swift; sourceTree = "<group>"; };
+		368FD46E74A866A64AFB69EA /* HandwritingReader.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HandwritingReader.swift; sourceTree = "<group>"; };
 		371F03DB5F3106C281550DF4 /* PrivacyInfo.xcprivacy */ = {isa = PBXFileReference; path = PrivacyInfo.xcprivacy; sourceTree = "<group>"; };
 		428BC768F710EFA3C2711881 /* MapView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MapView.swift; sourceTree = "<group>"; };
 		4363D056E6B217A1044E73A2 /* SmokeTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SmokeTests.swift; sourceTree = "<group>"; };
@@ -216,6 +218,7 @@
 			isa = PBXGroup;
 			children = (
 				7FD1ACE826B0B745BCD2C7EA /* EnjinPrint.metal */,
+				368FD46E74A866A64AFB69EA /* HandwritingReader.swift */,
 				703372B7F7246463E75EEB3D /* PlaygroundIllustrator.swift */,
 				92C44BE426D1F9CF2D4EB670 /* PrintStylizer.swift */,
 			);
@@ -403,6 +406,7 @@
 				742FC0B863CA0469B459D5CC /* DesignKitView.swift in Sources */,
 				6E49A1BB93899E2CAEB23C99 /* EnjinApp.swift in Sources */,
 				74BEA841A634776E969D7C27 /* EnjinPrint.metal in Sources */,
+				AD605B8DDCD56C57523BFB01 /* HandwritingReader.swift in Sources */,
 				D52FDE1D1D8FEE92A5DF3667 /* InkLayer.swift in Sources */,
 				D90CDB3052AA8098A50D8B67 /* Keys.swift in Sources */,
 				132D4C28F4B385F6F9BAC731 /* LearnerProfileView.swift in Sources */,

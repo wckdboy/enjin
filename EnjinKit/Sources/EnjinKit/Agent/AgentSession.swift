@@ -30,7 +30,8 @@ public final class AgentSession {
     }
 
     /// nudge: the companion noticed something and Enjin may respond on its own (see Companion).
-    public enum Kind: String, Sendable { case ask, fill, prefetch, begin, nudge }
+    /// sketch: bringing the explorer's drawing to life (it sees the drawing).
+    public enum Kind: String, Sendable { case ask, fill, prefetch, begin, nudge, sketch }
 
     /// A question Enjin asked, with answers to tap.
     public struct Question: Equatable, Sendable {
@@ -187,6 +188,17 @@ public final class AgentSession {
         start(.nudge, request: .nudge(observation), portalId: portalId, focusCardId: focusCardId, kidSaid: "(Enjin noticed: \(observation))")
     }
 
+    /// Bring the explorer's drawing to life: Enjin sees it and builds it as a live module (a sim for a
+    /// mechanism, a 3D model for an object...) placed right next to it.
+    public func bringToLife(sketchId: String, png: Data) {
+        guard let sketch = session.card(sketchId), sketch.isActive else { return }
+        let image: JSONValue = .object(["type": .string("image"), "source": .object([
+            "type": .string("base64"), "media_type": .string("image/png"), "data": .string(png.base64EncodedString()),
+        ])])
+        start(.sketch, request: .bringToLife(cardId: sketchId), portalId: sketch.portalId, focusCardId: sketchId,
+              kidSaid: "(asked Enjin to bring their drawing to life)", attachments: [image])
+    }
+
     /// The explorer tapped an answer to Enjin's question.
     public func answer(_ choice: String, portalId: String, focusCardId: String?) {
         let asked = question
@@ -238,13 +250,14 @@ public final class AgentSession {
 
     // MARK: - Turn
 
-    private func start(_ kind: Kind, request: PromptComposer.Request, portalId: String, focusCardId: String?, kidSaid: String) {
+    private func start(_ kind: Kind, request: PromptComposer.Request, portalId: String, focusCardId: String?, kidSaid: String,
+                       attachments: [JSONValue] = []) {
         if kind != .prefetch { task?.cancel() }
         let previous = task
         isRunning = true
         let next = Task { [weak self] in
             await previous?.value // let a cancelled turn finish its cleanup first
-            await self?.runTurn(kind, request: request, portalId: portalId, focusCardId: focusCardId, kidSaid: kidSaid)
+            await self?.runTurn(kind, request: request, portalId: portalId, focusCardId: focusCardId, kidSaid: kidSaid, attachments: attachments)
         }
         task = next
         Task { [weak self] in
@@ -257,7 +270,8 @@ public final class AgentSession {
         }
     }
 
-    private func runTurn(_ kind: Kind, request: PromptComposer.Request, portalId: String, focusCardId: String?, kidSaid: String) async {
+    private func runTurn(_ kind: Kind, request: PromptComposer.Request, portalId: String, focusCardId: String?, kidSaid: String,
+                         attachments: [JSONValue] = []) async {
         defer {
             if kind == .prefetch { prefetchingCardId = nil }
         }
@@ -307,15 +321,18 @@ public final class AgentSession {
                                               compact: backend.isReduced, language: language,
                                               learner: learner?.promptText,
                                               attention: attention?.summary(since: since) { [session] id in session.card(id)?.title })
-        var thread = light ? [] : threads[portalId] ?? []
-        var owed = light ? [] : pendingResults[portalId] ?? []
+        // Small turns and turns that carry a picture run in a context of their own (a picture in the
+        // portal's thread would be paid for again on every later turn).
+        let isolated = light || !attachments.isEmpty
+        var thread = isolated ? [] : threads[portalId] ?? []
+        var owed = isolated ? [] : pendingResults[portalId] ?? []
         if Self.kidTurns(thread) >= Self.maxThreadTurns || Self.size(thread) > Self.maxThreadChars {
             thread = []
             owed = []
         }
         // Results of the previous turn's tool calls go first, then the new message.
-        thread.append(.object(["role": .string("user"), "content": owed.isEmpty
-                ? .string(userText) : .array(owed + [.object(["type": .string("text"), "text": .string(userText)])])]))
+        thread.append(.object(["role": .string("user"), "content": owed.isEmpty && attachments.isEmpty
+                ? .string(userText) : .array(owed + attachments + [.object(["type": .string("text"), "text": .string(userText)])])]))
 
         let tools = light ? AgentTools.light : backend.isReduced ? AgentTools.reduced : AgentTools.all
         let system = light ? Persona.companion : Persona.system
@@ -354,7 +371,7 @@ public final class AgentSession {
             try Task.checkCancellation()
 
             // A nudge's little context is thrown away; the portal's thread is the real conversation.
-            if !light {
+            if !isolated {
                 threads[portalId] = thread
                 pendingResults[portalId] = result.pendingToolResults
             }
@@ -362,6 +379,15 @@ public final class AgentSession {
             record.previous.merge(executor.previous) { first, _ in first }
             made = executor.created.compactMap { session.card($0)?.title }
             if let id = fillingId, session.card(id)?.state == .filling { await setState(id, .filled) }
+            if case .bringToLife(let sketchId) = request, let sketch = session.card(sketchId), let at = sketch.place {
+                // What grew from the drawing stands right beside it.
+                var y = at.y
+                for id in executor.created {
+                    guard let c = try? await session.place(id, at: CardPlace(x: at.x + at.w + 60, y: y, w: 0, h: 0)) else { continue }
+                    y += 480
+                    await canvas?.apply(portalId: c.portalId, ops: [.upsert(session.bridgeCard(c))])
+                }
+            }
             // Undo is for what the kid saw happen; a background prefetch never replaces it.
             if !record.isEmpty && kind != .prefetch { lastTurn = record }
             tail.append(.init(portalTitle: session.portal(portalId)?.title ?? "", kidSaid: kidSaid, cardsMade: made))

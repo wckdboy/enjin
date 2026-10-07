@@ -18,6 +18,8 @@ public enum PromptComposer {
         case visualize(cardId: String)
         /// The companion noticed something about what the explorer is doing; respond if it helps.
         case nudge(String)
+        /// The explorer drew something (the attached picture) and wants it brought to life.
+        case bringToLife(cardId: String)
     }
 
     /// A finished turn elsewhere, carried into other portals' prompts as text.
@@ -146,6 +148,17 @@ public enum PromptComposer {
         switch request {
         case .ask(let text):
             return "The explorer says: \(text)"
+        case .bringToLife(let cardId):
+            let words = session.card(cardId)?.summary ?? ""
+            return """
+            The explorer drew this by hand on the canvas (the picture)\(words.isEmpty ? "" : ", and wrote: \"\(words)\"") and asked you \
+            to bring it to life. Make THEIR drawing work: createCards with ONE note card whose visual is the module that fits what \
+            they drew: a sim for a mechanism (lever, seesaw, pulley, ramp, pendulum, spring, gears, a thrown ball, an orbit), \
+            model3d for an object, ui for a graph or a formula, diorama for a scene, a figure for a diagram. Keep their idea: the \
+            same parts, the same layout and proportions as drawn, named the way they named them, with a slider for what they'd \
+            want to change. If you can't tell what it is, make your best guess and say so. Title it after what it is; the summary \
+            says what to try. Reply with one short sentence about what you made.
+            """
         case .nudge(let observation):
             return """
             Nobody asked: you noticed something, as their partner. \(observation) \

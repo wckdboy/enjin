@@ -63,6 +63,10 @@ public struct StoredCard: Codable, Equatable, Sendable, Identifiable {
     public var visual: Visual?
     /// What kind of picture the agent asked for (nil: decided by the card, see PicturePipeline).
     public var imagePrefer: PictureKind?
+    /// Placed by hand in the world (sketches, and what grew from them).
+    public var place: CardPlace?
+    /// The explorer's own drawing (its picture is the ink).
+    public var sketch: Bool?
 
     public var isActive: Bool { deletedAt == nil }
 

@@ -41,8 +41,8 @@ struct ContractTests {
         let files = try FileManager.default.contentsOfDirectory(atPath: Self.fixtures.path).filter { $0.hasSuffix(".json") }
         let methods = Set(files.map { String($0.dropLast(5)) })
         #expect(methods == [
-            "portal.load", "ink.lock", "ink.commit", "canvas.flash", "canvas.applyOps", "canvas.frame", "canvas.addFiles", "canvas.setHeader", "canvas.setBusy", "canvas.setLanguage", "canvas.setTool", "canvas.history", "canvas.setInsets", "canvas.liveDocument",
-            "canvas.ready", "canvas.changed", "focus.changed", "selection.changed", "card.open", "card.visualize", "media.stylize", "portal.enter", "portal.peek", "portal.zoomInto", "portal.exit", "attention", "log.event",
+            "portal.load", "ink.lock", "ink.commit", "canvas.flash", "canvas.applyOps", "canvas.frame", "canvas.addFiles", "canvas.setHeader", "canvas.setBusy", "canvas.setLanguage", "canvas.setTool", "canvas.history", "canvas.setInsets", "canvas.liveDocument", "enjin.state",
+            "canvas.ready", "canvas.changed", "focus.changed", "selection.changed", "card.open", "card.visualize", "media.stylize", "portal.enter", "portal.peek", "portal.zoomInto", "portal.exit", "attention", "sketch.add", "sketch.bringToLife", "enjin.ask", "enjin.answer", "enjin.step", "enjin.control", "enjin.typing", "log.event",
         ])
     }
 
@@ -61,6 +61,7 @@ struct ContractTests {
         try roundTrip("canvas.frame", NativeMethod.CanvasFrame.self, NativeMethod.CanvasFrameResult.self)
         try roundTrip("canvas.liveDocument", NativeMethod.LiveDocument.self, NativeMethod.LiveDocumentResult.self)
         try roundTrip("canvas.applyOps", NativeMethod.ApplyOps.self, NativeMethod.ApplyOpsResult.self)
+        try roundTrip("enjin.state", NativeMethod.EnjinState.self, Empty?.self)
     }
 
     @Test func webToNative() throws {
@@ -76,6 +77,13 @@ struct ContractTests {
         try roundTrip("portal.zoomInto", WebMethod.PortalZoomInto.self, WebMethod.PortalZoomIntoResult?.self)
         try roundTrip("portal.exit", WebMethod.PortalExit.self, WebMethod.PortalExitResult?.self)
         try roundTrip("attention", WebMethod.Attention.self, Empty?.self)
+        try roundTrip("sketch.add", WebMethod.SketchAdd.self, WebMethod.SketchAddResult.self)
+        try roundTrip("sketch.bringToLife", WebMethod.SketchBringToLife.self, Empty?.self)
+        try roundTrip("enjin.ask", WebMethod.EnjinAsk.self, Empty?.self)
+        try roundTrip("enjin.answer", WebMethod.EnjinAnswer.self, Empty?.self)
+        try roundTrip("enjin.step", WebMethod.EnjinStep.self, Empty?.self)
+        try roundTrip("enjin.control", WebMethod.EnjinControl.self, Empty?.self)
+        try roundTrip("enjin.typing", WebMethod.EnjinTyping.self, Empty?.self)
         try roundTrip("log.event", WebMethod.LogEvent.self, Empty?.self)
     }
 

@@ -112,7 +112,8 @@ public final class NotebookSession {
         let childCount = data.portals.first { $0.ownerCardId == c.id }.map { activeCards(in: $0.portalId).count } ?? 0
         return Card(id: c.id, type: c.type, title: c.title, summary: c.summary, state: c.state, childCount: childCount,
                     image: c.image.map { CardImageRef(fileId: $0.fileId, width: $0.width, height: $0.height) },
-                    imagePending: c.visual == nil && c.image == nil && c.imageQuery != nil ? true : nil, visual: c.visual)
+                    imagePending: c.visual == nil && c.image == nil && c.imageQuery != nil ? true : nil, visual: c.visual,
+                    place: c.place, sketch: c.sketch)
     }
 
     /// Header for the portal inside `cardId` (if it has one).
@@ -148,6 +149,29 @@ public final class NotebookSession {
             $0.image = image
             $0.imageQuery = nil
         }
+    }
+
+    /// The explorer drew something with the Pencil: keep it where they drew it, as their own card.
+    /// `text` is what on-device handwriting recognition read in it, if anything.
+    public func addSketch(in portalId: String, png: Data, place: CardPlace, text: String?, width: Int, height: Int) async throws -> StoredCard {
+        let fileId = "f-\(UUID().uuidString.lowercased())"
+        let image = CardImage(fileId: fileId, mimeType: "image/png", width: width, height: height)
+        try await store.saveFile(id, fileId: fileId, data: png)
+        fileCache[fileId] = BridgeFile(id: fileId, mimeType: "image/png", dataURL: "data:image/png;base64,\(png.base64EncodedString())")
+        let words = text?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
+        let title = words.isEmpty ? "Sketch" : String(words.split(separator: "\n").first ?? "").prefix(60).description
+        let card = try await createCard(in: portalId, type: .image, title: title, summary: String(words.prefix(140)), author: .kid)
+        return try await updateCard(card.id) {
+            $0.image = image
+            $0.place = place
+            $0.sketch = true
+        } ?? card
+    }
+
+    /// Put a card at a place in its world (by hand, or next to the sketch it grew from).
+    @discardableResult
+    public func place(_ cardId: String, at place: CardPlace) async throws -> StoredCard? {
+        try await updateCard(cardId, by: .agent) { $0.place = place }
     }
 
     /// Give the notebook its cover art. Returns the top level's new header.

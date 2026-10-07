@@ -1,0 +1,37 @@
+{
+  "direction": "nativeToWeb",
+  "request": {
+    "v": 1,
+    "id": "fx-1",
+    "method": "enjin.state",
+    "params": {
+      "status": "idle",
+      "text": "Quick guess first!",
+      "question": {
+        "text": "Which spins faster?",
+        "choices": [
+          "More turns",
+          "Fewer turns"
+        ]
+      },
+      "steps": [
+        {
+          "id": "dive:c-emperors",
+          "label": "Emperors",
+          "dive": true
+        },
+        {
+          "id": "ask:0",
+          "label": "Why did it fall?",
+          "dive": false
+        }
+      ],
+      "canUndo": true
+    }
+  },
+  "response": {
+    "v": 1,
+    "id": "fx-1",
+    "result": null
+  }
+}

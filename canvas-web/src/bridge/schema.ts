@@ -89,6 +89,10 @@ export const Card = z.object({
   imagePending: z.boolean().optional(),
   /** A figure drawn on the card (cards with a figure have no picture). */
   visual: Visual.optional(),
+  /** Placed by hand in the world (plane px), not in the flow of panels: sketches, and what grew from them. */
+  place: z.object({ x: z.number(), y: z.number(), w: z.number(), h: z.number() }).optional(),
+  /** The explorer's own drawing (its picture is the ink): shown as ink, not on glass. */
+  sketch: z.boolean().optional(),
 });
 export type Card = z.infer<typeof Card>;
 
@@ -209,6 +213,23 @@ export const nativeToWeb = {
     params: z.object({ cardId: z.string() }),
     result: Null,
   },
+  "enjin.state": {
+    /**
+     * Enjin itself, for the character on the canvas: what it's doing, what it's saying (streamed),
+     * its open question, the next steps it offers. Sent whenever any of it changes.
+     */
+    params: z.object({
+      status: z.enum(["idle", "thinking", "searching", "writing", "failed"]),
+      /** Its words (the reply so far), or what went wrong. */
+      text: z.string(),
+      /** searching: what for. */
+      detail: z.string().optional(),
+      question: z.object({ text: z.string(), choices: z.array(z.string()) }).optional(),
+      steps: z.array(z.object({ id: z.string(), label: z.string(), dive: z.boolean() })),
+      canUndo: z.boolean(),
+    }),
+    result: Null,
+  },
   "canvas.liveDocument": {
     /** The full sandboxed page for a card's live figure (live, model3d, diorama, ui), to open it full size natively. */
     params: z.object({ cardId: z.string() }),
@@ -282,6 +303,39 @@ export const webToNative = {
     params: z.object({ portalId: z.string() }),
     /** null = already at root. */
     result: z.object({ scene: PortalScene, focusCardId: z.string() }).nullable(),
+  },
+  "sketch.add": {
+    /** The explorer drew with the Pencil and paused: keep the drawing (a white-background PNG) where it was drawn. */
+    params: z.object({ portalId: z.string(), png: z.string(), place: z.object({ x: z.number(), y: z.number(), w: z.number(), h: z.number() }) }),
+    result: z.object({ cardId: z.string() }),
+  },
+  "sketch.bringToLife": {
+    /** Make the drawing real: Enjin looks at it and builds it as a live module next to it. */
+    params: z.object({ cardId: z.string() }),
+    result: Null,
+  },
+  "enjin.ask": {
+    /** The explorer said something to Enjin (to the character, on the canvas). */
+    params: z.object({ text: z.string() }),
+    result: Null,
+  },
+  "enjin.answer": {
+    params: z.object({ choice: z.string() }),
+    result: Null,
+  },
+  "enjin.step": {
+    /** One of the next steps Enjin offered (`steps[].id`). */
+    params: z.object({ id: z.string() }),
+    result: Null,
+  },
+  "enjin.control": {
+    params: z.object({ action: z.enum(["stop", "undo", "dismissQuestion", "dismissError"]) }),
+    result: Null,
+  },
+  "enjin.typing": {
+    /** The explorer is writing to Enjin (it doesn't chime in meanwhile). */
+    params: z.object({ typing: z.boolean() }),
+    result: Null,
   },
   "attention": {
     /**

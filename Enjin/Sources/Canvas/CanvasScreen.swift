@@ -50,7 +50,8 @@ struct CanvasScreen: View {
                     .chrome(radius: 24)
                     .transition(.move(edge: .bottom).combined(with: .opacity))
                 }
-                if controller.status == .ready {
+                // In the world, Enjin lives on the canvas (the character); the dock is for the classic canvas.
+                if controller.status == .ready && !controller.isWorld {
                     AgentDock(agent: controller.agent, onAsk: controller.ask, onGoToSuggestion: controller.goToSuggestion,
                               onNextStep: controller.takeNextStep, onAnswer: controller.answer,
                               onTyping: { controller.typing = $0 })

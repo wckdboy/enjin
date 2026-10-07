@@ -162,3 +162,43 @@ test("you watch Enjin build: a new card arrives in place and the view goes to it
   const after = await page.evaluate(() => (window as unknown as { __enjinWorld: { anchor: { el: HTMLElement } } }).__enjinWorld.anchor.el.style.transform);
   expect(after).not.toBe(before);
 });
+
+test("Enjin lives on the canvas: tap it, talk to it, it answers and asks right there", async ({ page }) => {
+  await page.click(".enjin-orb", { force: true });
+  await page.fill(".enjin-bubble input", "why does it get hot?");
+  await page.press(".enjin-bubble input", "Enter");
+  expect(await calls(page, "enjin.ask")).toEqual([{ text: "why does it get hot?" }]);
+  // The pretend Enjin (dev host) thinks, talks, then asks.
+  await expect(page.locator(".enjin-bubble .words")).toContainText("P = I²R");
+  const choice = page.locator(".enjin-bubble .chip", { hasText: "Quadruples" });
+  await expect(choice).toBeVisible();
+  await choice.click();
+  expect(await calls(page, "enjin.answer")).toEqual([{ choice: "Quadruples" }]);
+  expect((await calls(page, "enjin.typing")).at(0)).toEqual({ typing: true });
+});
+
+test("draw with the Pencil: it's kept where you drew it, and Enjin brings it to life beside it", async ({ page }) => {
+  const send = (method: string, params: unknown) =>
+    page.evaluate(([m, q]) => (window as unknown as { enjin: { handle(r: unknown): void } }).enjin.handle({ v: 1, id: String(Math.random()), method: m, params: q }), [method, params] as const);
+  const strokes = [[[180, 640], [300, 615], [420, 590]], [[300, 615], [280, 660], [325, 660], [300, 615]]];
+  for (const [i, pts] of strokes.entries()) {
+    await send("ink.lock", { locked: true });
+    await send("ink.commit", { strokeId: `s${i}`, tool: "pen", color: "#000000", width: 3, points: pts, pressures: pts.map(() => 0.5) });
+    await send("ink.lock", { locked: false });
+  }
+  await expect.poll(async () => (await calls(page, "sketch.add")).length, { timeout: 5000 }).toBe(1);
+  const [added] = (await calls(page, "sketch.add")) as { png: string; place: { w: number; h: number } }[];
+  expect(added!.png.startsWith("data:image/png;base64,")).toBe(true);
+  expect(added!.place.w).toBeGreaterThan(40);
+  const sketch = page.locator(".sketch");
+  await expect(sketch).toHaveCount(1);
+  await sketch.locator(".alive").click({ force: true });
+  expect((await calls(page, "sketch.bringToLife")).length).toBe(1);
+  // What grew from it stands beside it, covering nothing.
+  const alive = page.locator('.panel[data-card-id^="c-alive"]');
+  await expect(alive).toHaveCount(1);
+  const boxes = await page.evaluate(() => [...document.querySelectorAll<HTMLElement>('.plane[data-portal-id="p-root"] > .panel, .plane[data-portal-id="p-root"] > .door, .plane[data-portal-id="p-root"] > .sketch')]
+    .map((e) => ({ id: e.dataset.cardId ?? e.dataset.door, x: parseFloat(e.style.left), y: parseFloat(e.style.top), w: parseFloat(e.style.width), h: parseFloat(e.style.height) })));
+  const me = boxes.find((b) => b.id?.startsWith("c-alive"))!;
+  for (const b of boxes) if (b !== me) expect(me.x < b.x + b.w && b.x < me.x + me.w && me.y < b.y + b.h && b.y < me.y + me.h, `${me.id} vs ${b.id}`).toBe(false);
+});

@@ -36,6 +36,7 @@ final class CanvasController: NSObject {
     @ObservationIgnored let companion: Companion
     /// The ask field has the keyboard (Enjin doesn't chime in meanwhile).
     @ObservationIgnored var typing = false
+    @ObservationIgnored private var presenceTask: Task<Void, Never>?
     @ObservationIgnored let settings: AppSettings
     @ObservationIgnored let telemetry: Telemetry
     @ObservationIgnored private var prefetchTimer: Task<Void, Never>?
@@ -53,8 +54,7 @@ final class CanvasController: NSObject {
         self.settings = settings
         self.telemetry = telemetry
         isWorld = !settings.classicCanvas
-        // In the world, Pencil touches the world like a finger (sketch panels come later).
-        if isWorld { tool = .select }
+        // In the world the Pencil draws (fingers still pan and zoom): sketches Enjin can read and bring to life.
         agent = AgentSession(session: session, backend: settings.makeBackend(), telemetry: telemetry)
         agent.lightBackend = settings.makeLightBackend()
         agent.dailyCapUSD = settings.dailyCapUSD
@@ -326,6 +326,62 @@ final class CanvasController: NSObject {
             self?.selectedCardId = p.cardIds.count == 1 ? p.cardIds[0] : nil
             return Empty()
         }
+        // The Pencil in the world: a drawing is kept where it was drawn; writing is read and answered.
+        router.on("sketch.add", WebMethod.SketchAdd.self) { [weak self] p in
+            guard let self, let comma = p.png.firstIndex(of: ","), let png = Data(base64Encoded: String(p.png[p.png.index(after: comma)...])),
+                  let size = UIImage(data: png)?.size else {
+                throw BridgeError(code: BridgeErrorCode.invalidParams.rawValue, message: "not a PNG data URL")
+            }
+            let reading = await HandwritingReader.read(png)
+            let card = try await session.addSketch(in: p.portalId, png: png, place: p.place, text: reading?.text,
+                                                   width: Int(size.width), height: Int(size.height))
+            if let image = card.image, let file = await session.bridgeFile(image) { _ = try? await call("canvas.addFiles", NativeMethod.AddFiles(files: [file])) }
+            _ = try? await call("canvas.applyOps", NativeMethod.ApplyOps(portalId: p.portalId, ops: [.upsert(session.bridgeCard(card))]),
+                                returning: NativeMethod.ApplyOpsResult.self)
+            Task { await self.telemetry.record("sketch", ["writing": .bool(reading?.isWriting ?? false)]) }
+            // Writing is talking to Enjin: it reads it and answers on the canvas.
+            if let reading, reading.isWriting, p.portalId == currentPortalId {
+                companion.explorerSpoke()
+                agent.ask("(wrote by hand on the canvas) \(reading.text)", portalId: p.portalId, focusCardId: card.id)
+            }
+            return WebMethod.SketchAddResult(cardId: card.id)
+        }
+        router.on("sketch.bringToLife", WebMethod.SketchBringToLife.self) { [weak self] p in
+            guard let self, let image = session.card(p.cardId)?.image,
+                  let png = await session.store.file(session.id, fileId: image.fileId) else { return Empty() }
+            companion.explorerSpoke()
+            Task { await self.telemetry.record("bring_to_life") }
+            agent.bringToLife(sketchId: p.cardId, png: png)
+            return Empty()
+        }
+        // The character on the canvas talks to Enjin.
+        router.on("enjin.ask", WebMethod.EnjinAsk.self) { [weak self] p in
+            self?.ask(p.text)
+            return Empty()
+        }
+        router.on("enjin.answer", WebMethod.EnjinAnswer.self) { [weak self] p in
+            self?.answer(p.choice)
+            return Empty()
+        }
+        router.on("enjin.step", WebMethod.EnjinStep.self) { [weak self] p in
+            guard let self, let step = agent.nextSteps.first(where: { Self.stepId($0, in: self.agent.nextSteps) == p.id }) else { return Empty() }
+            takeNextStep(step)
+            return Empty()
+        }
+        router.on("enjin.control", WebMethod.EnjinControl.self) { [weak self] p in
+            guard let self else { return Empty() }
+            switch p.action {
+            case .stop: agent.cancel()
+            case .undo: Task { await self.agent.undoLastTurn() }
+            case .dismissQuestion: agent.dismissQuestion()
+            case .dismissError: agent.dismissError()
+            }
+            return Empty()
+        }
+        router.on("enjin.typing", WebMethod.EnjinTyping.self) { [weak self] p in
+            self?.typing = p.typing
+            return Empty()
+        }
         router.on("attention", WebMethod.Attention.self) { [weak self] p in
             guard let self else { return Empty() }
             attention.record(p.events, in: p.portalId)
@@ -342,6 +398,51 @@ final class CanvasController: NSObject {
         }
     }
 
+    // MARK: - Enjin on the canvas
+
+    static func stepId(_ step: AgentSession.NextStep, in steps: [AgentSession.NextStep]) -> String {
+        switch step {
+        case .dive(let cardId, _): "dive:\(cardId)"
+        case .ask(let q): "ask:\(steps.firstIndex(of: .ask(q)) ?? 0)"
+        }
+    }
+
+    /// What the character on the canvas shows: Enjin's status, words, question and offers.
+    var enjinState: NativeMethod.EnjinState {
+        let steps = agent.isRunning ? [] : agent.nextSteps.map { s -> NativeMethod.EnjinState.Step in
+            switch s {
+            case .dive(_, let title): .init(id: Self.stepId(s, in: agent.nextSteps), label: title, dive: true)
+            case .ask(let q): .init(id: Self.stepId(s, in: agent.nextSteps), label: q, dive: false)
+            }
+        }
+        let question = agent.isRunning ? nil : agent.question.map { NativeMethod.EnjinState.Question(text: $0.text, choices: $0.choices) }
+        switch agent.status {
+        case .failed(let message): return .init(status: .failed, text: message)
+        case .working(.thinking): return .init(status: .thinking, text: agent.reply)
+        case .working(.searching(let q)): return .init(status: .searching, text: agent.reply, detail: q.isEmpty ? nil : q)
+        case .working(.writing): return .init(status: .writing, text: agent.reply)
+        case .idle: return .init(status: .idle, text: agent.reply, question: question, steps: steps, canUndo: agent.canUndo && !agent.isRunning)
+        }
+    }
+
+    /// Keep the character in step with Enjin: a few times a second, only when something changed.
+    private func streamEnjin() {
+        presenceTask?.cancel()
+        guard isWorld else { return }
+        presenceTask = Task { [weak self] in
+            var last: NativeMethod.EnjinState?
+            while !Task.isCancelled {
+                guard let self else { return }
+                let now = self.enjinState
+                if now != last, self.status == .ready {
+                    last = now
+                    _ = try? await self.call("enjin.state", now)
+                }
+                try? await Task.sleep(for: .milliseconds(120))
+            }
+        }
+    }
+
     private func loadInitialPortal() async {
         // After a web process crash, come back to where the kid was.
         let portalId = path.last?.portalId ?? session.rootPortalId
@@ -349,6 +450,7 @@ final class CanvasController: NSObject {
         // Keep cards clear of the floating chrome: top bar, tool rail, dock.
         _ = try? await call("canvas.setInsets", NativeMethod.SetInsets(top: 84, left: 96, bottom: 150, right: 24))
         sendTool()
+        streamEnjin()
         do {
             guard let scene = try await session.scene(for: portalId) else { return }
             path = scene.path

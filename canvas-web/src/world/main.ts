@@ -10,6 +10,7 @@ import { liveDocument } from "../portal/LiveLayer";
 import { Camera2D } from "./Camera2D";
 import { Look } from "./Look";
 import { Plane, type Nest } from "./Plane";
+import { Presence } from "./Presence";
 import { MODEL, type Rect } from "./spec";
 
 /**
@@ -52,6 +53,13 @@ const hint = document.createElement("div");
 hint.className = "hint off";
 hud.append(info, explodeBtn, busy, hint);
 host.appendChild(hud);
+// Enjin itself, on the canvas.
+const enjin = new Presence(host);
+enjin.onAsk = (text) => bridge.notify("enjin.ask", { text });
+enjin.onAnswer = (choice) => bridge.notify("enjin.answer", { choice });
+enjin.onStep = (id) => bridge.notify("enjin.step", { id });
+enjin.onControl = (action) => bridge.notify("enjin.control", { action });
+enjin.onTyping = (typing) => bridge.notify("enjin.typing", { typing });
 const setWords = () => { explodeBtn.textContent = t.explode(); };
 setWords();
 onLangChange(setWords);
@@ -84,6 +92,7 @@ function ask<M extends "portal.enter" | "portal.exit" | "portal.peek" | "portal.
 function newPlane(scene: PortalScene, live: boolean): Plane {
   const p = new Plane(scene, look.environment, live);
   p.onOpen = (cardId) => bridge.notify("card.open", { cardId });
+  p.onBringToLife = (cardId) => bridge.notify("sketch.bringToLife", { cardId });
   p.onError = (e) => bridge.notify("log.event", { level: "error", message: `world build: ${String(e)}` });
   stage.appendChild(p.el);
   return p;
@@ -407,7 +416,7 @@ const inModel = (x: number, y: number) => {
 };
 
 host.addEventListener("pointerdown", (e) => {
-  if ((e.target as HTMLElement).closest?.(".hud button, .hud .info, .panel .open")) return;
+  if ((e.target as HTMLElement).closest?.(".hud button, .hud .info, .panel .open, .enjin")) return;
   pointers.set(e.pointerId, { x: e.clientX, y: e.clientY });
   lastInput = performance.now();
   cam.stop();
@@ -478,6 +487,8 @@ function tap(x: number, y: number, target: EventTarget | null): void {
   if (child?.up?.doorId) { flyThrough(child.up.doorId); return; }
   const doorEl = el?.closest?.("[data-door]") as HTMLElement | null;
   if (doorEl && planeEl === anchor.el) { flyThrough(doorEl.dataset.door!); return; }
+  const sketchEl = el?.closest?.(".sketch") as HTMLElement | null;
+  if (sketchEl && planeEl === anchor.el) { sketchEl.classList.toggle("on"); return; }
   const panelEl = el?.closest?.(".panel") as HTMLElement | null;
   if (panelEl && planeEl === anchor.el) { focusPanel(panelEl.dataset.cardId!); return; }
   if (anchor.model && !double) {
@@ -603,12 +614,15 @@ setInterval(sendAttention, 3000);
 
 // ---------- watching Enjin build: new cards arrive in place, and the view follows while you're hands-off ----------
 let followNext: string | null = null;
+let followAlways = false;
 let backToAll: number | undefined;
 const handsOff = () => performance.now() - lastInput > 3000 && !pointers.size;
 function follow(): void {
   const id = followNext;
   followNext = null;
-  if (!id || !anchor || transitioning || !handsOff()) return;
+  const always = followAlways;
+  followAlways = false;
+  if (!id || !anchor || transitioning || (!always && !handsOff())) return;
   const r = anchor.panelRect(id) ?? anchor.doorRect(id);
   if (!r) return;
   // The new card with some of what's around it, so you see where it goes.
@@ -657,13 +671,20 @@ bridge.on("canvas.applyOps", ({ portalId, ops }) => {
   const byId = new Map(p.scene.cards.map((c) => [c.id, c] as [string, Card]));
   const fresh: string[] = [];
   for (const o of ops) {
-    if (o.op === "upsert") { if (!byId.has(o.card.id)) fresh.push(o.card.id); byId.set(o.card.id, o.card); }
+    if (o.op === "upsert") {
+      if (!byId.has(o.card.id)) {
+        fresh.push(o.card.id);
+        // Something grown from a drawing: you asked for it, so you're shown it.
+        if (o.card.place && !o.card.sketch) followAlways = true;
+      }
+      byId.set(o.card.id, o.card);
+    }
     else byId.delete(o.cardId);
   }
   p.scene = { ...p.scene, cards: [...byId.values()] };
   if (fresh.length) {
     p.markBorn(fresh);
-    if (p === anchor) followNext = fresh.at(-1)!;
+    if (p === anchor) { followNext = fresh.at(-1)!; workingOn = followNext; }
   }
   rebuild(p);
   return { placed: [] };
@@ -714,10 +735,84 @@ bridge.on("canvas.liveDocument", ({ cardId }) => {
   return { html: body ? liveDocument(body) : null };
 });
 // The card canvas's drawing tools have no meaning here (sketch panels come later).
+bridge.on("enjin.state", (s) => {
+  enjin.set(s);
+  if (s.status === "idle" || s.status === "failed") {
+    workingOn = null;
+    // Drawings waiting on Enjin can ask again.
+    for (const b of host.querySelectorAll<HTMLButtonElement>(".sketch .alive:disabled")) { b.disabled = false; b.textContent = t.bringToLife(); }
+  }
+  wake();
+  return null;
+});
 bridge.on("canvas.setTool", () => null);
 bridge.on("canvas.history", () => null);
-bridge.on("ink.lock", () => null);
-bridge.on("ink.commit", (p) => ({ strokeId: p.strokeId, elementId: `ink:${p.strokeId}` }));
+// ---------- the Pencil: ink on the world; a pause makes it a sketch Enjin can read and bring to life ----------
+type Stroke = { points: [number, number][]; width: number };
+let ink: { plane: Plane; strokes: Stroke[]; svg: SVGSVGElement } | null = null;
+let penDown = false;
+let inkTimer: number | undefined;
+bridge.on("ink.lock", ({ locked }) => {
+  penDown = locked;
+  if (!locked) settleInk();
+  return null;
+});
+bridge.on("ink.commit", (p) => {
+  if (!anchor) return { strokeId: p.strokeId, elementId: "" };
+  if (!ink || ink.plane !== anchor) {
+    const svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+    svg.classList.add("ink-live");
+    anchor.el.appendChild(svg);
+    ink = { plane: anchor, strokes: [], svg };
+  }
+  // Screen points to the world's own coordinates, so the ink stays put as you pan and zoom.
+  const points = p.points.map(([x, y]) => cam.toPlane(x, y));
+  const width = p.width / cam.s;
+  ink.strokes.push({ points, width });
+  const path = document.createElementNS("http://www.w3.org/2000/svg", "path");
+  path.setAttribute("d", points.map(([x, y], i) => `${i ? "L" : "M"}${x.toFixed(1)} ${y.toFixed(1)}`).join(""));
+  path.setAttribute("stroke-width", String(width));
+  ink.svg.appendChild(path);
+  lastInput = performance.now();
+  settleInk();
+  return { strokeId: p.strokeId, elementId: `ink:${p.strokeId}` };
+});
+/** When the Pencil rests a moment, the strokes so far become one sketch. */
+function settleInk(): void {
+  clearTimeout(inkTimer);
+  inkTimer = window.setTimeout(() => { if (!penDown) void keepSketch(); }, 1500);
+}
+async function keepSketch(): Promise<void> {
+  const drawn = ink;
+  ink = null;
+  if (!drawn || !drawn.strokes.length) { drawn?.svg.remove(); return; }
+  const all = drawn.strokes.flatMap((s) => s.points);
+  const pad = Math.max(...drawn.strokes.map((s) => s.width)) * 2 + 12;
+  const x0 = Math.min(...all.map((p) => p[0])) - pad, y0 = Math.min(...all.map((p) => p[1])) - pad;
+  const x1 = Math.max(...all.map((p) => p[0])) + pad, y1 = Math.max(...all.map((p) => p[1])) + pad;
+  const place = { x: x0, y: y0, w: Math.max(40, x1 - x0), h: Math.max(40, y1 - y0) };
+  // A white-background picture of the ink (what handwriting recognition and Enjin's eyes read best).
+  const k = Math.min(4, 900 / Math.max(place.w, place.h));
+  const c = document.createElement("canvas");
+  c.width = Math.round(place.w * k); c.height = Math.round(place.h * k);
+  const g = c.getContext("2d")!;
+  g.fillStyle = "#ffffff"; g.fillRect(0, 0, c.width, c.height);
+  g.strokeStyle = "#0b0b0c"; g.lineCap = "round"; g.lineJoin = "round";
+  for (const s of drawn.strokes) {
+    g.lineWidth = Math.max(2, s.width * k);
+    g.beginPath();
+    s.points.forEach(([x, y], i) => (i ? g.lineTo((x - x0) * k, (y - y0) * k) : g.moveTo((x - x0) * k, (y - y0) * k)));
+    g.stroke();
+  }
+  try {
+    await bridge.request("sketch.add", { portalId: drawn.plane.portalId, png: c.toDataURL("image/png"), place });
+    notice("tap", { label: "a drawing they made" });
+    // The kept sketch (a card) replaces the live ink once it's drawn.
+    setTimeout(() => drawn.svg.remove(), 900);
+  } catch {
+    // Nowhere to keep it: leave the ink on screen rather than lose it.
+  }
+}
 bridge.install();
 
 // ---------- what you're looking at (native prepares the topic you're closest to) ----------
@@ -749,6 +844,28 @@ function resize(): void {
 }
 addEventListener("resize", resize);
 resize();
+/** Where Enjin goes: the card it's writing, the title while it thinks, what you're looking at, or its corner. */
+let workingOn: string | null = null;
+let lastEnjin = performance.now();
+function placeEnjin(now: number): boolean {
+  const dt = Math.min(0.1, (now - lastEnjin) / 1000);
+  lastEnjin = now;
+  const f = cam.free();
+  let at: [number, number] = [f.x + f.w - 64, f.y + f.h - 64];
+  const corner = (r: Rect): [number, number] => [r.x + r.w - 6, r.y + 6];
+  const rectOf = (id: string) => anchor && (anchor.panelRect(id) ?? anchor.doorRect(id));
+  if (anchor) {
+    const work = workingOn ? rectOf(workingOn) : null;
+    const seen = looking?.cardId ? rectOf(looking.cardId) : null;
+    if (work) at = corner(cam.rectToScreen(work));
+    else if (enjin.working) { const r = cam.rectToScreen(anchor.layout.title); at = [r.x + r.w / 2, r.y + r.h + 10]; }
+    else if (seen) at = corner(cam.rectToScreen(seen));
+  }
+  const m = 36;
+  enjin.goTo(Math.min(f.x + f.w - m, Math.max(f.x + m, at[0])), Math.min(f.y + f.h - m, Math.max(f.y + m, at[1])));
+  return enjin.update(dt);
+}
+
 let lastError = 0;
 function frame(now: number): void {
   // Whatever happens in one frame, the next one comes: a world must never freeze.
@@ -756,7 +873,7 @@ function frame(now: number): void {
   try {
     const moving = cam.update(now) || pointers.size > 0;
     if (moving) settledAt = now;
-    const animating = planes().some(({ p }) => p.model?.hasMotion);
+    const animating = planes().some(({ p }) => p.model?.hasMotion) || placeEnjin(now);
     if (moving || animating || now - lastWake < 1500) {
       draw(now);
       check(now);

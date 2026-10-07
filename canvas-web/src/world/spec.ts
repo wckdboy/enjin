@@ -112,3 +112,20 @@ export function layoutPlane(panelSizes: { w: number; h: number }[], doors: numbe
 export const DOOR_SCALE = (DOOR * 0.78) / MODEL.w;
 
 export const overlaps = (a: Rect, b: Rect) => a.x < b.x + b.w && b.x < a.x + a.w && a.y < b.y + b.h && b.y < a.y + a.h;
+
+/** The nearest spot to `want` (spiralling out) that overlaps none of `taken`, with a margin. */
+export function freeSpot(want: Rect, taken: Rect[], margin = 40): Rect {
+  const hits = (r: Rect) => taken.some((t) => r.x < t.x + t.w + margin && t.x < r.x + r.w + margin && r.y < t.y + t.h + margin && t.y < r.y + r.h + margin);
+  if (!hits(want)) return want;
+  const step = 80;
+  for (let ring = 1; ring < 60; ring++) {
+    let best: Rect | null = null, bestD = Infinity;
+    for (let i = -ring; i <= ring; i++) for (const [dx, dy] of [[i, -ring], [i, ring], [-ring, i], [ring, i]] as const) {
+      const r = { ...want, x: want.x + dx * step, y: want.y + dy * step };
+      const d = Math.hypot(dx, dy);
+      if (d < bestD && !hits(r)) { best = r; bestD = d; }
+    }
+    if (best) return best;
+  }
+  return want;
+}

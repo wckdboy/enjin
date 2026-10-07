@@ -1,0 +1,16 @@
+{
+  "direction": "webToNative",
+  "request": {
+    "v": 1,
+    "id": "fx-1",
+    "method": "enjin.answer",
+    "params": {
+      "choice": "Fewer turns"
+    }
+  },
+  "response": {
+    "v": 1,
+    "id": "fx-1",
+    "result": null
+  }
+}

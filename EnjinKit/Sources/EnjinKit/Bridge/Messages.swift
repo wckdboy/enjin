@@ -185,12 +185,25 @@ public struct Card: Codable, Equatable, Sendable, Identifiable {
     public var imagePending: Bool?
     /// A figure drawn on the card (cards with a figure have no picture).
     public var visual: Visual?
+    /// Placed by hand in the world: sketches, and what grew from them.
+    public var place: CardPlace?
+    /// The explorer's own drawing.
+    public var sketch: Bool?
 
     public init(id: String, type: CardType, title: String, summary: String, state: CardState, childCount: Int,
-                image: CardImageRef? = nil, imagePending: Bool? = nil, visual: Visual? = nil) {
+                image: CardImageRef? = nil, imagePending: Bool? = nil, visual: Visual? = nil, place: CardPlace? = nil, sketch: Bool? = nil) {
         self.id = id; self.type = type; self.title = title; self.summary = summary; self.state = state; self.childCount = childCount
-        self.image = image; self.imagePending = imagePending; self.visual = visual
+        self.image = image; self.imagePending = imagePending; self.visual = visual; self.place = place; self.sketch = sketch
     }
+}
+
+/// Where a card sits in its world when it's placed by hand (plane px). w/h 0: its natural size.
+public struct CardPlace: Codable, Equatable, Sendable {
+    public var x: Double
+    public var y: Double
+    public var w: Double
+    public var h: Double
+    public init(x: Double, y: Double, w: Double, h: Double) { self.x = x; self.y = y; self.w = w; self.h = h }
 }
 
 /// An image file for the canvas, as a data URL (Excalidraw's BinaryFileData).
@@ -361,6 +374,31 @@ public enum NativeMethod {
         public var framed: Bool
     }
 
+    /// Enjin itself, for the character on the canvas.
+    public struct EnjinState: Codable, Sendable, Equatable {
+        public enum Status: String, Codable, Sendable { case idle, thinking, searching, writing, failed }
+        public struct Question: Codable, Sendable, Equatable {
+            public var text: String
+            public var choices: [String]
+            public init(text: String, choices: [String]) { self.text = text; self.choices = choices }
+        }
+        public struct Step: Codable, Sendable, Equatable {
+            public var id: String
+            public var label: String
+            public var dive: Bool
+            public init(id: String, label: String, dive: Bool) { self.id = id; self.label = label; self.dive = dive }
+        }
+        public var status: Status
+        public var text: String
+        public var detail: String?
+        public var question: Question?
+        public var steps: [Step]
+        public var canUndo: Bool
+        public init(status: Status, text: String, detail: String? = nil, question: Question? = nil, steps: [Step] = [], canUndo: Bool = false) {
+            self.status = status; self.text = text; self.detail = detail; self.question = question; self.steps = steps; self.canUndo = canUndo
+        }
+    }
+
     public struct LiveDocument: Codable, Sendable {
         public var cardId: String
         public init(cardId: String) { self.cardId = cardId }
@@ -426,6 +464,25 @@ public enum WebMethod {
         public var portalId: String
         public var cardId: String
     }
+
+    public struct SketchAdd: Codable, Sendable {
+        public var portalId: String
+        public var png: String
+        public var place: CardPlace
+    }
+    public struct SketchAddResult: Codable, Sendable {
+        public var cardId: String
+        public init(cardId: String) { self.cardId = cardId }
+    }
+    public struct SketchBringToLife: Codable, Sendable { public var cardId: String }
+    public struct EnjinAsk: Codable, Sendable { public var text: String }
+    public struct EnjinAnswer: Codable, Sendable { public var choice: String }
+    public struct EnjinStep: Codable, Sendable { public var id: String }
+    public struct EnjinControl: Codable, Sendable {
+        public enum Action: String, Codable, Sendable { case stop, undo, dismissQuestion, dismissError }
+        public var action: Action
+    }
+    public struct EnjinTyping: Codable, Sendable { public var typing: Bool }
 
     public struct Attention: Codable, Sendable {
         public var portalId: String

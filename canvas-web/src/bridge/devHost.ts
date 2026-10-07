@@ -136,6 +136,44 @@ export function devHost(getBridge: () => Bridge): NativeTransport {
           const p = portalInside(params.cardId!);
           return ok(req, p ? sceneFor(p.portalId) : null);
         }
+        case "sketch.add": {
+          // Like native: keep the drawing as the explorer's own card, where it was drawn.
+          const q = req.params as { portalId: string; png: string; place: { x: number; y: number; w: number; h: number } };
+          const id = `c-sketch-${data.cards.length}`;
+          const fileId = `f-${id}`;
+          data.cards.push({ id, type: "image", title: "Sketch", summary: "", state: "filled", childCount: 0,
+            image: { fileId, width: 900, height: 600 }, place: q.place, sketch: true } as Card);
+          portals.find((x) => x.portalId === q.portalId)?.cardIds.push(id);
+          const b = getBridge();
+          setTimeout(() => {
+            b.handle({ v: PROTOCOL_VERSION, id: `f${id}`, method: "canvas.addFiles", params: { files: [{ id: fileId, mimeType: "image/png", dataURL: q.png }] } });
+            b.handle({ v: PROTOCOL_VERSION, id: `o${id}`, method: "canvas.applyOps", params: { portalId: q.portalId, ops: [{ op: "upsert", card: data.cards.at(-1) }] } });
+          });
+          return ok(req, { cardId: id });
+        }
+        case "sketch.bringToLife": {
+          // A pretend Enjin: a seesaw sim stands right beside the drawing.
+          const sketch = data.cards.find((x) => x.id === params.cardId) as Card | undefined;
+          const portal = portals.find((x) => x.cardIds.includes(params.cardId!));
+          if (!sketch?.place || !portal) return ok(req, null);
+          const card = { id: `c-alive-${data.cards.length}`, type: "note", title: "Your lever", summary: "Move the load and the pivot.", state: "filled", childCount: 0,
+            place: { x: sketch.place.x + sketch.place.w + 60, y: sketch.place.y, w: 0, h: 0 },
+            visual: { kind: "sim", spec: { view: [-3, 0, 3, 3], bodies: [{ id: "pivot", r: 0.1, x: 0, y: 0.5, fixed: true }, { id: "load", shape: "box", w: 0.4, h: 0.4, x: 1.5, y: 0.9 }] } } } as Card;
+          data.cards.push(card);
+          portal.cardIds.push(card.id);
+          setTimeout(() => getBridge().handle({ v: PROTOCOL_VERSION, id: `o${card.id}`, method: "canvas.applyOps", params: { portalId: portal.portalId, ops: [{ op: "upsert", card }] } }), 300);
+          return ok(req, null);
+        }
+        case "enjin.ask": {
+          // A pretend Enjin, for the character: thinks, talks, then asks and offers.
+          const say = (params: unknown, ms: number) => setTimeout(() => getBridge().handle({ v: PROTOCOL_VERSION, id: `e${ms}`, method: "enjin.state", params }), ms);
+          const text = "Good question. The coil heats up because current meets resistance: P = I²R.";
+          say({ status: "thinking", text: "", steps: [], canUndo: false }, 50);
+          for (let i = 1; i <= 4; i++) say({ status: "writing", text: text.slice(0, (text.length * i) / 4), steps: [], canUndo: false }, 150 + i * 120);
+          say({ status: "idle", text, question: { text: "Double the current. The heat…", choices: ["Doubles", "Quadruples"] },
+            steps: [{ id: "dive:c-homemade", label: "Build a motor in five minutes", dive: true }], canUndo: true }, 800);
+          return ok(req, null);
+        }
         case "portal.peek": {
           const p = portals.find((q) => q.ownerCardId === params.cardId);
           return ok(req, p ? sceneFor(p.portalId) : null);

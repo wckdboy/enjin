@@ -7,7 +7,7 @@ import { t } from "../i18n";
 import { FRAME_KINDS, frameBody } from "../live/documents";
 import { liveDocument } from "../portal/LiveLayer";
 import { ModelView } from "./ModelView";
-import { DOOR, DOOR_SCALE, layoutPlane, worldFromScene, type Layout, type Rect, type WorldSpec } from "./spec";
+import { DOOR, DOOR_SCALE, freeSpot, layoutPlane, worldFromScene, type Layout, type Rect, type WorldSpec } from "./spec";
 
 /** Where a world sits inside the one around it: its origin at (cx, cy), at scale k. */
 export interface Nest { cx: number; cy: number; k: number }
@@ -50,10 +50,16 @@ export class Plane {
   private arrive(id: string, el: HTMLElement): void {
     if (!this.born.delete(id)) return;
     el.classList.add("born");
+    // A drawing that just landed offers to come alive for a while.
+    if (el.classList.contains("sketch")) { el.classList.add("fresh"); setTimeout(() => el.classList.remove("fresh"), 20000); }
     el.addEventListener("animationend", () => el.classList.remove("born"), { once: true });
   }
   private active: string | null = null;
   onOpen: ((cardId: string) => void) | null = null;
+  /** The explorer asked for their drawing to be brought to life. */
+  onBringToLife: ((cardId: string) => void) | null = null;
+  /** Cards placed by hand (sketches, and what grew from them), where they stand. */
+  private placed = new Map<string, Rect>();
 
   constructor(scene: PortalScene, private env: THREE.Texture, private live: boolean) {
     this.scene = scene;
@@ -129,10 +135,34 @@ export class Plane {
       this.arrive(card.id, built.el);
     }
 
-    const L = layoutPlane(spec.panels.map((c) => this.panels.get(c.id)!), spec.doors.length);
+    // Panels flow in columns; cards placed by hand stand where they were put.
+    const flowing = spec.panels.filter((c) => !c.place);
+    const L = layoutPlane(flowing.map((c) => this.panels.get(c.id)!), spec.doors.length);
+    // Sketches stand exactly where they were drawn. What grew from one (no size given) goes to the
+    // nearest free spot from where it asked to be, so it never covers the model, a door or a panel.
+    this.placed = new Map();
+    const taken: Rect[] = [L.model, L.title, ...L.doors, ...L.doorLabels, ...L.panels];
+    const placedCards = spec.panels.filter((c) => c.place);
+    for (const c of placedCards.filter((c) => c.place!.w > 0)) {
+      const p = c.place!;
+      const r = { x: p.x, y: p.y, w: p.w, h: p.h };
+      this.placed.set(c.id, r);
+      taken.push(r);
+    }
+    for (const c of placedCards.filter((c) => !(c.place!.w > 0))) {
+      const natural = this.panels.get(c.id)!;
+      const r = freeSpot({ x: c.place!.x, y: c.place!.y, w: natural.w, h: natural.h }, taken);
+      this.placed.set(c.id, r);
+      taken.push(r);
+    }
+    for (const r of this.placed.values()) {
+      const b = L.bounds, x1 = Math.max(b.x + b.w, r.x + r.w + 100), y1 = Math.max(b.y + b.h, r.y + r.h + 100);
+      b.x = Math.min(b.x, r.x - 100); b.y = Math.min(b.y, r.y - 100); b.w = x1 - b.x; b.h = y1 - b.y;
+    }
     this.spec = spec;
     this.layout = L;
-    spec.panels.forEach((c, i) => place(this.panels.get(c.id)!.el, L.panels[i]!));
+    flowing.forEach((c, i) => place(this.panels.get(c.id)!.el, L.panels[i]!));
+    for (const [id, r] of this.placed) place(this.panels.get(id)!.el, r);
 
     // Doors.
     const doorIds = new Set(spec.doors.map((c) => c.id));
@@ -199,7 +229,9 @@ export class Plane {
   }
 
   panelRect(cardId: string): Rect | null {
-    const i = this.spec.panels.findIndex((c) => c.id === cardId);
+    const placed = this.placed.get(cardId);
+    if (placed) return placed;
+    const i = this.spec.panels.filter((c) => !c.place).findIndex((c) => c.id === cardId);
     return i < 0 ? null : this.layout.panels[i]!;
   }
 
@@ -234,7 +266,33 @@ export class Plane {
     this.el.remove();
   }
 
+  /** The explorer's drawing: just their ink where they drew it, and the offer to bring it to life. */
+  private buildSketch(card: Card, files: BinaryFiles, key: string): Panel {
+    const el = document.createElement("div");
+    el.className = "sketch";
+    el.dataset.cardId = card.id;
+    const src = card.image ? (files[card.image.fileId as never]?.dataURL as string | undefined) : undefined;
+    if (src) {
+      const img = document.createElement("img");
+      img.src = src;
+      img.alt = card.summary || card.title;
+      el.appendChild(img);
+    }
+    const go = document.createElement("button");
+    go.className = "alive";
+    go.textContent = t.bringToLife();
+    go.addEventListener("click", (e) => {
+      e.stopPropagation();
+      go.disabled = true;
+      go.textContent = t.enjinBuilding();
+      this.onBringToLife?.(card.id);
+    });
+    el.appendChild(go);
+    return { el, key, frame: null, w: card.place?.w || 300, h: card.place?.h || 200 };
+  }
+
   private async buildPanel(card: Card, files: BinaryFiles, key: string): Promise<Panel> {
+    if (card.sketch) return this.buildSketch(card, files, key);
     const { elements } = renderCards([], [card], []);
     const frame = cardRects(elements)[0]!.rect;
     const svg = await exportToSvg({

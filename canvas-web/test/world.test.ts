@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { Card } from "../src/bridge/schema";
-import { DOOR, DOOR_SCALE, MODEL, layoutPlane, overlaps, worldFromScene } from "../src/world/spec";
+import { DOOR, DOOR_SCALE, MODEL, freeSpot, layoutPlane, overlaps, worldFromScene } from "../src/world/spec";
 
 const card = (id: string, extra: Partial<Card> = {}): Card => ({ id, type: "note", title: id, summary: "", state: "filled", childCount: 0, ...extra });
 
@@ -58,5 +58,15 @@ describe("the world's plane", () => {
     expect(w.centerpiece?.cardId).toBe("m");
     expect(w.doors.map((c) => c.id)).toEqual(["t1"]);
     expect(w.panels.map((c) => c.id)).toEqual(["n1", "t2"]);
+  });
+});
+
+describe("placing what grew from a sketch", () => {
+  it("goes as close as it can to where it asked, without covering anything", () => {
+    const taken = [{ x: 0, y: 0, w: 400, h: 300 }, { x: 500, y: 0, w: 200, h: 200 }];
+    expect(freeSpot({ x: 900, y: 0, w: 100, h: 100 }, taken)).toEqual({ x: 900, y: 0, w: 100, h: 100 }); // already free
+    const r = freeSpot({ x: 100, y: 100, w: 300, h: 200 }, taken);
+    for (const t of taken) expect(r.x < t.x + t.w + 40 && t.x < r.x + r.w + 40 && r.y < t.y + t.h + 40 && t.y < r.y + r.h + 40).toBe(false);
+    expect(Math.hypot(r.x - 100, r.y - 100)).toBeLessThan(700);
   });
 });

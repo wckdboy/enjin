@@ -73,6 +73,17 @@ final class SmokeTests: XCTestCase {
         XCTAssertEqual(root.value as? String, "2 cards", "the cards were generated, not seeded")
     }
 
+    /// Talk to Enjin the way an explorer does in the world: tap the character on the canvas, type.
+    private func askEnjin(_ text: String) {
+        let enjin = app.buttons["Enjin"].firstMatch
+        XCTAssertTrue(enjin.waitForExistence(timeout: 15), "Enjin is on the canvas")
+        enjin.tap()
+        let field = app.textFields.matching(NSPredicate(format: "placeholderValue == %@", "Ask Enjin…")).firstMatch
+        XCTAssertTrue(field.waitForExistence(timeout: 5), "tapping Enjin opens a place to talk")
+        field.tap()
+        field.typeText(text + "\n")
+    }
+
     private func snap(_ name: String) {
         let a = XCTAttachment(screenshot: app.screenshot())
         a.name = name
@@ -83,17 +94,14 @@ final class SmokeTests: XCTestCase {
     /// Enjin as a partner: it asks with tappable answers, hears the answer, and keeps notes in User.md.
     func testEnjinAsksAndRemembersHowYouLearn() {
         app.buttons["notebook:Electric motors"].firstMatch.tap()
-        let ask = app.textFields["askField"]
-        XCTAssertTrue(ask.waitForExistence(timeout: 15))
-        ask.tap()
-        ask.typeText("quiz me\n")
-        let answer = app.buttons["answer:Fewer turns"]
+        askEnjin("quiz me")
+        let answer = app.buttons["Fewer turns"].firstMatch
         XCTAssertTrue(answer.waitForExistence(timeout: 10), "Enjin's question comes with answers to tap")
         XCTAssertTrue(app.staticTexts["Which spins faster: more turns of wire, or fewer?"].exists)
         snap("enjin-asks")
         answer.tap()
         XCTAssertTrue(app.staticTexts["Yes: fewer turns, less back-EMF, more speed."].waitForExistence(timeout: 10), "the answer goes back to Enjin")
-        XCTAssertFalse(app.buttons["answer:Fewer turns"].exists, "the question is gone once answered")
+        XCTAssertTrue(app.buttons["Fewer turns"].waitForNonExistence(timeout: 5), "the question is gone once answered")
 
         app.buttons["Settings"].tap()
         let profile = app.buttons["learnerProfile"]
@@ -107,10 +115,7 @@ final class SmokeTests: XCTestCase {
 
     func testAskTheAgentThenUndo() {
         app.buttons["notebook:Electric motors"].firstMatch.tap()
-        let ask = app.textFields["askField"]
-        XCTAssertTrue(ask.waitForExistence(timeout: 15), "agent dock appears once the canvas is ready")
-        ask.tap()
-        ask.typeText("what did they eat?\n")
+        askEnjin("what did they eat?")
 
         XCTAssertTrue(app.staticTexts["Here are two cards from the test agent."].waitForExistence(timeout: 10))
         sleep(1) // let the picture land
@@ -121,7 +126,9 @@ final class SmokeTests: XCTestCase {
         XCTAssertEqual(root.value as? String, "7 cards", "agent added two cards")
         app.buttons["Done"].tap()
 
-        let undo = app.buttons["Undo Enjin's last change"]
+        // Undo sits with Enjin's words, on the canvas.
+        if !app.buttons["Undo"].exists { app.buttons["Enjin"].firstMatch.tap() }
+        let undo = app.buttons["Undo"].firstMatch
         XCTAssertTrue(undo.waitForExistence(timeout: 5))
         undo.tap()
         snap("after-undo")

@@ -55,6 +55,14 @@ export const examples: Record<string, { direction: "nativeToWeb" | "webToNative"
   "canvas.addFiles": { direction: "nativeToWeb", params: { files: [{ id: "img-2", mimeType: "image/jpeg", dataURL: "data:image/jpeg;base64,/9j/" }] }, result: null },
   "canvas.frame": { direction: "nativeToWeb", params: { cardId: "c-why-won" }, result: { framed: true } },
   "canvas.flash": { direction: "nativeToWeb", params: { cardId: "c-why-won" }, result: null },
+  "enjin.state": {
+    direction: "nativeToWeb",
+    params: {
+      status: "idle", text: "Quick guess first!", question: { text: "Which spins faster?", choices: ["More turns", "Fewer turns"] },
+      steps: [{ id: "dive:c-emperors", label: "Emperors", dive: true }, { id: "ask:0", label: "Why did it fall?", dive: false }], canUndo: true,
+    },
+    result: null,
+  },
   "canvas.liveDocument": { direction: "nativeToWeb", params: { cardId: "c-march" }, result: { html: "<!doctype html><html><body><p>model</p></body></html>" } },
   "canvas.ready": { direction: "webToNative", params: { protocolVersion: PROTOCOL_VERSION, excalidrawVersion: "0.18.1" }, result: { accepted: true } },
   "canvas.changed": { direction: "webToNative", params: { portalId: "p-legions", elements: scene.elements }, result: null },
@@ -75,6 +83,17 @@ export const examples: Record<string, { direction: "nativeToWeb" | "webToNative"
     result: { scene, cardId: "c-legions" },
   },
   "portal.exit": { direction: "webToNative", params: { portalId: "p-legions" }, result: { scene, focusCardId: "c-legions" } },
+  "sketch.add": {
+    direction: "webToNative",
+    params: { portalId: "p-legions", png: "data:image/png;base64,iVBORw0KGgo=", place: { x: 600, y: -200, w: 320, h: 180 } },
+    result: { cardId: "c-sketch" },
+  },
+  "sketch.bringToLife": { direction: "webToNative", params: { cardId: "c-sketch" }, result: null },
+  "enjin.ask": { direction: "webToNative", params: { text: "why does it get hot?" }, result: null },
+  "enjin.answer": { direction: "webToNative", params: { choice: "Fewer turns" }, result: null },
+  "enjin.step": { direction: "webToNative", params: { id: "dive:c-emperors" }, result: null },
+  "enjin.control": { direction: "webToNative", params: { action: "stop" }, result: null },
+  "enjin.typing": { direction: "webToNative", params: { typing: true }, result: null },
   "attention": {
     direction: "webToNative",
     params: { portalId: "p-legions", events: [{ kind: "look", cardId: "c-why-won", ms: 9000 }, { kind: "tap", label: "Shield" }] },
