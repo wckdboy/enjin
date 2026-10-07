@@ -8,6 +8,9 @@ describe("frameBody", () => {
     expect(ui).toContain("mountUI");
     expect(ui).toContain("compileExpr");
     expect(frameBody({ kind: "model3d", spec: { parts: [] } }, null)).toContain("mount3D");
+    const sim = frameBody({ kind: "sim", spec: { bodies: [{ id: "ball" }] } }, null)!;
+    expect(sim).toContain("mountSim");
+    expect(sim).toContain("compileExpr");
   });
   it("waits while the spec is still being written", () => {
     expect(frameBody({ kind: "model3d" }, null)).toBeNull();

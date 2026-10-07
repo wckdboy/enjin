@@ -1,0 +1,27 @@
+{
+  "kinds": [
+    "flow",
+    "cycle",
+    "timeline",
+    "bars",
+    "parts",
+    "stat",
+    "formula",
+    "code",
+    "live",
+    "graph",
+    "table",
+    "chart",
+    "model3d",
+    "diorama",
+    "ui",
+    "sim"
+  ],
+  "frameKinds": [
+    "live",
+    "model3d",
+    "diorama",
+    "ui",
+    "sim"
+  ]
+}

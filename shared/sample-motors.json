@@ -24,6 +24,7 @@
         "c-live",
         "c-model",
         "c-push",
+        "c-lift",
         "c-steps",
         "c-force",
         "c-torque",
@@ -641,6 +642,107 @@
               "explain": "0.8 × 5 × 0.2 = 0.8 N."
             }
           ]
+        }
+      }
+    },
+    {
+      "id": "c-lift",
+      "type": "note",
+      "state": "filled",
+      "title": "Lift it",
+      "summary": "A motor winching a load: pull harder than the weight and it climbs. Grab the load and drop it.",
+      "visual": {
+        "kind": "sim",
+        "spec": {
+          "view": [
+            -2,
+            0,
+            2,
+            4
+          ],
+          "gravity": [
+            0,
+            -9.81
+          ],
+          "floor": true,
+          "params": {
+            "pull": {
+              "value": 14,
+              "min": 0,
+              "max": 30,
+              "step": 0.5,
+              "label": "Motor pull",
+              "unit": "N"
+            },
+            "m": {
+              "value": 1,
+              "min": 0.2,
+              "max": 2.5,
+              "step": 0.1,
+              "label": "Load",
+              "unit": "kg"
+            }
+          },
+          "bodies": [
+            {
+              "id": "drum",
+              "shape": "circle",
+              "r": 0.18,
+              "x": 0,
+              "y": 3.7,
+              "fixed": true,
+              "color": "black",
+              "label": "Motor"
+            },
+            {
+              "id": "load",
+              "shape": "box",
+              "w": 0.5,
+              "h": 0.4,
+              "x": 0,
+              "y": 0.2,
+              "mass": "m",
+              "color": "accent",
+              "label": "Load",
+              "bounce": 0.1
+            }
+          ],
+          "links": [
+            {
+              "type": "rope",
+              "a": "drum",
+              "b": "load"
+            }
+          ],
+          "forces": [
+            {
+              "on": "load",
+              "fx": "0",
+              "fy": "load_y < 2.4 ? pull : m*9.81 - 12*load_vy"
+            }
+          ],
+          "readouts": [
+            {
+              "label": "Net force",
+              "expr": "pull - m*9.81",
+              "unit": "N",
+              "digits": 1
+            },
+            {
+              "label": "Speed",
+              "expr": "load_vy",
+              "unit": "m/s",
+              "digits": 2
+            }
+          ],
+          "plot": [
+            {
+              "expr": "load_y",
+              "label": "Height",
+              "unit": "m"
+            }
+          ],
+          "caption": "Pull more than the weight (m × 9.81 N) and the load rises, faster and faster."
         }
       }
     },

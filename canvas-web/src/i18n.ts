@@ -14,8 +14,8 @@ const words = {
   actionOpen: { en: "Open", da: "Åbn" },
   actionVisualize: { en: "Visualize", da: "Visualisér" },
   fig: {
-    en: { flow: "Process", cycle: "Cycle", timeline: "Timeline", bars: "Compare", parts: "Parts", stat: "Number", formula: "Formula", code: "Code", live: "Live model", graph: "Concept map", table: "Table", chart: "Chart", model3d: "3D model", diorama: "Diorama", ui: "Interactive" },
-    da: { flow: "Proces", cycle: "Kredsløb", timeline: "Tidslinje", bars: "Sammenlign", parts: "Dele", stat: "Tal", formula: "Formel", code: "Kode", live: "Levende model", graph: "Begrebskort", table: "Tabel", chart: "Graf", model3d: "3D-model", diorama: "Diorama", ui: "Interaktiv" },
+    en: { flow: "Process", cycle: "Cycle", timeline: "Timeline", bars: "Compare", parts: "Parts", stat: "Number", formula: "Formula", code: "Code", live: "Live model", graph: "Concept map", table: "Table", chart: "Chart", model3d: "3D model", diorama: "Diorama", ui: "Interactive", sim: "Simulation" },
+    da: { flow: "Proces", cycle: "Kredsløb", timeline: "Tidslinje", bars: "Sammenlign", parts: "Dele", stat: "Tal", formula: "Formel", code: "Kode", live: "Levende model", graph: "Begrebskort", table: "Tabel", chart: "Graf", model3d: "3D-model", diorama: "Diorama", ui: "Interaktiv", sim: "Simulering" },
   },
 } as const;
 

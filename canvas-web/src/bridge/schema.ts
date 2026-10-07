@@ -30,7 +30,7 @@ export const VisualItem = z.object({
 export type VisualItem = z.infer<typeof VisualItem>;
 
 export const VisualKind = z.enum(["flow", "cycle", "timeline", "bars", "parts", "stat", "formula", "code", "live", "graph", "table", "chart",
-  "model3d", "diorama", "ui"]);
+  "model3d", "diorama", "ui", "sim"]);
 
 /** graph: a labelled relation between two nodes (by label). */
 export const VisualLink = z.object({ from: z.string(), to: z.string(), label: z.string().optional() });
@@ -53,7 +53,8 @@ export type VisualKind = z.infer<typeof VisualKind>;
  * scatter, axis labels, optional log y). Skills (run by ENJIN's own runtimes in
  * a sandboxed frame, from a `spec`): model3d (parts, camera, motion), diorama
  * (depth layers of props, hotspots, optional generated backdrop = the card's
- * picture), ui (generative interactive UI: state + blocks).
+ * picture), ui (generative interactive UI: state + blocks), sim (a 2D physics world:
+ * bodies, links, forces, sliders, readouts, a plot).
  */
 export const Visual = z.object({
   kind: VisualKind,

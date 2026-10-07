@@ -26,7 +26,7 @@ public enum AgentTools {
         e.g. "steers", "is made of", "causes"), table (compare things across properties: columns[] headers, rows[][] of \
         cells, first cell names the row; up to 5 x 6), chart (real data over a range: series[] = {label, points: [[x, y]]}, \
         up to 3 series and 40 points, plot line or scatter, xLabel, yLabel, logY for exponential growth). \
-        Skills (put the data in spec): model3d, diorama, ui; see the spec field. \
+        Modules (put the data in spec): \(SkillRegistry.all.filter(\.usesSpec).map(\.id).joined(separator: ", ")); see the spec field. \
         Labels <= 30 characters, details <= 48.
         """),
         "properties": .object([
@@ -68,41 +68,7 @@ public enum AgentTools {
             "xLabel": .object(["type": .string("string")]),
             "yLabel": .object(["type": .string("string")]),
             "logY": .object(["type": .string("boolean")]),
-            "spec": .object(["type": .string("object"), "description": .string("""
-            For the skills (data, not code; ENJIN renders it):
-            model3d: {"parts": [{"shape": "box|sphere|cylinder|cone|torus|ring|capsule|lathe|extrude|tube", "size": [w,h,d] (box), \
-            "radius", "height", "tube" (torus), "inner" (ring), "profile": [[r,y],...] (lathe: bottles, bells, rocket bodies), \
-            "outline": [[x,y],...] + "depth" (extrude: gears, wings, plates), "points": [[x,y,z],...] (tube: wires, pipes, struts), \
-            "position": [x,y,z], "rotation": [deg,deg,deg], "color": "white|light|grey|dark|black|accent|glass|red|blue|green|yellow", \
-            "label": "short name", "detail": "one sentence shown when tapped", "group": "name", "spin": {"axis": "x|y|z", "rpm"}, \
-            "orbit": {"center": [x,y,z], "rpm"}, "explode": [dx,dy,dz] (where the part flies to in exploded view)}], \
-            "groups": {"name": {"pivot": [x,y,z], "spin": {...}, "orbit": {...}}} (parts of an assembly that move together), \
-            "atoms": [{"id", "element": "H|C|N|O|S|P|Cl|F|Na|Fe", "position": [x,y,z], "label", "detail"}], "bonds": [[id, id, order]] \
-            (molecules, ball-and-stick, ~1.5 units per bond), "camera": {"azimuth", "elevation"}, "caption"}. Y is up; real \
-            proportions; up to 80 parts. Label the parts that matter and give them a detail; animate what moves; add explode \
-            offsets when the inside matters.
-            diorama: {"layers": [{"depth": 0..1 (0 far, 1 near), "items": [...]}], "hotspots": [{"x","y","label","detail"}], \
-            "steps": [{"label"}] (a scrubber through stages), "caption"}. The scene is 100 wide x 60 tall, y down. Items: \
-            a prop from the library {"prop": "tree|pine|mountain|hill|cloud|sun|moon|planet|stars|waves|strata|house|building|\
-            factory|turbine|volcano|cell|bacterium|atom|dna|rocket|satellite|person|car|fish|bird|plant|magnet|gear", "x", "y" \
-            (where it stands), "s" (scale, ~10 units tall at 1; negative flips), "fill", "accent"}, or a shape {"shape": \
-            "rect|circle|ellipse|path|text", "x","y","w","h","r","rx" or "d" (SVG path), "text", "size", "fill", "stroke", "opacity"}. \
-            Fills: white|light|grey|dark|black|accent|sky|water|green|earth|red|blue|glass|none or #hex. Any item, layer or hotspot \
-            can have "anim": "float|pulse|spin|drift" and "step": n (or "from"/"to") to appear only in those stages. 3-5 layers \
-            from far (sky) to near (ground); props do most of the drawing. Give the card an illustrate prompt to paint a backdrop.
-            ui: {"state": {"name": number}, "blocks": [...]} with blocks: {"type": "heading|text|callout", "text"} (text may embed \
-            {{expr}} or {{expr|digits}}), {"type": "slider", "var", "min", "max", "step", "label", "unit"}, {"type": "toggle", \
-            "var", "label"}, {"type": "choice", "var", "label", "options": [{"label", "value"}]}, {"type": "play", "var", "min", \
-            "max", "seconds", "label", "loop", "autoplay"} (animates a variable: time, angle), {"type": "readout", "label", "expr", \
-            "unit", "digits"}, {"type": "meter", "label", "expr", "max", "unit"}, {"type": "plot", "label", "expr" (in x and \
-            state), "xmin", "xmax", "ymin", "ymax", "xLabel", "marker"}, {"type": "table", "label", "columns": [...], "rows": [[text \
-            or {"expr", "unit", "digits"}]]}, {"type": "quiz", "question", "options": [...], "answer": index, "explain"}, {"type": \
-            "answer", "question", "answer": expr, "tolerance": 0.05, "unit", "hint", "explain"} (work it out), {"type": "match", \
-            "prompt", "pairs": [[term, meaning]]}, {"type": "steps", "items": [{"title", "text"}]}, {"type": "flashcards", \
-            "cards": [{"front", "back"}]}, {"type": "order", "prompt", "items": [in the correct order]}, {"type": "row", \
-            "blocks": [...]}. Expressions: + - * / % ^, comparisons, a ? b : c, pi, e, g, c, and sin cos tan sqrt abs exp ln log \
-            min max pow round clamp. Make the explorer's choices change real numbers, and end with a check (quiz or answer).
-            """)]),
+            "spec": .object(["type": .string("object"), "description": .string(SkillRegistry.specGrammar)]),
             "html": .object(["type": .string("string"), "description": .string("""
             live only: one self-contained HTML snippet (markup, <style>, <script>; no <html>/<head>) under 20,000 characters. \
             It runs in a sandboxed iframe, about 650 x 380 px (read innerWidth/innerHeight, handle resize), with NO network: \

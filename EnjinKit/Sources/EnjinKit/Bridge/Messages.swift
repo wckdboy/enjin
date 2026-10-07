@@ -46,10 +46,10 @@ public struct VisualItem: Codable, Equatable, Sendable {
     }
 }
 
-public enum VisualKind: String, Codable, Sendable, CaseIterable { case flow, cycle, timeline, bars, parts, stat, formula, code, live, graph, table, chart, model3d, diorama, ui
+public enum VisualKind: String, Codable, Sendable, CaseIterable { case flow, cycle, timeline, bars, parts, stat, formula, code, live, graph, table, chart, model3d, diorama, ui, sim
 
-    /// Skills: run by ENJIN's own runtimes in a sandboxed frame, from a JSON `spec`.
-    public var isSkill: Bool { self == .model3d || self == .diorama || self == .ui }
+    /// Modules run by ENJIN's own runtimes in a sandboxed frame, from a JSON `spec` (see SkillRegistry).
+    public var isSkill: Bool { SkillRegistry.specKinds.contains(self) }
 }
 
 /// graph: a labelled relation between two nodes, named by their labels.
@@ -103,7 +103,7 @@ public struct Visual: Codable, Equatable, Sendable {
     public static let maxSpecBytes = 40_000
 
     static let maxItems: [VisualKind: Int] = [.flow: 5, .cycle: 6, .timeline: 6, .bars: 6, .parts: 6, .stat: 0, .formula: 4, .code: 0, .live: 0,
-                                              .graph: 8, .table: 0, .chart: 0, .model3d: 0, .diorama: 0, .ui: 0]
+                                              .graph: 8, .table: 0, .chart: 0, .model3d: 0, .diorama: 0, .ui: 0, .sim: 0]
     /// Live models are small on purpose: one idea, one screen.
     public static let maxHTML = 24_000
 
@@ -162,15 +162,10 @@ public struct Visual: Codable, Equatable, Sendable {
         case .graph: return (v.items?.count ?? 0) >= 2 ? v : nil
         case .table: return (v.rows?.isEmpty ?? true) ? nil : v
         case .chart: return v.series == nil ? nil : v
-        case .model3d:
-            if case .array(let parts)? = v.spec?["parts"], !parts.isEmpty { return v }
-            return nil
-        case .diorama:
-            if case .array(let layers)? = v.spec?["layers"], !layers.isEmpty { return v }
-            return nil
-        case .ui:
-            if case .array(let blocks)? = v.spec?["blocks"], !blocks.isEmpty { return v }
-            return nil
+        case _ where kind.isSkill:
+            // A module's spec is drawable once it has what its runtime needs (e.g. model3d: parts or atoms).
+            let needs = SkillRegistry.skill(for: kind)?.needs ?? []
+            return needs.contains { key in if case .array(let a)? = v.spec?[key] { !a.isEmpty } else { false } } ? v : nil
         case .parts: return v.items == nil && v.center == nil ? nil : v
         case .bars: return (v.items?.count ?? 0) >= 2 ? v : nil
         default: return v.items == nil ? nil : v

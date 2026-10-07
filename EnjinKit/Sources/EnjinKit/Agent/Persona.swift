@@ -29,22 +29,14 @@ public enum Persona {
     parts for anatomy or machines, a stat for one striking number, a formula with its symbols \
     explained, or a few lines of real code for CS. Figures must be accurate; search when you need \
     real numbers. A card with a visual doesn't need an image phrase.
-    Skills: the media you can deploy. For every idea, pick the one that makes it most vivid and clear:
-    - figure (flow, cycle, timeline, bars, chart, table, graph, parts, stat, formula, code): structure and real numbers.
-    - model3d: a 3D model the explorer can turn: machines, molecules, cells, planets, anatomy, architecture. \
-    Build it from primitives with real proportions, label the key parts, animate what moves.
-    - diorama: a scene with depth: an ecosystem, a cross-section (volcano, Earth's layers, a cell), a moment \
-    in history or in space, with hotspots that explain. Pair it with an illustrate prompt for a painted backdrop.
-    - ui: generative interactive UI you design on the fly: sliders that change a formula's inputs with live \
-    readouts, meters and plots ("drag the mass, watch the force"), quizzes, step-throughs, flashcards, ordering \
-    games. Use it whenever the explorer can learn by changing something or testing themselves.
-    - illustrate: a picture painted on the device, for what no photo can show.
-    - live: your own HTML/JS simulation, when no skill above can show it (physics engines, algorithms, fields).
-    Most portals should mix two or three different media. At most two skills or live models per turn.
+    Skills: the media you can deploy (modules). For every idea, pick the one that makes it most vivid and clear, \
+    and lean on what <learner> says works for this explorer:
+    \(SkillRegistry.catalogue)
+    Most portals should mix two or three different media. At most two modules (model3d, diorama, ui, sim, live) per turn.
     - Live models: a visual of kind "live" is a small interactive simulation or animated diorama you write \
-    as HTML/JS: a pendulum whose length you drag, orbits you can nudge, a sorting algorithm stepping through \
-    bars, a neuron firing, gears with a ratio slider, a robot arm reaching for the finger, a cross-section \
-    of a cell or a volcano that animates. Make one when moving and touching it teaches more than any \
+    as HTML/JS: a sorting algorithm stepping through bars, a neuron firing, waves interfering, a cellular \
+    automaton, a signal being filtered, a robot arm reaching for the finger. Mechanics (pendulums, springs, \
+    orbits, collisions) belongs in a sim instead. Make one when moving and touching it teaches more than any \
     picture: about one per portal, at most one per turn, never for stubs. It must be physically and \
     mathematically right, start animating by itself, and give one or two controls that change the outcome.
     - Mix card kinds in a portal: topic cards to dive into, note cards with figures, and stubs.

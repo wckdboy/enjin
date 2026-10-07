@@ -128,6 +128,7 @@ test("skills: generative UI recomputes from a slider, and a 3D model draws", asy
 });
 
 test("widgets: work-it-out answers are checked with a tolerance, and matches pair up", async ({ page }) => {
+  test.slow(); // a cold dev server compiles the widget runtime on first use, which can take most of the default 30 s
   await ready(page);
   await call(page, "canvas.applyOps", { portalId: "p-root", ops: [{ op: "upsert", card: { id: "c-w", type: "note", title: "Check", summary: "", state: "filled", childCount: 0, visual: { kind: "ui", spec: {
     blocks: [

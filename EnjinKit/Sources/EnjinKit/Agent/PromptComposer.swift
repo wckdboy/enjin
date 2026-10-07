@@ -167,9 +167,10 @@ public enum PromptComposer {
             return """
             The explorer pressed Visualize on \(cardId) "\(c?.title ?? "")"\(c.map { $0.summary.isEmpty ? "" : ": \($0.summary)" } ?? "")\
             \(c?.body.map { " (detail: \(String($0.prefix(400))))" } ?? ""). Show this idea visually: createCards with ONE note card \
-            in this portal whose visual explains it best. Choose the form: a live model if moving and touching it teaches most \
-            (a mechanism, a system with a variable, an algorithm), otherwise the right figure (flow, cycle, chart, table, graph, \
-            parts, formula, code, timeline, bars, stat). Title it after what it shows; the summary says what to notice. \
+            in this portal whose visual explains it best. Choose the module that fits the idea (and what <learner> says works \
+            for them): sim for anything mechanical, ui when changing a variable or testing yourself teaches it, model3d for a \
+            thing with parts, diorama for a scene or cross-section, live for other things that move (algorithms, fields), \
+            otherwise the right figure (flow, cycle, chart, table, graph, parts, formula, code, timeline, bars, stat). Title it after what it shows; the summary says what to notice. \
             Accuracy first. Keep your reply to one short sentence.
             """
         case .expand(let cardId):

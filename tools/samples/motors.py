@@ -9,10 +9,10 @@ LIVE_EN = open("tools/samples/motor-live.html").read()
 LIVE_DA = (LIVE_EN.replace("'Pause':'Run'", "'Pause':'Kør'").replace("textContent='Run'", "textContent='Kør'")
            .replace(">Step<", ">Trin<").replace("Switching <input", "Skift <input").replace("'STEP '", "'TRIN '"))
 def T(en, da): return {"en": en, "da": da}
-MODEL, UI, DIORAMA = skills(T)
+MODEL, UI, DIORAMA, SIM = skills(T)
 portals = [
   ("p-root", T("Electric motors","Elmotorer"), None, None, ["c-how","c-everywhere","c-history","c-share","c-homemade"]),
-  ("p-how", T("How a motor spins","Sådan drejer en motor"), "c-how", "p-root", ["c-live","c-model","c-push","c-steps","c-force","c-torque","c-brushless","c-backemf"]),
+  ("p-how", T("How a motor spins","Sådan drejer en motor"), "c-how", "p-root", ["c-live","c-model","c-push","c-lift","c-steps","c-force","c-torque","c-brushless","c-backemf"]),
   ("p-brushless", T("Brushed vs brushless","Med og uden børster"), "c-brushless", "p-how", ["c-parts","c-system","c-esc","c-brushes"]),
   ("p-esc", T("The ESC: the motor's conductor","ESC'en: motorens dirigent"), "c-esc", "p-brushless", ["c-sixstep","c-hall"]),
   ("p-everywhere", T("Motors are everywhere","Motorer er overalt"), "c-everywhere", "p-root", ["c-windfarm","c-efficiency","c-types","c-drones","c-joints"]),
@@ -37,6 +37,11 @@ cards = [
     title=T("Push harder","Skub hårdere"),
     summary=T("The force on a wire, live. Every motor's torque starts here.","Kraften på en ledning, live. Hver motors moment starter her."),
     visual=UI),
+  dict(id="c-lift", type="note", state="filled",
+    title=T("Lift it","Løft den"),
+    summary=T("A motor winching a load: pull harder than the weight and it climbs. Grab the load and drop it.",
+              "En motor hejser en last: træk hårdere end vægten, og den stiger. Tag fat i lasten, og slip den."),
+    visual=SIM),
   dict(id="c-steps", type="note", state="filled",
     title=T("One turn, step by step","Én omgang, trin for trin"),
     summary=T("The same four steps, thousands of times a second in a drone motor.","De samme fire trin, tusindvis af gange i sekundet i en dronemotor."),

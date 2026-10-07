@@ -2,7 +2,8 @@
 // Both the web (vitest) and native (XCTest) contract tests decode these, so a
 // schema change that only one side picks up fails a test on the other.
 import { mkdirSync, writeFileSync } from "node:fs";
-import { PROTOCOL_VERSION, nativeToWeb, webToNative, type PortalScene } from "../src/bridge/schema";
+import { PROTOCOL_VERSION, VisualKind, nativeToWeb, webToNative, type PortalScene } from "../src/bridge/schema";
+import { FRAME_MODULES } from "../src/live/documents";
 
 const scene: PortalScene = {
   portalId: "p-legions",
@@ -95,4 +96,9 @@ if (import.meta.url === `file://${process.argv[1]}`) {
     writeFileSync(`${dir}${method}.json`, JSON.stringify({ direction: ex.direction, request, response }, null, 2) + "\n");
   }
   console.log(`wrote ${Object.keys(examples).length} fixtures to ${dir}`);
+  // The modules the canvas can show: every kind, and which run in a frame. EnjinKit's
+  // SkillRegistry must teach exactly these (ContractTests), so neither side drifts.
+  const skills = { kinds: VisualKind.options, frameKinds: Object.keys(FRAME_MODULES) };
+  writeFileSync(new URL("../../shared/skills.json", import.meta.url).pathname, JSON.stringify(skills, null, 2) + "\n");
+  console.log("wrote shared/skills.json");
 }

@@ -1,4 +1,4 @@
-"""The skills in the Electric motors sample: a 3D motor, a widget, a diorama.
+"""The skills in the Electric motors sample: a 3D motor, a widget, a diorama, a simulation.
 
 Hand-made showcase content (a dev/test fixture, never shipped as a notebook).
 `T(en, da)` makes a bilingual string; motors.py picks the language.
@@ -7,7 +7,28 @@ import math
 
 
 def skills(T):
-    return motor_model(T), force_widget(T), wind_farm(T)
+    return motor_model(T), force_widget(T), wind_farm(T), winch_sim(T)
+
+
+def winch_sim(T):
+    """A motor winching a load up on a rope: pull against weight, live, with a plot of the height."""
+    return dict(kind="sim", spec=dict(
+        view=[-2, 0, 2, 4], gravity=[0, -9.81], floor=True,
+        params=dict(
+            pull=dict(value=14, min=0, max=30, step=0.5, label=T("Motor pull", "Motorens træk"), unit="N"),
+            m=dict(value=1, min=0.2, max=2.5, step=0.1, label=T("Load", "Last"), unit="kg")),
+        bodies=[
+            dict(id="drum", shape="circle", r=0.18, x=0, y=3.7, fixed=True, color="black", label=T("Motor", "Motor")),
+            dict(id="load", shape="box", w=0.5, h=0.4, x=0, y=0.2, mass="m", color="accent", label=T("Load", "Last"), bounce=0.1)],
+        links=[dict(type="rope", a="drum", b="load")],
+        # The motor pulls until the load nears the top, then holds it there (brake: weight plus damping).
+        forces=[dict(on="load", fx="0", fy="load_y < 2.4 ? pull : m*9.81 - 12*load_vy")],
+        readouts=[
+            dict(label=T("Net force", "Nettokraft"), expr="pull - m*9.81", unit="N", digits=1),
+            dict(label=T("Speed", "Fart"), expr="load_vy", unit="m/s", digits=2)],
+        plot=[dict(expr="load_y", label=T("Height", "Højde"), unit="m")],
+        caption=T("Pull more than the weight (m × 9.81 N) and the load rises, faster and faster.",
+                  "Træk mere end vægten (m × 9,81 N), og lasten stiger, hurtigere og hurtigere.")))
 
 
 def motor_model(T):

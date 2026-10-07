@@ -12,6 +12,7 @@ import { CARD_W, GAP, type Rect } from "./layout";
 type Skeleton = NonNullable<Parameters<typeof convertToExcalidrawElements>[0]>[number];
 
 import { EDGE, EDGE_STRONG, EMBER, FACE, FACE_LOW, FG, MUTED, RAISED, SIGNAL, TRACK } from "./palette";
+import { FRAME_MODULES } from "../live/documents";
 
 const INK = FG; // lines and type on a dark card
 const HAIR = EDGE_STRONG;
@@ -23,7 +24,7 @@ const MONO = FONT_FAMILY.Cascadia;
 export const WIDE_W = 2 * CARD_W + GAP;
 const FIG_LABEL_H = 22;
 
-const MAX_ITEMS: Record<Visual["kind"], number> = { flow: 5, cycle: 6, timeline: 6, bars: 6, parts: 6, stat: 0, formula: 4, code: 0, live: 0, graph: 8, table: 0, chart: 0, model3d: 0, diorama: 0, ui: 0 };
+const MAX_ITEMS: Record<Visual["kind"], number> = { flow: 5, cycle: 6, timeline: 6, bars: 6, parts: 6, stat: 0, formula: 4, code: 0, live: 0, graph: 8, table: 0, chart: 0, model3d: 0, diorama: 0, ui: 0, sim: 0 };
 const ACCENT = SIGNAL;
 const TABLE_COLS = 5;
 const TABLE_ROWS = 6;
@@ -52,7 +53,10 @@ function codeLines(v: Visual): string[] {
 
 /** Height of the figure area (label included) for a card of width `w`. */
 export function visualHeight(v: Visual): number {
-  const body = {
+  // Frame modules (live models, 3D, dioramas, widgets, sims) say how tall they run.
+  const frame = FRAME_MODULES[v.kind];
+  if (frame) return FIG_LABEL_H + frame.height;
+  const body = ({
     flow: 16 + 72 + 6 + 40,
     cycle: 280,
     timeline: 136,
@@ -61,14 +65,10 @@ export function visualHeight(v: Visual): number {
     stat: 84,
     formula: 52 + 4 * 26,
     code: Math.max(1, codeLines(v).length) * CODE_LINE_H + 24,
-    live: LIVE_H,
-    model3d: 400,
-    diorama: 400,
-    ui: 420,
     graph: 290,
     table: 30 + TABLE_ROWS * TABLE_ROW_H,
     chart: 262,
-  }[v.kind];
+  } as Partial<Record<Visual["kind"], number>>)[v.kind] ?? LIVE_H;
   return FIG_LABEL_H + body;
 }
 
@@ -228,7 +228,8 @@ export function visualSkeletons(v: Visual, box: Rect, cardId: string, base: Base
     case "live":
     case "model3d":
     case "diorama":
-    case "ui": {
+    case "ui":
+    case "sim": {
       // The slot: what exports, previews and the dive animation show; the running model sits on top of it.
       out.push({
         ...base, type: "rectangle", id: id("live"), x: x0, y: y0, width: W, height: visualHeight(v) - FIG_LABEL_H, backgroundColor: SOFT, fillStyle: "solid",
