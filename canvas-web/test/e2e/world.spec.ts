@@ -138,3 +138,27 @@ test("an error in one frame never freezes the world", async ({ page }) => {
   await page.waitForTimeout(700);
   expect(await drawn()).not.toBe(before);
 });
+
+test("Enjin notices what the explorer lingers on and plays with", async ({ page }) => {
+  const id = await page.evaluate(() => (window as unknown as { __enjinWorld: World }).__enjinWorld.anchor!.spec.panels[0]!.id);
+  await page.evaluate((c) => (window as unknown as { __enjinWorld: World }).__enjinWorld.focusPanel(c), id);
+  await page.waitForTimeout(7000); // reports go out every 3 s
+  const events = (await calls(page, "attention")).flatMap((p) => (p as { events: { kind: string; cardId?: string; ms?: number }[] }).events);
+  expect(events).toContainEqual({ kind: "tap", cardId: id });
+  const looked = events.filter((e) => e.kind === "look" && e.cardId === id).reduce((n, e) => n + (e.ms ?? 0), 0);
+  expect(looked).toBeGreaterThan(2500);
+});
+
+test("you watch Enjin build: a new card arrives in place and the view goes to it", async ({ page }) => {
+  await page.waitForTimeout(3500); // hands off
+  const before = await page.evaluate(() => (window as unknown as { __enjinWorld: { anchor: { el: HTMLElement } } }).__enjinWorld.anchor.el.style.transform);
+  await page.evaluate(() => (window as unknown as { enjin: { handle(r: unknown): void } }).enjin.handle({
+    v: 1, id: "new", method: "canvas.applyOps",
+    params: { portalId: "p-root", ops: [{ op: "upsert", card: { id: "c-new", type: "note", title: "Fresh from Enjin", summary: "Just written", state: "filling", childCount: 0 } }] },
+  }));
+  await expect(page.locator('.panel[data-card-id="c-new"]')).toHaveClass(/born/);
+  await expect(page.locator('.panel[data-card-id="c-new"]')).toHaveClass(/writing/);
+  await page.waitForTimeout(1200);
+  const after = await page.evaluate(() => (window as unknown as { __enjinWorld: { anchor: { el: HTMLElement } } }).__enjinWorld.anchor.el.style.transform);
+  expect(after).not.toBe(before);
+});

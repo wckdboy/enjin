@@ -52,7 +52,8 @@ struct CanvasScreen: View {
                 }
                 if controller.status == .ready {
                     AgentDock(agent: controller.agent, onAsk: controller.ask, onGoToSuggestion: controller.goToSuggestion,
-                              onNextStep: controller.takeNextStep)
+                              onNextStep: controller.takeNextStep, onAnswer: controller.answer,
+                              onTyping: { controller.typing = $0 })
                 }
             }
             .padding(.bottom, 20)

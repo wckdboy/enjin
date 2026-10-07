@@ -370,12 +370,32 @@
         }
       }
     },
+    "Enjin chimes in": {
+      "localizations": {
+        "da": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Enjin blander sig"
+          }
+        }
+      }
+    },
     "Enjin is an AI. It can be wrong; it shows its sources so you can check.": {
       "localizations": {
         "da": {
           "stringUnit": {
             "state": "translated",
             "value": "Enjin er en AI. Den kan tage fejl, så den viser sine kilder, så du kan tjekke dem."
+          }
+        }
+      }
+    },
+    "Enjin notices what you linger on and play with, and now and then says something, asks you something, or adds a card right there. It keeps notes on how you learn best in User.md, which you can read and change.": {
+      "localizations": {
+        "da": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Enjin lægger mærke til, hvad du dvæler ved og leger med, og siger engang imellem noget, spørger dig om noget eller lægger et kort lige der. Den noterer, hvordan du lærer bedst, i User.md, som du kan læse og ændre."
           }
         }
       }
@@ -396,6 +416,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Enjin bruger"
+          }
+        }
+      }
+    },
+    "Enjin writes down what it learns about how you learn best: which visuals click, your pace, what you're curious about. Only learning, never anything personal. Change anything you like.": {
+      "localizations": {
+        "da": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Enjin skriver ned, hvad den lærer om, hvordan du lærer bedst: hvilke billeder der virker, dit tempo, hvad du er nysgerrig på. Kun læring, aldrig noget personligt. Ret alt, du vil."
           }
         }
       }
@@ -472,6 +502,26 @@
           "stringUnit": {
             "state": "translated",
             "value": "For forældre: Claude API-nøgle"
+          }
+        }
+      }
+    },
+    "Forget everything Enjin learned about how you learn?": {
+      "localizations": {
+        "da": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Glem alt, hvad Enjin har lært om, hvordan du lærer?"
+          }
+        }
+      }
+    },
+    "Forget it all": {
+      "localizations": {
+        "da": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Glem det hele"
           }
         }
       }
@@ -565,6 +615,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Blad"
+          }
+        }
+      }
+    },
+    "Learning together": {
+      "localizations": {
+        "da": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Vi lærer sammen"
           }
         }
       }
@@ -1015,6 +1075,16 @@
         }
       }
     },
+    "Start over": {
+      "localizations": {
+        "da": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Start forfra"
+          }
+        }
+      }
+    },
     "Stop": {
       "localizations": {
         "da": {
@@ -1236,6 +1306,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Visning"
+          }
+        }
+      }
+    },
+    "What Enjin knows about you": {
+      "localizations": {
+        "da": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Det Enjin ved om dig"
           }
         }
       }

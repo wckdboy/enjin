@@ -80,6 +80,31 @@ final class SmokeTests: XCTestCase {
         add(a)
     }
 
+    /// Enjin as a partner: it asks with tappable answers, hears the answer, and keeps notes in User.md.
+    func testEnjinAsksAndRemembersHowYouLearn() {
+        app.buttons["notebook:Electric motors"].firstMatch.tap()
+        let ask = app.textFields["askField"]
+        XCTAssertTrue(ask.waitForExistence(timeout: 15))
+        ask.tap()
+        ask.typeText("quiz me\n")
+        let answer = app.buttons["answer:Fewer turns"]
+        XCTAssertTrue(answer.waitForExistence(timeout: 10), "Enjin's question comes with answers to tap")
+        XCTAssertTrue(app.staticTexts["Which spins faster: more turns of wire, or fewer?"].exists)
+        snap("enjin-asks")
+        answer.tap()
+        XCTAssertTrue(app.staticTexts["Yes: fewer turns, less back-EMF, more speed."].waitForExistence(timeout: 10), "the answer goes back to Enjin")
+        XCTAssertFalse(app.buttons["answer:Fewer turns"].exists, "the question is gone once answered")
+
+        app.buttons["Settings"].tap()
+        let profile = app.buttons["learnerProfile"]
+        XCTAssertTrue(profile.waitForExistence(timeout: 5))
+        profile.tap()
+        let md = app.textViews["learnerMarkdown"]
+        XCTAssertTrue(md.waitForExistence(timeout: 5))
+        XCTAssertTrue((md.value as? String)?.contains("Likes being quizzed before the answer") == true, "User.md has what Enjin learned")
+        snap("user-md")
+    }
+
     func testAskTheAgentThenUndo() {
         app.buttons["notebook:Electric motors"].firstMatch.tap()
         let ask = app.textFields["askField"]

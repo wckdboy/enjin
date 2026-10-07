@@ -432,6 +432,11 @@ public enum WebMethod {
         public var cardId: String
     }
 
+    public struct Attention: Codable, Sendable {
+        public var portalId: String
+        public var events: [AttentionEvent]
+    }
+
     public struct PortalPeek: Codable, Sendable {
         public var cardId: String
     }

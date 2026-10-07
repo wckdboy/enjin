@@ -40,6 +40,18 @@ export class Plane {
   private pending: { scene: PortalScene; files: BinaryFiles } | null = null;
   private running = false;
   onError: ((e: unknown) => void) | null = null;
+  /** Cards that just arrived: their panel or door appears with a little arrival. */
+  private born = new Set<string>();
+
+  markBorn(ids: string[]): void {
+    for (const id of ids) this.born.add(id);
+  }
+
+  private arrive(id: string, el: HTMLElement): void {
+    if (!this.born.delete(id)) return;
+    el.classList.add("born");
+    el.addEventListener("animationend", () => el.classList.remove("born"), { once: true });
+  }
   private active: string | null = null;
   onOpen: ((cardId: string) => void) | null = null;
 
@@ -114,6 +126,7 @@ export class Plane {
       old?.el.remove();
       this.panels.set(card.id, built);
       this.el.appendChild(built.el);
+      this.arrive(card.id, built.el);
     }
 
     const L = layoutPlane(spec.panels.map((c) => this.panels.get(c.id)!), spec.doors.length);
@@ -133,6 +146,7 @@ export class Plane {
         d = { ...buildDoor(card, files), key: k };
         this.doors.set(card.id, d);
         this.el.append(d.door, d.label);
+        this.arrive(card.id, d.door);
       }
       d.door.classList.toggle("peeked", this.children.has(card.id));
       place(d.door, L.doors[i]!);
@@ -232,7 +246,7 @@ export class Plane {
     svg.setAttribute("height", String(frame.height));
     svg.style.display = "block";
     const el = document.createElement("div");
-    el.className = "panel";
+    el.className = card.state === "filling" ? "panel writing" : "panel";
     el.dataset.cardId = card.id;
     el.appendChild(svg);
     let live: HTMLIFrameElement | null = null;
@@ -273,7 +287,7 @@ function place(el: HTMLElement, r: Rect): void {
 /** A door: a glass circle showing the topic (its picture, or its name), its title underneath. */
 function buildDoor(card: Card, files: BinaryFiles): { door: HTMLDivElement; label: HTMLDivElement } {
   const door = document.createElement("div");
-  door.className = `door${card.state === "stub" ? " stub" : ""}`;
+  door.className = `door${card.state === "stub" ? " stub" : ""}${card.state === "filling" ? " writing" : ""}`;
   door.dataset.door = card.id;
   const peek = document.createElement("div");
   peek.className = "peek";

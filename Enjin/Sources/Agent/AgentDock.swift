@@ -7,6 +7,10 @@ struct AgentDock: View {
     let onAsk: (String) -> Void
     let onGoToSuggestion: () -> Void
     let onNextStep: (AgentSession.NextStep) -> Void
+    /// The explorer tapped an answer to Enjin's question.
+    var onAnswer: (String) -> Void = { _ in }
+    /// The explorer is typing (Enjin doesn't chime in meanwhile).
+    var onTyping: (Bool) -> Void = { _ in }
     @Environment(\.locale) private var locale
     private var language: AppLanguage { locale.language.languageCode?.identifier == "da" ? .da : .en }
     @State private var text = ""
@@ -62,6 +66,27 @@ struct AgentDock: View {
                 .padding(.horizontal, 4)
             }
 
+            if let q = agent.question, !agent.isRunning {
+                VStack(alignment: .leading, spacing: 10) {
+                    HStack(alignment: .top) {
+                        Text(q.text).font(Theme.body(17, weight: .semibold)).foregroundStyle(Theme.fg)
+                            .frame(maxWidth: .infinity, alignment: .leading)
+                        Button { agent.dismissQuestion() } label: { Image(systemName: "xmark").font(.system(size: 12, weight: .bold)) }
+                            .buttonStyle(RotorKeyStyle(size: 28))
+                            .accessibilityLabel(Text("Not now"))
+                    }
+                    FlowRow(spacing: 8) {
+                        ForEach(q.choices, id: \.self) { choice in
+                            Button(choice) { onAnswer(choice) }
+                                .buttonStyle(KeyButtonStyle(kind: .primary, size: .small))
+                                .accessibilityIdentifier("answer:\(choice)")
+                        }
+                    }
+                }
+                .padding(.horizontal, 4)
+                .transition(.opacity.combined(with: .move(edge: .bottom)))
+            }
+
             HStack(spacing: 10) {
                 TextField(text: $text, axis: .vertical) { Text("Ask Enjin anything…") }
                     .font(Theme.body(19))
@@ -107,6 +132,8 @@ struct AgentDock: View {
         .animation(.snappy, value: agent.status)
         .animation(.snappy, value: agent.suggestion)
         .animation(.snappy, value: agent.nextSteps)
+        .animation(.snappy, value: agent.question)
+        .onChange(of: focused) { _, on in onTyping(on) }
     }
 
     private var isError: Bool {

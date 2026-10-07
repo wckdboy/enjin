@@ -59,6 +59,7 @@ explodeBtn.addEventListener("click", () => {
   const m = anchor?.model;
   if (!m) return;
   m.explodeTarget = m.explodeTarget ? 0 : 1;
+  if (m.explodeTarget) notice("explode", { cardId: anchor?.spec.centerpiece?.cardId });
   explodeBtn.classList.toggle("on", !!m.explodeTarget);
   wake();
 });
@@ -272,6 +273,8 @@ async function dive(cardId: string): Promise<void> {
       from.markPeeked(cardId, true);
     }
     await child.build(scene, files);
+    notice("dive", { cardId });
+    sendAttention();
     enter(child);
   } finally {
     transitioning = false;
@@ -295,6 +298,8 @@ async function zoomInto(what: { title: string; detail?: string; cardId?: string 
     child.el.classList.add("arriving");
     from.children.set(res.cardId, child);
     await child.build(res.scene, files);
+    notice("zoomInto", { cardId: what.cardId, label: what.cardId ? undefined : what.title });
+    sendAttention();
     enter(child);
     requestAnimationFrame(() => requestAnimationFrame(() => child.el.classList.remove("arriving")));
   } finally {
@@ -345,7 +350,9 @@ async function rise(): Promise<void> {
     cam.rebase(-n.cx / n.k, -n.cy / n.k, 1 / n.k);
     for (const c of from.children.values()) c.dispose();
     from.children.clear();
+    sendAttention();
     anchor = parent;
+    notice("rise", { cardId: from.up?.doorId ?? undefined });
     const door = from.up!.doorId;
     // A world entered through a door goes back behind its glass; one entered through a part fades away.
     if (door) {
@@ -402,6 +409,7 @@ const inModel = (x: number, y: number) => {
 host.addEventListener("pointerdown", (e) => {
   if ((e.target as HTMLElement).closest?.(".hud button, .hud .info, .panel .open")) return;
   pointers.set(e.pointerId, { x: e.clientX, y: e.clientY });
+  lastInput = performance.now();
   cam.stop();
   if (pointers.size === 1) gesture = { mode: null, moved: 0, t0: performance.now() };
   if (pointers.size === 2) gesture.mode = "pinch";
@@ -436,6 +444,7 @@ const up = (e: PointerEvent) => {
   if (!pointers.has(e.pointerId)) return;
   pointers.delete(e.pointerId);
   if (pointers.size === 0) {
+    if (gesture.mode === "turn") notice("turn", { cardId: anchor?.spec.centerpiece?.cardId });
     if (gesture.mode === "pan" || gesture.mode === "pinch") cam.release();
     else if (gesture.moved < 8 && performance.now() - gesture.t0 < 500) tap(e.clientX, e.clientY, e.target);
     gesture.mode = null;
@@ -448,6 +457,7 @@ host.addEventListener("pointerup", up);
 host.addEventListener("pointercancel", up);
 host.addEventListener("wheel", (e) => {
   e.preventDefault();
+  lastInput = performance.now();
   if (e.ctrlKey) cam.zoomAt(e.clientX, e.clientY, Math.exp(-e.deltaY * 0.01));
   else cam.panBy(-e.deltaX, -e.deltaY);
   wake();
@@ -499,6 +509,7 @@ function focusPanel(cardId: string): void {
   const r = anchor?.panelRect(cardId);
   if (!anchor || !r) return;
   anchor.setActive(cardId);
+  notice("tap", { cardId });
   bridge.notify("selection.changed", { portalId: anchor.portalId, cardIds: [cardId] });
   void cam.flyTo(cam.fit(r, 0.86), 650);
 }
@@ -509,6 +520,7 @@ function selectPart(i: number | null): void {
   selectedPart = i === null || selectedPart === i ? null : i;
   m.highlight(selectedPart);
   const p = selectedPart === null ? null : m.partInfo(selectedPart);
+  if (p?.label) notice("tap", { label: p.label });
   showInfo(p?.label ?? null, p?.detail ?? null);
   wake();
 }
@@ -528,6 +540,83 @@ function showInfo(title: string | null, detail: string | null): void {
   info.classList.remove("off");
 }
 
+// ---------- what the explorer does: Enjin notices (Companion, in EnjinKit, decides when to chime in) ----------
+type Noticed = { kind: "look" | "tap" | "explode" | "turn" | "play" | "zoomInto" | "dive" | "rise"; cardId?: string; label?: string; ms?: number };
+const noticed: Noticed[] = [];
+let lastInput = -1e9;
+function notice(kind: Noticed["kind"], what: Omit<Noticed, "kind"> = {}): void {
+  noticed.push({ kind, ...Object.fromEntries(Object.entries(what).filter(([, v]) => v !== undefined)) });
+}
+function sendAttention(): void {
+  flushLook();
+  if (noticed.length && anchor) bridge.notify("attention", { portalId: anchor.portalId, events: noticed.splice(0) });
+}
+
+/** What's in the middle of the view, if they're close enough to be looking at it (or playing with it). */
+type Subject = { key: string; cardId?: string; label?: string; kind: "look" | "play" };
+function subject(): Subject | null {
+  if (!anchor) return null;
+  const active = document.activeElement as HTMLElement | null;
+  if (active?.tagName === "IFRAME") {
+    const id = (active.closest(".panel") as HTMLElement | null)?.dataset.cardId;
+    if (id) return { key: id, cardId: id, kind: "play" };
+  }
+  const f = cam.free();
+  const cx = f.x + f.w / 2, cy = f.y + f.h / 2, minD = Math.min(f.w, f.h);
+  const inside = (r: Rect) => cx > r.x && cx < r.x + r.w && cy > r.y && cy < r.y + r.h;
+  for (const card of anchor.spec.panels) {
+    const r0 = anchor.panelRect(card.id);
+    const r = r0 && cam.rectToScreen(r0);
+    if (r && inside(r) && Math.max(r.w, r.h) > 0.3 * minD) return { key: card.id, cardId: card.id, kind: "look" };
+  }
+  for (const card of anchor.spec.doors) {
+    const r0 = anchor.doorRect(card.id);
+    const r = r0 && cam.rectToScreen(r0);
+    if (r && inside(r) && r.w > 0.22 * minD) return { key: card.id, cardId: card.id, kind: "look" };
+  }
+  const m = anchor.model, mr = cam.rectToScreen(anchor.layout.model);
+  if (m && inside(mr) && mr.h > 0.45 * f.h) {
+    const i = m.pick(((cx - mr.x) / mr.w) * 2 - 1, -(((cy - mr.y) / mr.h) * 2 - 1));
+    const label = i === null ? null : m.partInfo(i)?.label;
+    if (label) return { key: `part:${label}`, label, kind: "look" };
+    const id = anchor.spec.centerpiece?.cardId;
+    if (id) return { key: id, cardId: id, kind: "look" };
+  }
+  return null;
+}
+let looking: (Subject & { ms: number }) | null = null;
+let lastLookTick = performance.now();
+function flushLook(): void {
+  if (looking && looking.ms >= 800) notice(looking.kind, { cardId: looking.cardId, label: looking.label, ms: Math.round(looking.ms) });
+  if (looking) looking.ms = 0;
+}
+setInterval(() => {
+  const now = performance.now();
+  const dt = Math.min(1000, now - lastLookTick);
+  lastLookTick = now;
+  // Moving around isn't looking; playing with a live panel is, even with a finger down in it.
+  const s = transitioning ? null : cam.moving(now) || pointers.size ? (looking?.kind === "play" ? subject() : null) : subject();
+  if (s && looking && s.key === looking.key) looking.ms += dt;
+  else { flushLook(); looking = s ? { ...s, ms: 0 } : null; }
+}, 250);
+setInterval(sendAttention, 3000);
+
+// ---------- watching Enjin build: new cards arrive in place, and the view follows while you're hands-off ----------
+let followNext: string | null = null;
+let backToAll: number | undefined;
+const handsOff = () => performance.now() - lastInput > 3000 && !pointers.size;
+function follow(): void {
+  const id = followNext;
+  followNext = null;
+  if (!id || !anchor || transitioning || !handsOff()) return;
+  const r = anchor.panelRect(id) ?? anchor.doorRect(id);
+  if (!r) return;
+  // The new card with some of what's around it, so you see where it goes.
+  void cam.flyTo(cam.fit({ x: r.x - 320, y: r.y - 220, w: r.w + 640, h: r.h + 440 }, 0.95), 900);
+  clearTimeout(backToAll);
+  backToAll = window.setTimeout(() => { if (anchor && handsOff() && !transitioning) void cam.flyTo(overview(anchor), 1200); }, 4000);
+}
+
 // ---------- the bridge (same protocol as the card canvas) ----------
 /** Cards change many times a second while Enjin writes: show them as they grow, a few times a second. */
 const rebuilds = new Set<Plane>();
@@ -536,7 +625,7 @@ function rebuild(p: Plane): void {
   rebuilds.add(p);
   window.setTimeout(() => {
     rebuilds.delete(p);
-    void p.build(p.scene, files).then(() => { if (p === anchor) afterBuild(); wake(); });
+    void p.build(p.scene, files).then(() => { if (p === anchor) { afterBuild(); follow(); } wake(); });
   }, 160);
 }
 function planeFor(portalId: string): Plane | undefined {
@@ -566,11 +655,16 @@ bridge.on("canvas.applyOps", ({ portalId, ops }) => {
   const p = planeFor(portalId);
   if (!p) return { placed: [] };
   const byId = new Map(p.scene.cards.map((c) => [c.id, c] as [string, Card]));
+  const fresh: string[] = [];
   for (const o of ops) {
-    if (o.op === "upsert") byId.set(o.card.id, o.card);
+    if (o.op === "upsert") { if (!byId.has(o.card.id)) fresh.push(o.card.id); byId.set(o.card.id, o.card); }
     else byId.delete(o.cardId);
   }
   p.scene = { ...p.scene, cards: [...byId.values()] };
+  if (fresh.length) {
+    p.markBorn(fresh);
+    if (p === anchor) followNext = fresh.at(-1)!;
+  }
   rebuild(p);
   return { placed: [] };
 });

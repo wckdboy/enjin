@@ -43,6 +43,10 @@ final class AppSettings {
     var showPictures: Bool { didSet { defaults.set(showPictures, forKey: "showPictures") } }
     /// The flat card canvas instead of the 3D world (the world is the default).
     var classicCanvas: Bool { didSet { defaults.set(classicCanvas, forKey: "classicCanvas") } }
+    /// Enjin chimes in on its own when the explorer lingers on something (Companion).
+    var companion: Bool { didSet { defaults.set(companion, forKey: "companion") } }
+    /// User.md: how this explorer learns, shared by every notebook.
+    let learner = LearnerProfile(url: LearnerProfile.defaultURL())
     private(set) var hasKey: Bool
 
     init(defaults: UserDefaults = .standard) {
@@ -55,6 +59,7 @@ final class AppSettings {
         workspaceId = defaults.string(forKey: "workspaceId") ?? ""
         prepareAhead = defaults.bool(forKey: "prepareAhead")
         classicCanvas = defaults.bool(forKey: "classicCanvas")
+        companion = defaults.object(forKey: "companion") as? Bool ?? true
         languageChoice = defaults.string(forKey: "language").flatMap(AppLanguage.init(rawValue:))
         hasKey = Keychain.read(Self.keyAccount)?.isEmpty == false
     }

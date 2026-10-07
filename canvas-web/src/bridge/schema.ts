@@ -282,6 +282,23 @@ export const webToNative = {
     /** null = already at root. */
     result: z.object({ scene: PortalScene, focusCardId: z.string() }).nullable(),
   },
+  "attention": {
+    /**
+     * What the explorer has been doing, a few seconds at a time, so Enjin can notice and respond:
+     * look (dwelt on something), tap, explode, turn (a model), play (with a live panel),
+     * zoomInto / dive / rise (moved between worlds). `cardId` or `label` (a model part) say what.
+     */
+    params: z.object({
+      portalId: z.string(),
+      events: z.array(z.object({
+        kind: z.enum(["look", "tap", "explode", "turn", "play", "zoomInto", "dive", "rise"]),
+        cardId: z.string().optional(),
+        label: z.string().optional(),
+        ms: z.number().int().nonnegative().optional(),
+      })),
+    }),
+    result: Null,
+  },
   "log.event": {
     params: z.object({
       level: z.enum(["debug", "info", "warn", "error"]),

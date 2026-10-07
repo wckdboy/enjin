@@ -15,6 +15,20 @@ struct UITestBackend: AgentBackend {
              execute: @escaping @Sendable (String, JSONValue) async -> ToolOutcome) async throws -> AgentTurnResult {
         try await Task.sleep(for: .milliseconds(300))
         let prompt = thread.last?["content"]?.stringValue ?? ""
+        // The partner loop: a question with answers, a note in User.md, and the answer coming back.
+        if prompt.contains("The explorer says: quiz me") {
+            _ = await execute("askLearner", .object(["question": .string("Which spins faster: more turns of wire, or fewer?"),
+                                                     "choices": .array([.string("More turns"), .string("Fewer turns")])]))
+            _ = await execute("rememberAboutLearner", .object(["section": .string("How I learn best"), "note": .string("Likes being quizzed before the answer")]))
+            onEvent(.textDelta("Quick guess first!"))
+            thread.append(.object(["role": .string("assistant"), "content": .string("ok")]))
+            return AgentTurnResult(stop: .done, rounds: 1, usage: .init(), firstEventMs: 300, totalMs: 300)
+        }
+        if prompt.contains("(answering your question") {
+            onEvent(.textDelta(prompt.contains("Fewer turns") ? "Yes: fewer turns, less back-EMF, more speed." : "Close, but it's fewer."))
+            thread.append(.object(["role": .string("assistant"), "content": .string("ok")]))
+            return AgentTurnResult(stop: .done, rounds: 1, usage: .init(), firstEventMs: 300, totalMs: 300)
+        }
         // A fill request names its stub; put the cards inside it.
         let parent = prompt.range(of: #"parentCardId (c-[a-z0-9-]+)"#, options: .regularExpression)
             .map { String(prompt[$0].split(separator: " ").last!) }

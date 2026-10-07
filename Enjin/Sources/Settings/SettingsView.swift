@@ -10,6 +10,7 @@ struct SettingsView: View {
     @State private var spentToday = 0.0
     @State private var testing = false
     @State private var testResult: (ok: Bool, message: String)?
+    @State private var showProfile = false
 
     var body: some View {
         EnjinSheet(title: "Settings") {
@@ -107,6 +108,18 @@ struct SettingsView: View {
                 }
 
                 Section {
+                    Toggle("Enjin chimes in", isOn: $settings.companion)
+                    Button { showProfile = true } label: {
+                        LabeledContent("What Enjin knows about you", value: "User.md")
+                    }
+                    .accessibilityIdentifier("learnerProfile")
+                } header: {
+                    Text("Learning together")
+                } footer: {
+                    Text("Enjin notices what you linger on and play with, and now and then says something, asks you something, or adds a card right there. It keeps notes on how you learn best in User.md, which you can read and change.")
+                }
+
+                Section {
                     Toggle("Prepare cards ahead", isOn: $settings.prepareAhead)
                 } footer: {
                     Text("Fills unexplored cards in the background while your kid looks at them, so diving in is instant. Uses noticeably more of the daily limit.")
@@ -127,6 +140,9 @@ struct SettingsView: View {
             .task { spentToday = await telemetry.spentToday() }
             .sheet(isPresented: $showConsent) {
                 ParentConsentView { settings.consentGiven = true }
+            }
+            .sheet(isPresented: $showProfile) {
+                LearnerProfileView(profile: settings.learner)
             }
         }
     }

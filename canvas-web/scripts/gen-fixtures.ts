@@ -74,6 +74,11 @@ export const examples: Record<string, { direction: "nativeToWeb" | "webToNative"
     result: { scene, cardId: "c-legions" },
   },
   "portal.exit": { direction: "webToNative", params: { portalId: "p-legions" }, result: { scene, focusCardId: "c-legions" } },
+  "attention": {
+    direction: "webToNative",
+    params: { portalId: "p-legions", events: [{ kind: "look", cardId: "c-why-won", ms: 9000 }, { kind: "tap", label: "Shield" }] },
+    result: null,
+  },
   "log.event": { direction: "webToNative", params: { level: "warn", message: "hello", data: { n: 1 } }, result: null },
 };
 

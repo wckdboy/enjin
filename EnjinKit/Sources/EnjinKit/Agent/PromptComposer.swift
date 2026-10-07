@@ -16,6 +16,8 @@ public enum PromptComposer {
         case expand(cardId: String)
         /// The explorer asked to see a card's idea as a visual.
         case visualize(cardId: String)
+        /// The companion noticed something about what the explorer is doing; respond if it helps.
+        case nudge(String)
     }
 
     /// A finished turn elsewhere, carried into other portals' prompts as text.
@@ -33,7 +35,8 @@ public enum PromptComposer {
 
     public static func compose(session: NotebookSession, portalId: String, focusCardId: String?, request: Request,
                                changes: [NotebookSession.KidChange], tail: [TailEntry],
-                               budgetChars: Int = defaultBudgetChars, compact: Bool = false, language: AppLanguage = .en) -> String {
+                               budgetChars: Int = defaultBudgetChars, compact: Bool = false, language: AppLanguage = .en,
+                               learner: String? = nil, attention: String? = nil) -> String {
         // Tiers from the inside out; outer tiers are dropped first when over budget.
         let here = currentPortal(session, portalId, focusCardId, compact: compact)
         let around = compact ? "" : surroundings(session, portalId)
@@ -46,8 +49,10 @@ public enum PromptComposer {
             ask += "\n\nLanguage: write your reply and every card's title, summary and body in \(language.promptName). Keep image phrases in English (they search English Wikipedia)."
         }
 
-        var parts = [here, around, elsewhere, changeText, tailText, ask]
-        // Drop: elsewhere, then tail, then surroundings. "Here", changes and the ask always stay.
+        let learnerText = learner.map { "<learner file=\"User.md\">\n\($0.trimmingCharacters(in: .whitespacesAndNewlines))\n</learner>" } ?? ""
+        let attentionText = attention.map { "<what_they_did since=\"you last spoke\">\n\($0)\n</what_they_did>" } ?? ""
+        var parts = [here, around, elsewhere, changeText, tailText, learnerText, attentionText, ask]
+        // Drop: elsewhere, then tail, then surroundings. "Here", changes, the learner, what they did and the ask always stay.
         for drop in [2, 4, 1] where parts.joined().count > budgetChars { parts[drop] = "" }
         return parts.filter { !$0.isEmpty }.joined(separator: "\n\n")
     }
@@ -141,6 +146,15 @@ public enum PromptComposer {
         switch request {
         case .ask(let text):
             return "The explorer says: \(text)"
+        case .nudge(let observation):
+            return """
+            Nobody asked: you noticed something, as their partner. \(observation) \
+            Respond only if it helps, the way a friend learning alongside them would: one short line (under 25 words) that \
+            notices what they're doing, adds the one thing that makes it click, or asks what they think (askLearner, with \
+            choices). If a picture or a widget would help right there, add ONE card next to it with createCards. If they \
+            seem to be in flow, reply with nothing and make no calls. If this tells you something lasting about how they \
+            learn, rememberAboutLearner. Never repeat what's already on the canvas.
+            """
         case .begin:
             return """
             The explorer just started a new notebook about "\(session.title)". Open it up: one short, excited sentence, \

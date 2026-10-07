@@ -29,7 +29,14 @@ public final class AgentSession {
         case failed(String)
     }
 
-    public enum Kind: String, Sendable { case ask, fill, prefetch, begin }
+    /// nudge: the companion noticed something and Enjin may respond on its own (see Companion).
+    public enum Kind: String, Sendable { case ask, fill, prefetch, begin, nudge }
+
+    /// A question Enjin asked, with answers to tap.
+    public struct Question: Equatable, Sendable {
+        public var text: String
+        public var choices: [String]
+    }
 
     /// Tappable suggestions shown after a turn.
     public enum NextStep: Equatable, Sendable, Identifiable {
@@ -53,6 +60,12 @@ public final class AgentSession {
     public private(set) var reply = ""
     public private(set) var suggestion: Suggestion?
     public private(set) var nextSteps: [NextStep] = []
+    /// Enjin's open question to the explorer, if any.
+    public private(set) var question: Question?
+    /// When the last turn finished (the companion waits a while after Enjin has spoken).
+    public private(set) var lastTurnEnded: Date?
+    /// Kind of the turn in flight or last run.
+    public private(set) var lastKind: Kind?
     public var canUndo: Bool { lastTurn != nil && !(lastTurn?.isEmpty ?? true) }
     /// True while a turn (including a background prefetch) is in flight.
     /// Stored (not derived from `task`) so SwiftUI observes it.
@@ -67,6 +80,12 @@ public final class AgentSession {
     @ObservationIgnored public var imageGenerator: ImageGenerator?
     /// The shared look applied to every picture.
     @ObservationIgnored public var imageStylizer: ImageStylizer?
+    /// User.md: how this explorer learns, read every turn, written by rememberAboutLearner.
+    @ObservationIgnored public var learner: LearnerProfile?
+    /// What the explorer has been doing in the world.
+    @ObservationIgnored public var attention: AttentionLog?
+    /// Time, for when turns end (tests drive it).
+    @ObservationIgnored public var clock: () -> Date = Date.init
     /// Free on-device help: next-question chips, picture phrases.
     @ObservationIgnored public var assist: AssistHelper?
     /// Fill stubs in the background when the kid lingers on them (costs a turn each).
@@ -155,6 +174,25 @@ public final class AgentSession {
         }
     }
 
+    /// The companion noticed something (`observation`): Enjin may respond, briefly and on its own:
+    /// a line, a question, or one card next to what they're looking at; or nothing, if they're in flow.
+    public func nudge(_ observation: String, portalId: String, focusCardId: String?) {
+        guard task == nil, backend?.isReduced == false else { return }
+        start(.nudge, request: .nudge(observation), portalId: portalId, focusCardId: focusCardId, kidSaid: "(Enjin noticed: \(observation))")
+    }
+
+    /// The explorer tapped an answer to Enjin's question.
+    public func answer(_ choice: String, portalId: String, focusCardId: String?) {
+        let asked = question
+        question = nil
+        let text = asked.map { "(answering your question \"\($0.text)\") \(choice)" } ?? choice
+        start(.ask, request: .ask(text), portalId: portalId, focusCardId: focusCardId, kidSaid: choice)
+    }
+
+    public func dismissQuestion() {
+        question = nil
+    }
+
     public func cancel() {
         task?.cancel()
     }
@@ -228,6 +266,11 @@ public final class AgentSession {
         }
 
         let turnId = "t-\(UUID().uuidString.prefix(8).lowercased())"
+        lastKind = kind
+        let since = lastTurnEnded
+        defer { if kind != .prefetch { lastTurnEnded = clock() } }
+        // Quiet turns don't show a working state; a nudge's words still appear (if it says anything).
+        let quiet = kind == .prefetch || kind == .nudge
         var record = TurnRecord(id: turnId)
         var fillingId: String?
         if case .fill(let cardId) = request, let card = session.card(cardId) {
@@ -235,12 +278,14 @@ public final class AgentSession {
             record.previous[cardId] = card
             await setState(cardId, .filling)
         }
-        if kind != .prefetch {
+        if !quiet {
             status = .working(.thinking)
             reply = ""
             suggestion = nil
             nextSteps = []
+            question = nil
         }
+        let spoke = Flag()
         if kind == .begin { paintCover() }
         let showBusy = (kind == .fill || kind == .begin) && session.activeCards(in: portalId).isEmpty
         if showBusy {
@@ -251,7 +296,9 @@ public final class AgentSession {
         let changes = session.drainChangeLog()
         let userText = PromptComposer.compose(session: session, portalId: portalId, focusCardId: focusCardId, request: request,
                                               changes: changes, tail: tail.filter { $0.portalTitle != session.portal(portalId)?.title },
-                                              compact: backend.isReduced, language: language)
+                                              compact: backend.isReduced, language: language,
+                                              learner: learner?.promptText,
+                                              attention: attention?.summary(since: since) { [session] id in session.card(id)?.title })
         var thread = threads[portalId] ?? []
         var owed = pendingResults[portalId] ?? []
         if Self.kidTurns(thread) >= Self.maxThreadTurns {
@@ -263,7 +310,7 @@ public final class AgentSession {
                 ? .string(userText) : .array(owed + [.object(["type": .string("text"), "text": .string(userText)])])]))
 
         let tools = backend.isReduced ? AgentTools.reduced : AgentTools.all
-        let executor = ToolExecutor(agent: self, portalId: portalId, turnId: turnId)
+        let executor = ToolExecutor(agent: self, portalId: portalId, turnId: turnId, cardLimit: kind == .nudge ? 1 : AgentTools.maxCardsPerTurn)
         defer { Task { await executor.discardUnusedDrafts() } }
         let foreground = kind != .prefetch
         let started = Date()
@@ -278,9 +325,12 @@ public final class AgentSession {
                     }
                     guard foreground, let self else { return }
                     switch e {
-                    case .textDelta(let t): self.reply += t
-                    case .serverToolUse(_, let input): self.status = .working(.searching(input["query"]?.stringValue ?? ""))
-                    case .toolUse: self.status = .working(.writing)
+                    case .textDelta(let t):
+                        // A nudge keeps the last thing Enjin said until it actually says something new.
+                        if !spoke.on { spoke.on = true; if quiet { self.reply = ""; self.question = nil } }
+                        self.reply += t
+                    case .serverToolUse(_, let input): if !quiet { self.status = .working(.searching(input["query"]?.stringValue ?? "")) }
+                    case .toolUse: if !quiet { self.status = .working(.writing) }
                     default: break
                     }
                 }
@@ -300,7 +350,7 @@ public final class AgentSession {
             tail.append(.init(portalTitle: session.portal(portalId)?.title ?? "", kidSaid: kidSaid, cardsMade: made))
             if tail.count > 3 { tail.removeFirst(tail.count - 3) }
             if showBusy { await canvas?.setBusy(portalId: portalId, message: nil) }
-            if foreground {
+            if foreground && !quiet {
                 switch result.stop {
                 case .refused: status = .failed(strings.refused)
                 default: status = .idle
@@ -328,8 +378,8 @@ public final class AgentSession {
                 lastTurn = record
             }
             let cancelled = error is CancellationError || Task.isCancelled
-            if foreground && !cancelled { status = .failed(Self.kidMessage(for: error, strings)) }
-            if cancelled && foreground { status = .idle }
+            if foreground && !quiet && !cancelled { status = .failed(Self.kidMessage(for: error, strings)) }
+            if cancelled && foreground && !quiet { status = .idle }
             log.error("turn \(turnId) failed: \(error.localizedDescription)")
             await telemetry?.record("agent_turn", [
                 "kind": .string(kind.rawValue), "model": .string(backend.modelId), "turn": .string(turnId),
@@ -469,11 +519,19 @@ public final class AgentSession {
         await canvas?.apply(portalId: c.portalId, ops: [.upsert(session.bridgeCard(c))])
     }
 
+    fileprivate func setQuestion(_ q: Question) {
+        question = q
+    }
+
     fileprivate func setSuggestion(_ s: Suggestion) async {
         suggestion = s
         await canvas?.flash(cardId: s.cardId)
     }
 }
+
+/// A mutable bit shared with a turn's event handler.
+@MainActor
+final class Flag { var on = false }
 
 /// Executes one turn's tool calls. Main-actor bound: it mutates the notebook.
 @MainActor
@@ -481,6 +539,7 @@ final class ToolExecutor {
     private weak var agent: AgentSession?
     private let portalId: String
     private let turnId: String
+    private let cardLimit: Int
     private(set) var created: [String] = []
     private(set) var previous: [String: StoredCard] = [:]
     /// URLs the model actually saw this turn; cards may only cite these.
@@ -501,10 +560,11 @@ final class ToolExecutor {
     private var latestPartial: [String: String] = [:]
     private var previewTask: Task<Void, Never>?
 
-    init(agent: AgentSession, portalId: String, turnId: String) {
+    init(agent: AgentSession, portalId: String, turnId: String, cardLimit: Int = AgentTools.maxCardsPerTurn) {
         self.agent = agent
         self.portalId = portalId
         self.turnId = turnId
+        self.cardLimit = cardLimit
     }
 
     func observe(_ e: ProviderEvent) {
@@ -619,8 +679,8 @@ final class ToolExecutor {
                     target = p.portalId
                     parent = session.card(parentId)
                 }
-                let room = AgentTools.maxCardsPerTurn - created.count
-                guard room > 0 else { return .error("This turn already added \(AgentTools.maxCardsPerTurn) cards, the limit. Stop adding cards.") }
+                let room = cardLimit - created.count
+                guard room > 0 else { return .error("This turn already added \(cardLimit) card(s), the limit. Stop adding cards.") }
                 let wanted = Array(args.cards.prefix(min(AgentTools.maxCardsPerCall, room)))
                 await drainPreviews()
                 let draft = takeDraft()
@@ -690,6 +750,19 @@ final class ToolExecutor {
                 guard session.card(args.cardId)?.isActive == true else { return .error("No card \(args.cardId).") }
                 await agent.setSuggestion(.init(cardId: args.cardId, reason: AgentTools.clip(args.reason, 80)))
                 return .ok("Highlighted \(args.cardId) for the kid.")
+
+            case "rememberAboutLearner":
+                let args = try input.decode(as: AgentTools.RememberAboutLearner.self)
+                guard let learner = agent.learner else { return .ok("Noted (the profile isn't available right now).") }
+                learner.remember(args.note, in: args.section, replacing: args.replaces)
+                return .ok("Saved to their User.md under \"\(args.section.rawValue)\".")
+
+            case "askLearner":
+                let args = try input.decode(as: AgentTools.AskLearner.self)
+                let choices = args.choices.map { AgentTools.clip($0, 40) }.filter { !$0.isEmpty }.prefix(4)
+                guard choices.count >= 2 else { return .error("Give 2-4 answers to choose from.") }
+                agent.setQuestion(.init(text: AgentTools.clip(args.question, 120), choices: Array(choices)))
+                return .ok("Asked. Their answer will come as their next message.")
 
             default:
                 return .error("Unknown tool \(name).")

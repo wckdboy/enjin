@@ -1,0 +1,27 @@
+{
+  "direction": "webToNative",
+  "request": {
+    "v": 1,
+    "id": "fx-1",
+    "method": "attention",
+    "params": {
+      "portalId": "p-legions",
+      "events": [
+        {
+          "kind": "look",
+          "cardId": "c-why-won",
+          "ms": 9000
+        },
+        {
+          "kind": "tap",
+          "label": "Shield"
+        }
+      ]
+    }
+  },
+  "response": {
+    "v": 1,
+    "id": "fx-1",
+    "result": null
+  }
+}

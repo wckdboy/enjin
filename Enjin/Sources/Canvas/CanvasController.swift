@@ -28,6 +28,11 @@ final class CanvasController: NSObject {
     let webView: WKWebView
     @ObservationIgnored let session: NotebookSession
     let agent: AgentSession
+    /// What the explorer does in the world, and Enjin chiming in about it.
+    @ObservationIgnored let attention = AttentionLog()
+    @ObservationIgnored let companion: Companion
+    /// The ask field has the keyboard (Enjin doesn't chime in meanwhile).
+    @ObservationIgnored var typing = false
     @ObservationIgnored let settings: AppSettings
     @ObservationIgnored let telemetry: Telemetry
     @ObservationIgnored private var prefetchTimer: Task<Void, Never>?
@@ -55,6 +60,10 @@ final class CanvasController: NSObject {
         agent.assist = settings.makeAssist()
         agent.prefetchEnabled = settings.prepareAhead
         agent.language = settings.language
+        agent.learner = settings.learner
+        agent.attention = attention
+        companion = Companion(agent: agent, attention: attention)
+        companion.enabled = settings.companion
 
         let config = WKWebViewConfiguration()
         config.setURLSchemeHandler(SchemeHandler(root: bundle.resourceURL!.appendingPathComponent("canvas-web")), forURLScheme: SchemeHandler.scheme)
@@ -118,6 +127,7 @@ final class CanvasController: NSObject {
         agent.imageFinder = settings.makeImageFinder()
         agent.imageGenerator = settings.makeIllustrator()
         agent.prefetchEnabled = settings.prepareAhead
+        companion.enabled = settings.companion
         if agent.language != settings.language {
             agent.language = settings.language
             agent.clearNextSteps()
@@ -140,6 +150,7 @@ final class CanvasController: NSObject {
     }
 
     func takeNextStep(_ step: AgentSession.NextStep) {
+        companion.explorerSpoke()
         agent.clearNextSteps()
         switch step {
         case .ask(let q): ask(q)
@@ -149,7 +160,15 @@ final class CanvasController: NSObject {
 
     func ask(_ text: String) {
         guard let portalId = currentPortalId else { return }
+        companion.explorerSpoke()
         agent.ask(text, portalId: portalId, focusCardId: selectedCardId ?? focusedCardId)
+    }
+
+    /// The explorer tapped an answer to Enjin's question.
+    func answer(_ choice: String) {
+        guard let portalId = currentPortalId else { return }
+        companion.explorerSpoke()
+        agent.answer(choice, portalId: portalId, focusCardId: selectedCardId ?? focusedCardId)
     }
 
     func goToSuggestion() {
@@ -300,6 +319,12 @@ final class CanvasController: NSObject {
         }
         router.on("selection.changed", WebMethod.SelectionChanged.self) { [weak self] p in
             self?.selectedCardId = p.cardIds.count == 1 ? p.cardIds[0] : nil
+            return Empty()
+        }
+        router.on("attention", WebMethod.Attention.self) { [weak self] p in
+            guard let self else { return Empty() }
+            attention.record(p.events, in: p.portalId)
+            if p.portalId == currentPortalId { companion.consider(portalId: p.portalId, typing: typing) }
             return Empty()
         }
         router.on("log.event", WebMethod.LogEvent.self) { [weak self] p in

@@ -182,7 +182,42 @@ public enum AgentTools {
         ]),
     ])
 
-    public static let all = [createCards, updateCard, suggestFocus]
+    public static let rememberAboutLearner: JSONValue = .object([
+        "name": .string("rememberAboutLearner"),
+        "description": .string("""
+        Write down something lasting you've learned about how this explorer learns, in their User.md (read it in         <learner>). Use it when you notice a pattern, not a one-off: they keep turning and exploding 3D models; they         skip long text; formulas click once there's a slider; they light up at space; they want to go faster. One short         sentence in their terms. Pass `replaces` to update a note that's no longer true. Learning only: never names,         places, schools, age or anything personal.
+        """),
+        "input_schema": .object([
+            "type": .string("object"),
+            "properties": .object([
+                "section": .object([
+                    "type": .string("string"),
+                    "enum": .array(LearnerProfile.Section.allCases.map { .string($0.rawValue) }),
+                ]),
+                "note": string("One short sentence, e.g. 'Learns fastest by changing a variable and watching what happens'"),
+                "replaces": string("An existing note (exact text) that this one replaces"),
+            ]),
+            "required": .array([.string("section"), .string("note")]),
+        ]),
+    ])
+
+    public static let askLearner: JSONValue = .object([
+        "name": .string("askLearner"),
+        "description": .string("""
+        Ask the explorer a short question with 2-4 tappable answers, shown right where they are. Use it like a         partner would: to check what they think will happen, to find out what they want next, or how they like to         learn ("Want to see it move, or the maths behind it?"). Their tap comes back to you as their next message.         At most one question per turn, and not every turn.
+        """),
+        "input_schema": .object([
+            "type": .string("object"),
+            "properties": .object([
+                "question": string("Up to 120 characters"),
+                "choices": .object(["type": .string("array"), "items": .object(["type": .string("string")]), "minItems": .number(2), "maxItems": .number(4),
+                                    "description": .string("2-4 short answers, each up to 40 characters")]),
+            ]),
+            "required": .array([.string("question"), .string("choices")]),
+        ]),
+    ])
+
+    public static let all = [createCards, updateCard, suggestFocus, askLearner, rememberAboutLearner]
     /// The on-device model gets the minimum (plan §5.4).
     public static let reduced = [createCards, updateCard]
 
@@ -246,6 +281,17 @@ public enum AgentTools {
             visual = (try? c.decodeIfPresent(Visual.self, forKey: .visual))?.sanitized()
             illustrate = try? c.decodeIfPresent(String.self, forKey: .illustrate)
         }
+    }
+
+    public struct RememberAboutLearner: Decodable, Equatable, Sendable {
+        public var section: LearnerProfile.Section
+        public var note: String
+        public var replaces: String?
+    }
+
+    public struct AskLearner: Decodable, Equatable, Sendable {
+        public var question: String
+        public var choices: [String]
     }
 
     public struct SuggestFocus: Decodable, Equatable, Sendable {
