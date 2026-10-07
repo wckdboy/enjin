@@ -29,7 +29,7 @@ window.addEventListener("error", (e) => bridge.notify("log.event", { level: "err
 // Layers, bottom to top: backdrop (CSS) · planes (DOM) · models (WebGL) · part labels · HUD.
 const host = document.getElementById("world")!;
 const stage = document.createElement("div");
-stage.className = "stage";
+stage.className = "wstage";
 const canvas = document.createElement("canvas");
 const labelLayer = document.createElement("div");
 labelLayer.className = "labels";
@@ -72,9 +72,18 @@ const peeking = new Set<string>();
 /** Things that just refused to open: don't keep asking while you're still zoomed on them. */
 const refused = new Map<string, number>();
 
+/** Ask native, but never wait forever: a world mid-crossing must not get stuck. */
+function ask<M extends "portal.enter" | "portal.exit" | "portal.peek" | "portal.zoomInto">(method: M, params: Parameters<typeof bridge.request<M>>[1]) {
+  return Promise.race([
+    bridge.request(method, params).catch(() => null),
+    new Promise<null>((r) => setTimeout(() => r(null), 10000)),
+  ]);
+}
+
 function newPlane(scene: PortalScene, live: boolean): Plane {
   const p = new Plane(scene, look.environment, live);
   p.onOpen = (cardId) => bridge.notify("card.open", { cardId });
+  p.onError = (e) => bridge.notify("log.event", { level: "error", message: `world build: ${String(e)}` });
   stage.appendChild(p.el);
   return p;
 }
@@ -175,7 +184,9 @@ function check(now: number): void {
 
   // Doors: a look inside once they're big enough to see into; through, once one fills the view.
   for (const card of anchor.spec.doors) {
-    const r = cam.rectToScreen(anchor.doorRect(card.id)!);
+    const dr = anchor.doorRect(card.id);
+    if (!dr) continue;
+    const r = cam.rectToScreen(dr);
     const onScreen = r.x < cam.w && r.y < cam.h && r.x + r.w > 0 && r.y + r.h > 0;
     if (onScreen && r.w > 56 && card.childCount > 0 && !anchor.children.has(card.id) && !peeking.has(card.id)) void peek(anchor, card.id);
     const centred = Math.abs(r.x + r.w / 2 - cx) < r.w / 2 && Math.abs(r.y + r.h / 2 - cy) < r.h / 2;
@@ -206,7 +217,9 @@ function check(now: number): void {
 
   // A panel: the same.
   for (const card of anchor.spec.panels) {
-    const r = cam.rectToScreen(anchor.panelRect(card.id)!);
+    const pr = anchor.panelRect(card.id);
+    if (!pr) continue;
+    const r = cam.rectToScreen(pr);
     if (!(cx > r.x && cx < r.x + r.w && cy > r.y && cy < r.y + r.h)) continue;
     const big = Math.max(r.w / f.w, r.h / f.h);
     if (big > 2.2 && fresh(card.id)) { void zoomInto({ title: card.title, detail: card.summary, cardId: card.id }, card.id); return; }
@@ -227,7 +240,7 @@ function showHint(text: string | null): void {
 async function peek(from: Plane, cardId: string): Promise<void> {
   peeking.add(cardId);
   try {
-    const scene = await bridge.request("portal.peek", { cardId });
+    const scene = await ask("portal.peek", { cardId });
     if (!scene || anchor !== from || from.children.has(cardId) || !from.doorNest(cardId)) return;
     const child = newPlane(scene, false);
     child.up = { plane: from, nest: from.doorNest(cardId)!, doorId: cardId };
@@ -248,7 +261,7 @@ async function dive(cardId: string): Promise<void> {
   transitioning = true;
   showHint(null);
   try {
-    const scene = await bridge.request("portal.enter", { portalId: from.portalId, cardId });
+    const scene = await ask("portal.enter", { portalId: from.portalId, cardId });
     if (!scene || anchor !== from) { refused.set(cardId, performance.now()); return; }
     let child = from.children.get(cardId);
     if (!child) {
@@ -271,7 +284,7 @@ async function zoomInto(what: { title: string; detail?: string; cardId?: string 
   transitioning = true;
   showHint(null);
   try {
-    const res = await bridge.request("portal.zoomInto", { portalId: from.portalId, ...what });
+    const res = await ask("portal.zoomInto", { portalId: from.portalId, ...what });
     if (!res || anchor !== from) { refused.set(id, performance.now()); return; }
     // The new world opens where you were looking, its centrepiece filling the view.
     const f = cam.free();
@@ -317,7 +330,7 @@ async function rise(): Promise<void> {
   transitioning = true;
   showHint(null);
   try {
-    const res = await bridge.request("portal.exit", { portalId: from.portalId });
+    const res = await ask("portal.exit", { portalId: from.portalId });
     if (!res || anchor !== from) { refused.set("exit", performance.now()); return; }
     let parent = from.up?.plane;
     if (!parent) {
@@ -516,10 +529,15 @@ function showInfo(title: string | null, detail: string | null): void {
 }
 
 // ---------- the bridge (same protocol as the card canvas) ----------
-const rebuilds = new Map<Plane, number>();
+/** Cards change many times a second while Enjin writes: show them as they grow, a few times a second. */
+const rebuilds = new Set<Plane>();
 function rebuild(p: Plane): void {
-  clearTimeout(rebuilds.get(p));
-  rebuilds.set(p, window.setTimeout(() => { void p.build(p.scene, files).then(() => { if (p === anchor) afterBuild(); wake(); }); }, 120));
+  if (rebuilds.has(p)) return;
+  rebuilds.add(p);
+  window.setTimeout(() => {
+    rebuilds.delete(p);
+    void p.build(p.scene, files).then(() => { if (p === anchor) afterBuild(); wake(); });
+  }, 160);
 }
 function planeFor(portalId: string): Plane | undefined {
   return planes().find(({ p }) => p.portalId === portalId)?.p;
@@ -617,7 +635,9 @@ function reportFocus(now: number): void {
   const cx = f.x + f.w / 2, cy = f.y + f.h / 2;
   let best: string | null = null, bestD = Infinity;
   for (const card of anchor.spec.doors) {
-    const r = cam.rectToScreen(anchor.doorRect(card.id)!);
+    const dr = anchor.doorRect(card.id);
+    if (!dr) continue;
+    const r = cam.rectToScreen(dr);
     const d = Math.hypot(r.x + r.w / 2 - cx, r.y + r.h / 2 - cy);
     if (r.w > 0.25 * Math.min(f.w, f.h) && d < bestD) { best = card.id; bestD = d; }
   }
@@ -635,16 +655,22 @@ function resize(): void {
 }
 addEventListener("resize", resize);
 resize();
+let lastError = 0;
 function frame(now: number): void {
-  const moving = cam.update(now) || pointers.size > 0;
-  if (moving) settledAt = now;
-  const animating = planes().some(({ p }) => p.model?.hasMotion);
-  if (moving || animating || now - lastWake < 1500) {
-    draw(now);
-    check(now);
-  }
-  reportFocus(now);
+  // Whatever happens in one frame, the next one comes: a world must never freeze.
   requestAnimationFrame(frame);
+  try {
+    const moving = cam.update(now) || pointers.size > 0;
+    if (moving) settledAt = now;
+    const animating = planes().some(({ p }) => p.model?.hasMotion);
+    if (moving || animating || now - lastWake < 1500) {
+      draw(now);
+      check(now);
+    }
+    reportFocus(now);
+  } catch (e) {
+    if (now - lastError > 5000) { lastError = now; bridge.notify("log.event", { level: "error", message: `world frame: ${String(e)}` }); }
+  }
 }
 requestAnimationFrame(frame);
 

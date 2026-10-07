@@ -84,3 +84,57 @@ test("two fingers pinch to zoom; one finger pans", async ({ page }) => {
   const tx2 = await page.evaluate(() => (window as unknown as { __enjinWorld: { cam: { tx: number } } }).__enjinWorld.cam.tx);
   expect(tx2 - tx).toBeGreaterThan(100);
 });
+
+test("a new world being written never freezes: doors and panels stream in while you pan", async ({ page }) => {
+  // A topic with nothing inside yet: Enjin fills it while you watch.
+  await page.evaluate(() => (window as unknown as { __enjinWorld: World }).__enjinWorld.flyThrough("c-homemade"));
+  await expect.poll(async () => (await w(page)).portal, { timeout: 5000 }).toBe("p-c-homemade");
+  const portal = (await w(page)).portal!;
+  // Stream like the agent does: new doors and growing panels, many times a second.
+  await page.evaluate((portalId) => new Promise<void>((done) => {
+    let i = 0;
+    const t = setInterval(() => {
+      i++;
+      const ops = Array.from({ length: 1 + Math.floor(i / 2) }, (_, n) => ({
+        op: "upsert",
+        card: { id: `s${n}`, type: n % 2 ? "topic" : "note", title: `Thing ${n}`, summary: "word ".repeat(Math.min(40, i)), state: "filling", childCount: 0 },
+      }));
+      (window as unknown as { enjin: { handle(r: unknown): void } }).enjin.handle({ v: 1, id: `s${i}`, method: "canvas.applyOps", params: { portalId, ops } });
+      if (i >= 24) { clearInterval(t); done(); }
+    }, 170); // about the pace of the agent's partial previews
+  }), portal);
+  // Still alive: a pan moves what's drawn on screen (not just the camera), and the cards (doors included) arrived.
+  const tx = () => page.evaluate(() => {
+    const m = /translate\((-?[\d.]+)px/.exec((window as unknown as { __enjinWorld: { anchor: { el: HTMLElement } } }).__enjinWorld.anchor.el.style.transform);
+    return Number(m?.[1] ?? NaN);
+  });
+  await page.waitForTimeout(400);
+  const before = await tx();
+  const host = page.locator("#world");
+  const ev = (type: string, x: number) => host.dispatchEvent(type, { pointerId: 1, clientX: x, clientY: 400, isPrimary: true, pointerType: "touch", bubbles: true });
+  await ev("pointerdown", 300);
+  for (let i = 1; i <= 4; i++) await ev("pointermove", 300 + i * 40);
+  await ev("pointerup", 460);
+  await page.waitForTimeout(200);
+  expect(Math.abs((await tx()) - before)).toBeGreaterThan(100);
+  await expect.poll(() => page.evaluate(() => (window as unknown as { __enjinWorld: World }).__enjinWorld.anchor!.spec.doors.length)).toBeGreaterThan(3);
+  const errors = await page.evaluate(() => (window as unknown as { __devLog: { method: string; params: { level?: string; message?: string } }[] }).__devLog
+    .filter((r) => r.method === "log.event" && r.params.level === "error" && /world/.test(r.params.message ?? "")));
+  expect(errors).toEqual([]);
+});
+
+test("an error in one frame never freezes the world", async ({ page }) => {
+  const drawn = () => page.evaluate(() => (window as unknown as { __enjinWorld: { anchor: { el: HTMLElement } } }).__enjinWorld.anchor.el.style.transform);
+  // Something goes wrong while drawing (say, a half-written model): once.
+  await page.evaluate(() => {
+    const m = (window as unknown as { __enjinWorld: { anchor: { model: { update(t: number): boolean } } } }).__enjinWorld.anchor.model;
+    const real = m.update.bind(m);
+    let thrown = false;
+    m.update = (t: number) => { if (!thrown) { thrown = true; throw new Error("boom"); } return real(t); };
+  });
+  await page.waitForTimeout(300);
+  const before = await drawn();
+  await page.evaluate(() => (window as unknown as { __enjinWorld: World }).__enjinWorld.zoomBy(1.3));
+  await page.waitForTimeout(700);
+  expect(await drawn()).not.toBe(before);
+});

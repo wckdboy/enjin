@@ -37,6 +37,9 @@ export class Plane {
   private doors = new Map<string, { door: HTMLDivElement; label: HTMLDivElement; key: string }>();
   private titleEl = document.createElement("div");
   private building: Promise<void> = Promise.resolve();
+  private pending: { scene: PortalScene; files: BinaryFiles } | null = null;
+  private running = false;
+  onError: ((e: unknown) => void) | null = null;
   private active: string | null = null;
   onOpen: ((cardId: string) => void) | null = null;
 
@@ -53,22 +56,50 @@ export class Plane {
     return this.scene.portalId;
   }
 
-  /** Show this scene. Unchanged panels and models are kept; calls queue so the last one wins. */
+  /**
+   * Show this scene. Unchanged panels and models are kept. While one build runs,
+   * newer scenes replace each other: at most one waits, so streaming never piles up work.
+   */
   build(scene: PortalScene, files: BinaryFiles): Promise<void> {
-    this.building = this.building.then(() => this.doBuild(scene, files)).catch(() => undefined);
+    this.pending = { scene, files };
+    if (!this.running) this.building = this.drain();
     return this.building;
+  }
+
+  private async drain(): Promise<void> {
+    this.running = true;
+    try {
+      while (this.pending) {
+        const { scene, files } = this.pending;
+        this.pending = null;
+        try {
+          await this.doBuild(scene, files);
+        } catch (e) {
+          this.onError?.(e);
+        }
+      }
+    } finally {
+      this.running = false;
+    }
   }
 
   private async doBuild(scene: PortalScene, files: BinaryFiles): Promise<void> {
     this.scene = scene;
-    this.spec = worldFromScene(scene);
-    const spec = this.spec;
+    // The new spec goes live together with its layout (at the end): in between, the
+    // world on screen still answers questions about its doors and panels consistently.
+    const spec = worldFromScene(scene);
 
-    // The centrepiece (a glass orb until there's a model).
+    // The centrepiece (a glass orb until there's a model; a model still being written may not build yet).
     const key = spec.centerpiece ? JSON.stringify(spec.centerpiece.spec) : "orb";
     if (key !== this.modelKey) {
+      let model: ModelView;
+      try {
+        model = new ModelView(spec.centerpiece?.spec ?? null, this.env);
+      } catch {
+        model = new ModelView(null, this.env);
+      }
       this.model?.dispose();
-      this.model = new ModelView(spec.centerpiece?.spec ?? null, this.env);
+      this.model = model;
       this.modelKey = key;
     }
 
@@ -85,8 +116,9 @@ export class Plane {
       this.el.appendChild(built.el);
     }
 
-    this.layout = layoutPlane(spec.panels.map((c) => this.panels.get(c.id)!), spec.doors.length);
-    const L = this.layout;
+    const L = layoutPlane(spec.panels.map((c) => this.panels.get(c.id)!), spec.doors.length);
+    this.spec = spec;
+    this.layout = L;
     spec.panels.forEach((c, i) => place(this.panels.get(c.id)!.el, L.panels[i]!));
 
     // Doors.
